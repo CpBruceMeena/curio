@@ -4,21 +4,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,181 +25,118 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.curio.app.ui.components.KnowledgeCard
-import com.curio.app.ui.theme.OnSecondaryContainer
 import com.curio.app.ui.theme.OnSurface
 import com.curio.app.ui.theme.OnSurfaceVariant
 import com.curio.app.ui.theme.Primary
 import com.curio.app.ui.theme.SecondaryContainer
 import com.curio.app.ui.theme.Surface
-import com.curio.app.ui.theme.SurfaceContainerHigh
+import com.curio.app.ui.theme.SurfaceContainer
 import com.curio.app.viewmodel.FeedViewModel
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun FeedScreen(
     viewModel: FeedViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val listState = rememberLazyListState()
+    val pagerState = rememberPagerState(pageCount = {
+        uiState.content.size
+    })
 
-    val shouldLoadMore by remember {
+    // Load more when approaching last page
+    val nearEnd by remember {
         derivedStateOf {
-            val lastVisibleItem = listState.layoutInfo.visibleItemsInfo.lastOrNull()
-            lastVisibleItem != null &&
-            lastVisibleItem.index >= listState.layoutInfo.totalItemsCount - 3 &&
-            uiState.hasMore &&
-            !uiState.isLoading
+            val total = uiState.content.size
+            total > 0 && pagerState.currentPage >= total - 2 &&
+            uiState.hasMore && !uiState.isLoading
         }
     }
 
-    LaunchedEffect(shouldLoadMore) {
-        if (shouldLoadMore) {
+    LaunchedEffect(nearEnd) {
+        if (nearEnd) {
             viewModel.loadMore()
         }
     }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Surface)
     ) {
-        // Top App Bar
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Surface.copy(alpha = 0.8f))
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = { /* Menu */ }) {
-                Text(text = "☰", fontSize = 20.sp)
-            }
-
-            Text(
-                text = "Curio",
-                style = MaterialTheme.typography.headlineMedium,
-                color = Primary,
-                fontWeight = FontWeight.ExtraBold
-            )
-
-            IconButton(onClick = { /* Search */ }) {
-                Icon(
-                    imageVector = Icons.Filled.Search,
-                    contentDescription = "Search",
-                    tint = Primary
-                )
-            }
-        }
-
-        // Category Filter Tabs
-        val categories = uiState.categories
-        if (categories.isNotEmpty()) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                CategoryChip(
-                    name = "All",
-                    isSelected = uiState.selectedCategoryId == null,
-                    onClick = { viewModel.selectCategory(null) }
-                )
-                categories.take(7).forEach { category ->
-                    CategoryChip(
-                        name = category.name,
-                        isSelected = uiState.selectedCategoryId == category.id,
-                        onClick = { viewModel.selectCategory(category.id) }
+        when {
+            uiState.isLoading && uiState.content.isEmpty() -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Loading curious content...",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = OnSurfaceVariant
                     )
                 }
             }
-        }
-
-        // Feed Content
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-        ) {
-            when {
-                uiState.isLoading && uiState.content.isEmpty() -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
+            uiState.content.isEmpty() -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(text = "🔍", fontSize = 64.sp)
+                        Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "Loading curious content...",
+                            text = "No content yet",
                             style = MaterialTheme.typography.bodyLarge,
                             color = OnSurfaceVariant
                         )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Check back soon for new discoveries!",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = OnSurfaceVariant.copy(alpha = 0.6f)
+                        )
                     }
                 }
-                uiState.content.isEmpty() -> {
+            }
+            else -> {
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.fillMaxSize()
+                ) { page ->
+                    val item = uiState.content[page]
                     Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 16.dp, vertical = 12.dp)
                     ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(text = "🔍", fontSize = 64.sp)
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                text = "No content yet",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = OnSurfaceVariant
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = "Try selecting a different category",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = OnSurfaceVariant.copy(alpha = 0.6f)
-                            )
-                        }
+                        FullPageCard(
+                            title = item.title,
+                            body = item.body,
+                            category = item.categoryName,
+                            readTime = item.readTimeSecs,
+                            source = item.source
+                        )
                     }
                 }
-                else -> {
-                    LazyColumn(
-                        state = listState,
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(vertical = 4.dp)
-                    ) {
-                        items(
-                            items = uiState.content,
-                            key = { it.id }
-                        ) { item ->
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(580.dp)
-                                    .padding(horizontal = 12.dp, vertical = 6.dp)
-                            ) {
-                                KnowledgeCard(
-                                    content = item,
-                                    modifier = Modifier.fillMaxSize(),
-                                    onLike = { viewModel.likeContent(item.id) }
-                                )
-                            }
-                        }
 
-                        if (uiState.isLoading) {
-                            item {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(32.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = "Loading more...",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = OnSurfaceVariant
-                                    )
-                                }
-                            }
-                        }
+                // Page indicator
+                if (uiState.content.size > 1) {
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "${pagerState.currentPage + 1} / ${uiState.content.size}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Primary.copy(alpha = 0.6f),
+                            fontWeight = FontWeight.Medium
+                        )
                     }
                 }
             }
@@ -215,25 +145,87 @@ fun FeedScreen(
 }
 
 @Composable
-private fun CategoryChip(
-    name: String,
-    isSelected: Boolean,
-    onClick: () -> Unit
+private fun FullPageCard(
+    title: String,
+    body: String,
+    category: String,
+    readTime: Int,
+    source: String
 ) {
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(20.dp))
-            .background(
-                if (isSelected) SecondaryContainer else SurfaceContainerHigh.copy(alpha = 0.4f)
-            )
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        contentAlignment = Alignment.Center
+            .fillMaxSize()
+            .clip(RoundedCornerShape(24.dp))
+            .background(SurfaceContainer)
     ) {
-        Text(
-            text = name,
-            style = MaterialTheme.typography.labelMedium,
-            color = if (isSelected) OnSecondaryContainer else OnSurfaceVariant,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-        )
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(32.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Category tag
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(SecondaryContainer.copy(alpha = 0.2f))
+                    .padding(horizontal = 14.dp, vertical = 6.dp)
+            ) {
+                Text(
+                    text = category.uppercase(),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = SecondaryContainer,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // Title
+            Text(
+                text = title,
+                style = MaterialTheme.typography.headlineLarge,
+                color = OnSurface,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Body
+            Text(
+                text = body,
+                style = MaterialTheme.typography.bodyLarge,
+                color = OnSurfaceVariant.copy(alpha = 0.9f),
+                textAlign = TextAlign.Center,
+                maxLines = 15,
+                overflow = TextOverflow.Ellipsis,
+                lineHeight = 28.sp
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Bottom metadata
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = "${readTime}s read",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Primary,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = source,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = OnSurfaceVariant.copy(alpha = 0.4f),
+                    textAlign = TextAlign.Center,
+                    maxLines = 1
+                )
+            }
+        }
     }
 }

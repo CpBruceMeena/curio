@@ -143,7 +143,10 @@ fun OnboardingScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Button(
-                    onClick = onNavigateToFeed,
+                    onClick = {
+                        viewModel.saveInterests()
+                        onNavigateToFeed()
+                    },
                     enabled = uiState.canProceed,
                     modifier = Modifier
                         .fillMaxWidth()

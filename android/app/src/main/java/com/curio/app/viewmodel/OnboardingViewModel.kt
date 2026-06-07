@@ -1,6 +1,8 @@
 package com.curio.app.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import com.curio.app.CurioApp
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -10,7 +12,9 @@ data class OnboardingUiState(
     val canProceed: Boolean = false
 )
 
-class OnboardingViewModel : ViewModel() {
+class OnboardingViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val prefs = (application as CurioApp).prefs
 
     private val _uiState = MutableStateFlow(OnboardingUiState())
     val uiState: StateFlow<OnboardingUiState> = _uiState.asStateFlow()
@@ -43,5 +47,10 @@ class OnboardingViewModel : ViewModel() {
             selectedInterests = current,
             canProceed = current.size >= minSelection
         )
+    }
+
+    fun saveInterests() {
+        prefs.selectedCategories = _uiState.value.selectedInterests
+        prefs.hasCompletedOnboarding = true
     }
 }

@@ -1,7 +1,9 @@
 package com.curio.app.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.curio.app.CurioApp
 import com.curio.app.data.model.Category
 import com.curio.app.data.model.Content
 import com.curio.app.data.repository.ContentRepository
@@ -20,9 +22,10 @@ data class FeedUiState(
     val error: String? = null
 )
 
-class FeedViewModel : ViewModel() {
+class FeedViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = ContentRepository()
+    private val prefs = (application as CurioApp).prefs
 
     private val _uiState = MutableStateFlow(FeedUiState())
     val uiState: StateFlow<FeedUiState> = _uiState.asStateFlow()
@@ -38,15 +41,25 @@ class FeedViewModel : ViewModel() {
 
             val result = repository.getFeed(
                 page = page,
-                pageSize = 10,
-                categoryId = _uiState.value.selectedCategoryId
+                pageSize = 30,
             )
 
             result.onSuccess { feedResponse ->
-                val currentContent = if (page == 1) {
-                    feedResponse.content
+                val userInterests = prefs.selectedCategories
+                val filteredContent = if (userInterests.isNotEmpty()) {
+                    feedResponse.content.filter { item ->
+                        userInterests.any { interest ->
+                            item.categoryName.equals(interest, ignoreCase = true)
+                        }
+                    }
                 } else {
-                    _uiState.value.content + feedResponse.content
+                    feedResponse.content
+                }
+
+                val currentContent = if (page == 1) {
+                    filteredContent
+                } else {
+                    _uiState.value.content + filteredContent
                 }
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
@@ -67,23 +80,6 @@ class FeedViewModel : ViewModel() {
     fun loadMore() {
         if (!_uiState.value.hasMore || _uiState.value.isLoading) return
         loadFeed(page = _uiState.value.currentPage + 1)
-    }
-
-    fun selectCategory(categoryId: Long?) {
-        _uiState.value = _uiState.value.copy(selectedCategoryId = categoryId, content = emptyList())
-        loadFeed()
-    }
-
-    fun likeContent(contentId: Long) {
-        viewModelScope.launch {
-            repository.likeContent(contentId).onSuccess { likes ->
-                _uiState.value = _uiState.value.copy(
-                    content = _uiState.value.content.map {
-                        if (it.id == contentId) it.copy(likes = likes) else it
-                    }
-                )
-            }
-        }
     }
 
     private fun loadCategories() {
