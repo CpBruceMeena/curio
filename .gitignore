@@ -1,0 +1,48 @@
+# --- Environment ---
+.env
+.env.local
+.env.production
+.env.development
+
+# --- Code Review Graph ---
+.code-review-graph/
+.code_review_graph/
+code-review-graph-cache/
+crg-cache/
+.cache/code-review-graph/
+.cache/crg/
+*.crg
+
+# --- Go ---
+backend/server
+backend/tmp/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+vendor/
+
+# --- Android ---
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/.idea/
+*.iml
+*.hprof
+.cxx/
+
+# --- macOS ---
+.DS_Store
+*.swp
+*.swo
+*~
+
+# --- IDE ---
+.idea/
+.vscode/
+*.swp
+*.swo

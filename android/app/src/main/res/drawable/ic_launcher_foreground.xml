@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Background circle -->
+    <path
+        android:fillColor="#00F4FE"
+        android:fillAlpha="0.15"
+        android:pathData="M54,54m-28,0a28,28 0,1 1,56 0a28,28 0,1 1,-56 0" />
+    <!-- Diamond shape "◇" as a stylized icon -->
+    <path
+        android:fillColor="#00F4FE"
+        android:pathData="M54,26L72,54L54,82L36,54Z" />
+    <!-- Inner diamond -->
+    <path
+        android:fillColor="#0B1514"
+        android:pathData="M54,36L64,54L54,72L44,54Z" />
+    <!-- Accent dot -->
+    <path
+        android:fillColor="#A8CEC8"
+        android:pathData="M54,30C55.5,30 56.5,31 56.5,32.5C56.5,34 55.5,35 54,35C52.5,35 51.5,34 51.5,32.5C51.5,31 52.5,30 54,30Z" />
+</vector>
