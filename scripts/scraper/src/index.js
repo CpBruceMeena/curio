@@ -29,7 +29,7 @@ const BATCH_INDEX = args.indexOf('--batch');
 const CAT_INDEX = args.indexOf('--category');
 const MAX_ITEMS = LIMIT_INDEX > -1 ? parseInt(args[LIMIT_INDEX + 1], 10) : 10;
 const BATCH_TARGET = BATCH_INDEX > -1 ? parseInt(args[BATCH_INDEX + 1], 10) : 0;
-const FILTER_CATEGORY = CAT_INDEX > -1 ? args[CAT_INDEX + 1] : null;
+let FILTER_CATEGORY = CAT_INDEX > -1 ? args[CAT_INDEX + 1] : null;
 
 // ─── Categories ────────────────────────────────────────────────────
 const CATEGORIES = [
@@ -135,17 +135,36 @@ async function getCategoryId(name) {
   return rows[0]?.id ?? null;
 }
 
+// Insert into per-category table: contents_X (no category_id column)
 async function insertContent(item) {
   const catId = await getCategoryId(item.category);
   if (!catId) return false;
   try {
     await getPool().query(
-      `INSERT INTO contents (category_id, title, body, source, read_time_secs, tags, likes)
-       VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (title) DO NOTHING`,
-      [catId, item.title?.slice(0, 500), item.body?.slice(0, 2000), item.source, item.readTime, item.tags, item.likes]
+      `INSERT INTO contents_${catId} (title, body, source, read_time_secs, tags, likes)
+       VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT (title) DO NOTHING`,
+      [item.title?.slice(0, 500), item.body?.slice(0, 2000), item.source, item.readTime, item.tags, item.likes]
     );
     return true;
   } catch { return false; }
+}
+
+// Archive a category: move current data to archive_X, then truncate for fresh data
+async function archiveCategory(catId) {
+  try {
+    // Move current rows to archive
+    const { rowCount } = await getPool().query(
+      `INSERT INTO archive_${catId} (title, body, source, source_url, read_time_secs, tags, likes, created_at, archived_at)
+       SELECT title, body, source, source_url, read_time_secs, tags, likes, created_at, NOW() FROM contents_${catId}
+       ON CONFLICT (title) DO NOTHING`
+    );
+    // Truncate the current table
+    await getPool().query(`TRUNCATE contents_${catId}`);
+    return rowCount || 0;
+  } catch (e) {
+    console.error(`  ⚠ Archive failed for category ${catId}: ${e.message}`);
+    return 0;
+  }
 }
 
 // ─── Source 1: Wikipedia API ───────────────────────────────────────
@@ -395,6 +414,7 @@ async function main() {
 
   if (isBatch) {
     console.log(`\n📊 Category distribution:`);
+    // Query the VIEW for category-level counts
     const dist = await getPool().query(
       'SELECT c.name, COUNT(*) as count FROM contents ct JOIN categories c ON ct.category_id = c.id GROUP BY c.name ORDER BY count DESC'
     );
@@ -403,7 +423,35 @@ async function main() {
 
   const { rows } = await getPool().query('SELECT COUNT(*) FROM contents');
   console.log(`   Total: ${rows[0].count} entries`);
+}
+
+async function run(argv) {
+  // Check for --archive <name> mode
+  const ARCHIVE_INDEX = argv.indexOf('--archive');
+  if (ARCHIVE_INDEX > -1) {
+    const catName = argv[ARCHIVE_INDEX + 1];
+    if (!catName) {
+      console.error('❌ Usage: node src/index.js --archive <CategoryName>');
+      process.exit(1);
+    }
+    const catId = await getCategoryId(catName);
+    if (!catId) {
+      console.error(`❌ Category "${catName}" not found`);
+      process.exit(1);
+    }
+    console.log(`📦 Archiving "${catName}" (category ${catId})...`);
+    const archived = await archiveCategory(catId);
+    console.log(`   Archived ${archived} items, table is now empty.`);
+
+    // Now refill with fresh data (filtered to this category)
+    FILTER_CATEGORY = catName;
+    await main();
+    await pool?.end();
+    return;
+  }
+
+  await main();
   await pool?.end();
 }
 
-main().catch(e => { console.error('❌', e); process.exit(1); });
+run(args).catch(e => { console.error('❌', e); process.exit(1); });
