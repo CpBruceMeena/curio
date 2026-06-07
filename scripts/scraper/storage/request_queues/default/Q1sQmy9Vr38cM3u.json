@@ -1,0 +1,9 @@
+{
+	"id": "Q1sQmy9Vr38cM3u",
+	"json": "{\"id\":\"Q1sQmy9Vr38cM3u\",\"url\":\"https://en.wikipedia.org/wiki/Special:Random\",\"loadedUrl\":\"https://en.wikipedia.org/wiki/Ambergau\",\"uniqueKey\":\"https://en.wikipedia.org/wiki/Special:Random\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"state\":4}},\"handledAt\":\"2026-06-07T19:51:57.912Z\"}",
+	"method": "GET",
+	"orderNo": null,
+	"retryCount": 0,
+	"uniqueKey": "https://en.wikipedia.org/wiki/Special:Random",
+	"url": "https://en.wikipedia.org/wiki/Special:Random"
+}

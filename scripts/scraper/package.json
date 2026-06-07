@@ -9,7 +9,6 @@
     "test": "node src/index.js --dry-run"
   },
   "dependencies": {
-    "crawlee": "^3.0.0",
     "pg": "^8.12.0"
   }
 }

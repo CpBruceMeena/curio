@@ -1,0 +1,9 @@
+{
+	"id": "Bh7pkk8KvVPvysX",
+	"json": "{\"id\":\"Bh7pkk8KvVPvysX\",\"url\":\"https://www.wikidata.org/wiki/Special:Random\",\"loadedUrl\":\"https://www.wikidata.org/wiki/Q48247948\",\"uniqueKey\":\"https://www.wikidata.org/wiki/Special:Random\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"state\":4}},\"handledAt\":\"2026-06-07T19:51:59.832Z\"}",
+	"method": "GET",
+	"orderNo": null,
+	"retryCount": 0,
+	"uniqueKey": "https://www.wikidata.org/wiki/Special:Random",
+	"url": "https://www.wikidata.org/wiki/Special:Random"
+}
