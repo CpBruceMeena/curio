@@ -16,8 +16,6 @@ data class Content(
     @SerializedName("read_time_secs")
     val readTimeSecs: Int = 15,
     val tags: String = "",
-    @SerializedName("image_url")
-    val imageUrl: String = "",
     val likes: Int = 0,
     @SerializedName("created_at")
     val createdAt: String = ""

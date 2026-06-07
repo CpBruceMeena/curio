@@ -225,7 +225,7 @@ fun DiscoverScreen(
                             title = content.title,
                             category = content.categoryName,
                             likes = content.likes,
-                            imageUrl = content.imageUrl,
+
                             onClick = { onNavigateToContent(content.id) }
                         )
                     }
@@ -329,7 +329,7 @@ private fun CategoryCard(
 
 @Composable
 private fun TrendingCard(
-    title: String, category: String, likes: Int, imageUrl: String?, onClick: () -> Unit
+    title: String, category: String, likes: Int, onClick: () -> Unit
 ) {
     Box(
         modifier = Modifier

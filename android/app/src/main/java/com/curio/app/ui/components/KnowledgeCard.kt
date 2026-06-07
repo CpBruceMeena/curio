@@ -1,7 +1,5 @@
 package com.curio.app.ui.components
 
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,34 +14,28 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
 import com.curio.app.data.model.Content
 import com.curio.app.ui.theme.OnSecondaryContainer
 import com.curio.app.ui.theme.OnSurface
 import com.curio.app.ui.theme.OnSurfaceVariant
 import com.curio.app.ui.theme.OutlineVariant
 import com.curio.app.ui.theme.Primary
-import com.curio.app.ui.theme.PrimaryContainer
 import com.curio.app.ui.theme.SecondaryContainer
 import com.curio.app.ui.theme.SurfaceContainer
 import com.curio.app.ui.theme.Tertiary
@@ -58,12 +50,6 @@ fun KnowledgeCard(
     onShare: () -> Unit = {}
 ) {
     var isLiked by remember { mutableStateOf(false) }
-    var imageLoadFailed by remember { mutableStateOf(false) }
-    val likeScale by animateFloatAsState(
-        targetValue = if (isLiked) 1.2f else 1f,
-        animationSpec = tween(200),
-        label = "likeScale"
-    )
 
     Box(
         modifier = modifier
@@ -71,47 +57,20 @@ fun KnowledgeCard(
             .clip(RoundedCornerShape(16.dp))
             .background(SurfaceContainer)
     ) {
-        // Background image or fallback gradient
-        if (content.imageUrl.isNotBlank() && !imageLoadFailed) {
-            AsyncImage(
-                model = content.imageUrl,
-                contentDescription = content.title,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
-                onError = { imageLoadFailed = true }
-            )
-        }
-
-        // Fallback gradient when no image or load failed
-        if (content.imageUrl.isBlank() || imageLoadFailed) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(categoryGradient(content.categoryName))
-            )
-        }
-
-        // Gradient overlay for readability
+        // Top accent bar based on category
         Box(
             modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            Color(0x000B1514),
-                            Color(0xF20B1514)
-                        )
-                    )
-                )
+                .fillMaxWidth()
+                .height(4.dp)
+                .background(categoryAccent(content.categoryName))
+                .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
         )
 
-        // Content overlay
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(20.dp)
-                .padding(bottom = 16.dp),
+                .padding(top = 16.dp),
             verticalArrangement = Arrangement.Bottom
         ) {
             // Category tag
@@ -142,15 +101,16 @@ fun KnowledgeCard(
                 overflow = TextOverflow.Ellipsis
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-            // Body
+            // Body preview
             Text(
                 text = content.body,
                 style = MaterialTheme.typography.bodyMedium,
                 color = OnSurfaceVariant.copy(alpha = 0.9f),
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis
+                maxLines = 4,
+                overflow = TextOverflow.Ellipsis,
+                lineHeight = 22.sp
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -189,6 +149,15 @@ fun KnowledgeCard(
                         color = Tertiary
                     )
                 }
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                Text(
+                    text = content.source,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = OnSurfaceVariant.copy(alpha = 0.5f),
+                    maxLines = 1
+                )
             }
         }
 
@@ -278,20 +247,20 @@ private fun formatCount(count: Int): String {
     }
 }
 
-private fun categoryGradient(categoryName: String): Brush {
+private fun categoryAccent(categoryName: String): Color {
     return when (categoryName.lowercase()) {
-        "science" -> Brush.linearGradient(listOf(Color(0xFF0D4F4B), Color(0xFF062E2A)))
-        "space" -> Brush.linearGradient(listOf(Color(0xFF1A1A3E), Color(0xFF0B1514)))
-        "history" -> Brush.linearGradient(listOf(Color(0xFF3D2E00), Color(0xFF1A1500)))
-        "biology" -> Brush.linearGradient(listOf(Color(0xFF0D3D35), Color(0xFF062E2A)))
-        "psychology" -> Brush.linearGradient(listOf(Color(0xFF2D1B4E), Color(0xFF1A0D2E)))
-        "philosophy" -> Brush.linearGradient(listOf(Color(0xFF3D2E1A), Color(0xFF1A1508)))
-        "physics" -> Brush.linearGradient(listOf(Color(0xFF002D3D), Color(0xFF001A24)))
-        "startups" -> Brush.linearGradient(listOf(Color(0xFF3D2E00), Color(0xFF1A1400)))
-        "ai" -> Brush.linearGradient(listOf(Color(0xFF0D2D4E), Color(0xFF061A33)))
-        "economics" -> Brush.linearGradient(listOf(Color(0xFF0D3D35), Color(0xFF062620)))
-        "nature" -> Brush.linearGradient(listOf(Color(0xFF0D4F3D), Color(0xFF062E21)))
-        "technology" -> Brush.linearGradient(listOf(Color(0xFF001A3D), Color(0xFF000D24)))
-        else -> Brush.linearGradient(listOf(Color(0xFF1A2D2B), Color(0xFF0B1514)))
+        "science" -> Color(0xFF00F4FE)
+        "space" -> Color(0xFF7C3AED)
+        "history" -> Color(0xFFE9C400)
+        "biology" -> Color(0xFF63F7FF)
+        "psychology" -> Color(0xFFC3EAE4)
+        "philosophy" -> Color(0xFFFFE16D)
+        "physics" -> Color(0xFF00DCE5)
+        "startups" -> Color(0xFFFBBF24)
+        "ai" -> Color(0xFF818CF8)
+        "economics" -> Color(0xFF4ECDC4)
+        "nature" -> Color(0xFF34D399)
+        "technology" -> Color(0xFF60A5FA)
+        else -> Primary
     }
 }

@@ -12,7 +12,6 @@ type Content struct {
 	SourceURL    string    `json:"source_url"`
 	ReadTimeSecs int       `json:"read_time_secs" gorm:"default:15"`
 	Tags         string    `json:"tags" gorm:"type:text"`
-	ImageURL     string    `json:"image_url"`
 	Likes        int       `json:"likes" gorm:"default:0"`
 	CreatedAt    time.Time `json:"created_at"`
 }
