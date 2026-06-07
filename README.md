@@ -28,8 +28,3 @@ The app covers 12 major categories — from quantum physics to ancient history, 
 | **Vault** | Personal collections and saved content |
 | **Profile** | Stats, achievements, leveling, and settings |
 
-## Get Started
-
-1. Set up the backend server (Go + PostgreSQL) and seed the database.
-2. Build and install the Android app on your device or emulator.
-3. Pick your interests during onboarding and start discovering.
