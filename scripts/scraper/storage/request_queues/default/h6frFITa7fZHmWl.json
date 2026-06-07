@@ -1,9 +1,0 @@
-{
-	"id": "h6frFITa7fZHmWl",
-	"json": "{\"id\":\"h6frFITa7fZHmWl\",\"url\":\"https://www.britannica.com/did-you-know\",\"loadedUrl\":\"https://www.britannica.com/did-you-know\",\"uniqueKey\":\"https://www.britannica.com/did-you-know\",\"method\":\"GET\",\"noRetry\":false,\"retryCount\":0,\"errorMessages\":[],\"headers\":{},\"userData\":{\"__crawlee\":{\"state\":4}},\"handledAt\":\"2026-06-07T19:52:00.195Z\"}",
-	"method": "GET",
-	"orderNo": null,
-	"retryCount": 0,
-	"uniqueKey": "https://www.britannica.com/did-you-know",
-	"url": "https://www.britannica.com/did-you-know"
-}

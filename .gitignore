@@ -46,6 +46,7 @@ android/.idea/
 __pycache__/
 scripts/venv/
 scripts/scraper/node_modules/
+scripts/scraper/storage/
 
 # --- IDE ---
 .idea/
