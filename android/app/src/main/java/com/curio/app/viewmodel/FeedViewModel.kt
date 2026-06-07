@@ -35,6 +35,11 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
         loadFeed()
     }
 
+    fun selectCategory(categoryId: Long?) {
+        _uiState.value = _uiState.value.copy(selectedCategoryId = categoryId, content = emptyList())
+        loadFeed()
+    }
+
     fun loadFeed(page: Int = 1) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = page == 1)
@@ -42,6 +47,7 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
             val result = repository.getFeed(
                 page = page,
                 pageSize = 30,
+                categoryId = _uiState.value.selectedCategoryId,
             )
 
             result.onSuccess { feedResponse ->

@@ -63,7 +63,8 @@ private val categoryColors = listOf(
 @Composable
 fun DiscoverScreen(
     onNavigateToContent: (Long) -> Unit = {},
-    categories: List<Category> = emptyList()
+    categories: List<Category> = emptyList(),
+    onCategoryClick: (String) -> Unit = {}
 ) {
     val repository = remember { ContentRepository() }
     var trendingContent by remember { mutableStateOf<List<Content>>(emptyList()) }
@@ -176,7 +177,7 @@ fun DiscoverScreen(
                                     name = category.name,
                                     accentColor = categoryColors[((category.id - 1) % categoryColors.size).toInt()],
                                     contentCount = category.contentCount,
-                                    onClick = { /* Filter feed */ },
+                                    onClick = { onCategoryClick(category.name) },
                                     modifier = Modifier.weight(1f)
                                 )
                             }

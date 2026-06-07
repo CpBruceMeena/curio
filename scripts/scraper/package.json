@@ -1,0 +1,15 @@
+{
+  "name": "curio-scraper",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Curio content scraper using Crawlee",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node src/index.js --dry-run"
+  },
+  "dependencies": {
+    "crawlee": "^3.0.0",
+    "pg": "^8.12.0"
+  }
+}

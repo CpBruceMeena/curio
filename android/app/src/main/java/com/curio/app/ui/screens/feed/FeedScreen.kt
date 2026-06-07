@@ -162,10 +162,9 @@ private fun FullPageCard(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(32.dp),
-            verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Category tag
+            // Category tag at top
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(20.dp))
@@ -181,36 +180,33 @@ private fun FullPageCard(
                 )
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            // Title
+            // Title — full, no truncation
             Text(
                 text = title,
                 style = MaterialTheme.typography.headlineLarge,
                 color = OnSurface,
                 fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis
+                textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-            // Body
+            // Body — takes remaining space
             Text(
                 text = body,
+                modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.bodyLarge,
                 color = OnSurfaceVariant.copy(alpha = 0.9f),
                 textAlign = TextAlign.Center,
-                maxLines = 15,
                 overflow = TextOverflow.Ellipsis,
-                lineHeight = 28.sp
+                lineHeight = 26.sp
             )
-
-            Spacer(modifier = Modifier.height(24.dp))
 
             // Bottom metadata
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     text = "${readTime}s read",
                     style = MaterialTheme.typography.labelMedium,

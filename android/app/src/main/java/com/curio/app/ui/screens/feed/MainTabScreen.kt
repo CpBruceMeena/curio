@@ -90,7 +90,17 @@ fun MainTabScreen(
                 0 -> FeedScreen(viewModel = feedViewModel)
                 1 -> DiscoverScreen(
                     onNavigateToContent = onNavigateToContent,
-                    categories = uiState.categories
+                    categories = uiState.categories,
+                    onCategoryClick = { categoryName ->
+                        // Find category ID by name and switch to feed tab
+                        val category = uiState.categories.find {
+                            it.name.equals(categoryName, ignoreCase = true)
+                        }
+                        if (category != null) {
+                            feedViewModel.selectCategory(category.id)
+                        }
+                        selectedTab = 0
+                    }
                 )
             }
         }
