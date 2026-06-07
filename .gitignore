@@ -42,6 +42,10 @@ android/.idea/
 *.swo
 *~
 
+# --- Python ---
+__pycache__/
+scripts/venv/
+
 # --- IDE ---
 .idea/
 .vscode/

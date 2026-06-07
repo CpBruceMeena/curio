@@ -144,7 +144,6 @@ VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
 ON CONFLICT (title) DO NOTHING;
 """
 
-CHECK_CONTENT_EXISTS = "SELECT COUNT(*) FROM contents WHERE title = %s;"
 
 
 def get_db_url() -> str:
