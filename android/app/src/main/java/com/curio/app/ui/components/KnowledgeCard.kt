@@ -22,6 +22,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -42,12 +43,11 @@ import com.curio.app.ui.theme.OnSurface
 import com.curio.app.ui.theme.OnSurfaceVariant
 import com.curio.app.ui.theme.OutlineVariant
 import com.curio.app.ui.theme.Primary
+import com.curio.app.ui.theme.PrimaryContainer
 import com.curio.app.ui.theme.SecondaryContainer
 import com.curio.app.ui.theme.SurfaceContainer
 import com.curio.app.ui.theme.Tertiary
-import com.curio.app.ui.theme.TertiaryContainer
 import com.curio.app.ui.theme.GlassWhite
-import com.curio.app.ui.theme.GlassBorder
 
 @Composable
 fun KnowledgeCard(
@@ -58,6 +58,7 @@ fun KnowledgeCard(
     onShare: () -> Unit = {}
 ) {
     var isLiked by remember { mutableStateOf(false) }
+    var imageLoadFailed by remember { mutableStateOf(false) }
     val likeScale by animateFloatAsState(
         targetValue = if (isLiked) 1.2f else 1f,
         animationSpec = tween(200),
@@ -68,16 +69,29 @@ fun KnowledgeCard(
         modifier = modifier
             .fillMaxSize()
             .clip(RoundedCornerShape(16.dp))
+            .background(SurfaceContainer)
     ) {
-        // Background Image
-        AsyncImage(
-            model = content.imageUrl,
-            contentDescription = content.title,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop
-        )
+        // Background image or fallback gradient
+        if (content.imageUrl.isNotBlank() && !imageLoadFailed) {
+            AsyncImage(
+                model = content.imageUrl,
+                contentDescription = content.title,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+                onError = { imageLoadFailed = true }
+            )
+        }
 
-        // Gradient overlay
+        // Fallback gradient when no image or load failed
+        if (content.imageUrl.isBlank() || imageLoadFailed) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(categoryGradient(content.categoryName))
+            )
+        }
+
+        // Gradient overlay for readability
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -85,10 +99,9 @@ fun KnowledgeCard(
                     Brush.verticalGradient(
                         colors = listOf(
                             Color.Transparent,
-                            Color(0x00FFFFFF),
+                            Color(0x000B1514),
                             Color(0xF20B1514)
-                        ),
-                        startY = 100f
+                        )
                     )
                 )
         )
@@ -146,12 +159,8 @@ fun KnowledgeCard(
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Read time
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "🕐",
-                        fontSize = 14.sp
-                    )
+                    Text(text = "🕐", fontSize = 14.sp)
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = "${content.readTimeSecs}s read",
@@ -171,12 +180,8 @@ fun KnowledgeCard(
 
                 Spacer(modifier = Modifier.width(12.dp))
 
-                // Verified
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "⭐",
-                        fontSize = 14.sp
-                    )
+                    Text(text = "⭐", fontSize = 14.sp)
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = "Verified",
@@ -195,7 +200,6 @@ fun KnowledgeCard(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Like
             ActionButton(
                 emoji = if (isLiked) "❤️" else "🤍",
                 label = if (content.likes > 0) formatCount(content.likes) else "",
@@ -205,14 +209,12 @@ fun KnowledgeCard(
                 }
             )
 
-            // Save
             ActionButton(
                 emoji = "🔖",
                 label = "Save",
                 onClick = onSave
             )
 
-            // Share
             ActionButton(
                 emoji = "↗️",
                 label = "Share",
@@ -220,7 +222,7 @@ fun KnowledgeCard(
             )
         }
 
-        // Progress indicator (bottom)
+        // Progress indicator
         Box(
             modifier = Modifier
                 .align(Alignment.BottomStart)
@@ -273,5 +275,23 @@ private fun formatCount(count: Int): String {
     return when {
         count >= 1000 -> "${count / 1000}k"
         else -> count.toString()
+    }
+}
+
+private fun categoryGradient(categoryName: String): Brush {
+    return when (categoryName.lowercase()) {
+        "science" -> Brush.linearGradient(listOf(Color(0xFF0D4F4B), Color(0xFF062E2A)))
+        "space" -> Brush.linearGradient(listOf(Color(0xFF1A1A3E), Color(0xFF0B1514)))
+        "history" -> Brush.linearGradient(listOf(Color(0xFF3D2E00), Color(0xFF1A1500)))
+        "biology" -> Brush.linearGradient(listOf(Color(0xFF0D3D35), Color(0xFF062E2A)))
+        "psychology" -> Brush.linearGradient(listOf(Color(0xFF2D1B4E), Color(0xFF1A0D2E)))
+        "philosophy" -> Brush.linearGradient(listOf(Color(0xFF3D2E1A), Color(0xFF1A1508)))
+        "physics" -> Brush.linearGradient(listOf(Color(0xFF002D3D), Color(0xFF001A24)))
+        "startups" -> Brush.linearGradient(listOf(Color(0xFF3D2E00), Color(0xFF1A1400)))
+        "ai" -> Brush.linearGradient(listOf(Color(0xFF0D2D4E), Color(0xFF061A33)))
+        "economics" -> Brush.linearGradient(listOf(Color(0xFF0D3D35), Color(0xFF062620)))
+        "nature" -> Brush.linearGradient(listOf(Color(0xFF0D4F3D), Color(0xFF062E21)))
+        "technology" -> Brush.linearGradient(listOf(Color(0xFF001A3D), Color(0xFF000D24)))
+        else -> Brush.linearGradient(listOf(Color(0xFF1A2D2B), Color(0xFF0B1514)))
     }
 }
