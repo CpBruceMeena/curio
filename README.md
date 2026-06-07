@@ -2,128 +2,34 @@
 
 > **One interesting thing at a time.**
 
-Discover fascinating facts, inspiring quotes, historical events, startup stories, AI insights, and mind-blowing discoveries through an addictive swipe-based experience.
+Curio is a knowledge discovery app designed for the curious mind. Swipe through bite-sized, fascinating facts across science, space, history, philosophy, biology, psychology, startups, AI, economics, nature, technology, and more. Each card delivers a single, well-sourced insight — giving you something new to wonder about in seconds.
 
-## Architecture
+## Features
 
-- **Backend**: Go + Gin + GORM + PostgreSQL
-- **Android**: Kotlin + Jetpack Compose + Material 3
-- **Database**: PostgreSQL 18
+- **Infinite Feed** — Endless discovery. Swipe through a curated stream of knowledge cards, each packed with a surprising fact or idea.
+- **Discover** — Explore a categorized universe of topics. Browse trending content, quick reads, and 12 knowledge categories at a glance.
+- **Vault** — Save and organize your favorite insights into personal collections. Build your own knowledge library over time.
+- **Profile** — Track your curiosity journey. See your stats, unlock achievement badges, level up, and customize your experience.
+- **Onboarding** — Pick your interests on day one. The feed learns what excites you from the start.
+- **Dark Mode** — A thoughtfully designed dark interface with a refined emerald/cyan/gold palette. Easy on the eyes, beautiful at any hour.
 
-## Quick Start
+## Product Philosophy
 
-### Prerequisites
+Curio is built around a simple belief: **knowledge should feel like discovery, not work.** Every piece of content is condensed to a single insight — no fluff, no filler. Just one interesting thing at a time, served in a format you can consume in seconds but think about for minutes.
 
-- Go 1.26+
-- PostgreSQL 18+
-- Android Studio (for Android development)
-- Java 17+ (for Android builds)
+The app covers 12 major categories — from quantum physics to ancient history, startup lore to neuroplasticity — with new content rotating in regularly. It's designed for the commute, the coffee break, or the moment you just want to learn something new without committing to a deep dive.
 
-### Backend Setup
+## Screens
 
-1. **Navigate to backend:**
-   ```bash
-   cd backend
-   ```
+| Screen | Purpose |
+|--------|---------|
+| **Feed** | Swipeable knowledge cards with category filters |
+| **Discover** | Category grid, trending section, quick reads |
+| **Vault** | Personal collections and saved content |
+| **Profile** | Stats, achievements, leveling, and settings |
 
-2. **Configure environment:**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your database credentials
-   ```
+## Get Started
 
-3. **Set up the database:**
-   ```bash
-   createdb curio
-   ```
-
-4. **Seed the database:**
-   ```bash
-   go run cmd/seed/main.go
-   ```
-
-5. **Start the server:**
-   ```bash
-   go run main.go
-   ```
-
-   The server starts on `http://localhost:8080`.
-
-### Android Setup
-
-1. **Open the Android project:**
-   ```bash
-   open android/
-   ```
-
-2. **Set ANDROID_HOME:**
-   ```bash
-   export ANDROID_HOME=$HOME/Library/Android/sdk
-   ```
-
-3. **Build debug APK:**
-   ```bash
-   cd android && ./gradlew assembleDebug
-   ```
-
-   APK location: `android/app/build/outputs/apk/debug/app-debug.apk`
-
-4. **Install on emulator:**
-   ```bash
-   adb install -r android/app/build/outputs/apk/debug/app-debug.apk
-   ```
-
-   The Android app connects to the backend at `http://10.0.2.2:8080/api/v1/` (emulator → host localhost).
-
-### Environment Variables
-
-| Variable        | Default                                                              | Description           |
-|-----------------|----------------------------------------------------------------------|-----------------------|
-| `PORT`          | `8080`                                                               | Server port           |
-| `DATABASE_URL`  | `postgres://postgres:password@localhost:5432/curio?sslmode=disable`  | PostgreSQL connection |
-
-## API Endpoints
-
-| Method | Path                     | Description             |
-|--------|--------------------------|-------------------------|
-| GET    | `/health`                | Health check            |
-| GET    | `/api/v1/feed`           | Paginated feed          |
-| GET    | `/api/v1/content/:id`    | Content detail          |
-| POST   | `/api/v1/content/:id/like` | Like content          |
-| GET    | `/api/v1/categories`     | List categories         |
-
-### Feed Query Parameters
-
-- `page` (default: 1) — Page number
-- `page_size` (default: 10, max: 50) — Items per page
-- `category_id` — Filter by category
-
-## Project Structure
-
-```
-curio/
-├── backend/
-│   ├── cmd/seed/          # Database seeder
-│   ├── config/            # App configuration
-│   ├── data/              # Seed data
-│   ├── database/          # DB connection & migrations
-│   ├── handlers/          # HTTP handlers
-│   ├── middleware/        # CORS middleware
-│   ├── models/            # Data models
-│   ├── router/            # Route definitions
-│   ├── main.go            # Entry point
-│   └── .env.example       # Environment template
-├── android/
-│   └── app/src/main/java/com/curio/app/
-│       ├── data/          # API, models, repository
-│       ├── ui/            # Screens, components, theme, navigation
-│       └── viewmodel/     # ViewModels
-├── .gitignore
-└── README.md
-```
-
-## Tech Stack
-
-- **Backend**: Go 1.26, Gin, GORM, PostgreSQL, godotenv
-- **Android**: Kotlin, Jetpack Compose, Material 3, Retrofit, Coil, Navigation Compose
-- **Design**: Hanken Grotesk, Dark Mode, Glassmorphism, Emerald/Cyan/Gold palette
+1. Set up the backend server (Go + PostgreSQL) and seed the database.
+2. Build and install the Android app on your device or emulator.
+3. Pick your interests during onboarding and start discovering.
