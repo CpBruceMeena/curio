@@ -42,6 +42,14 @@ CATEGORIES = [
     {"name": "Economics", "icon": "account_balance", "color_hex": "#63f7ff", "priority": 10},
     {"name": "Nature", "icon": "forest", "color_hex": "#a8cec8", "priority": 11},
     {"name": "Technology", "icon": "memory", "color_hex": "#00dce5", "priority": 12},
+    {"name": "Poetry", "icon": "auto_stories", "color_hex": "#f472b6", "priority": 13},
+    {"name": "Movies", "icon": "movie", "color_hex": "#fb923c", "priority": 14},
+    {"name": "Neuroscience", "icon": "psychology", "color_hex": "#a78bfa", "priority": 15},
+    {"name": "Literature", "icon": "menu_book", "color_hex": "#fbbf24", "priority": 16},
+    {"name": "Geography", "icon": "public", "color_hex": "#34d399", "priority": 17},
+    {"name": "Music", "icon": "music_note", "color_hex": "#f472b6", "priority": 18},
+    {"name": "Sports", "icon": "sports_soccer", "color_hex": "#fb923c", "priority": 19},
+    {"name": "Food", "icon": "ramen_dining", "color_hex": "#f59e0b", "priority": 20},
 ]
 
 CONTENT = [
