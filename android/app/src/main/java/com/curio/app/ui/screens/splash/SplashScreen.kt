@@ -21,8 +21,10 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -57,123 +59,101 @@ import com.curio.app.ui.theme.Tertiary
 import kotlinx.coroutines.delay
 import kotlin.math.PI
 import kotlin.math.cos
+import kotlin.math.pow
 import kotlin.math.sin
+import kotlin.random.Random
 
-// ── Colour references (kept local to avoid import noise) ─────────────────
+// ── Space colour references ────────────────────────────────────
 private val CyanGlow = Color(0x4400F4FE)
-private val GoldGlow = Color(0x33E9C400)
-private val TealGlow = Color(0x22A8CEC8)
-private val RingColor = Color(0x1A00F4FE)
+private val PurpleGlow = Color(0x33A78BFA)
+private val GoldGlow = Color(0x28E9C400)
+private val TealGlow = Color(0x1AA8CEC8)
+private val StarWhite = Color(0xCCFFFFFF)
+private val ShootingStarColor = Color(0x99E6FEFF)
 
-// ── Particle data class ──────────────────────────────────────────────────
-private data class Particle(
-    var x: Float,
-    var y: Float,
+// ── Particle types ─────────────────────────────────────────────
+private data class StarParticle(
+    var x: Float = 0f,
+    var y: Float = 0f,
     val size: Float,
-    val speedY: Float,
-    val speedX: Float,
-    val alpha: Float,
+    val baseAlpha: Float,
+    val twinkleSpeed: Float,
+    val twinkleOffset: Float,
+    val isTwinkler: Boolean,     // small white stars that twinkle
+    val isNebula: Boolean,       // larger coloured specks
     val color: Color,
-    val phaseOffset: Float,   // used by the infinite animation loop
+    val orbitAngle: Float,
+    val orbitRadius: Float,
+    val orbitSpeed: Float,
+)
+
+private data class ShootingStar(
+    val startX: Float,
+    val startY: Float,
+    val angle: Float,        // direction in radians
+    val speed: Float,
+    val length: Float,
+    var life: Float = 0f,    // 0..1
 )
 
 @Composable
 fun SplashScreen(
     onNavigateToOnboarding: () -> Unit
 ) {
-    // ── Phase state machine ──────────────────────────────────────────────
-    var phase by remember { mutableStateOf(0) }          // 0…7
+    // ── Phase state machine ──────────────────────────────────────
+    var phase by remember { mutableStateOf(0) }
 
     LaunchedEffect(Unit) {
-        // stagger the reveals
-        phase = 1   // glow orb + particles start
-        delay(200)
-        phase = 2   // diamond icon
-        delay(250)
-        phase = 3   // "Curio" title
-        delay(350)
-        phase = 4   // tagline
-        delay(400)
-        phase = 5   // beam sweep hint
-        delay(300)
-        phase = 6   // button starts fading in
-        // wait before auto-navigating
-        delay(1500)
+        phase = 1; delay(200)   // stars + nebula glow
+        phase = 2; delay(300)   // star icon
+        phase = 3; delay(400)   // title
+        phase = 4; delay(350)   // tagline
+        phase = 5; delay(400)   // shooting stars
+        phase = 6; delay(400)   // button
+        delay(1200)
         onNavigateToOnboarding()
     }
 
-    // ── Continuous animation values ──────────────────────────────────────
-    val infiniteTransition = rememberInfiniteTransition(label = "splash")
+    // ── Continuous animations ────────────────────────────────────
+    val infiniteTransition = rememberInfiniteTransition(label = "space")
 
-    // Glow orb pulse
-    val orbScale by infiniteTransition.animateFloat(
-        initialValue = 0.85f,
-        targetValue = 1.15f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(2800, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "orbScale",
+    // Nebula pulse
+    val nebulaScale by infiniteTransition.animateFloat(
+        initialValue = 0.90f, targetValue = 1.10f,
+        animationSpec = infiniteRepeatable(tween(3200, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "nebulaScale",
     )
 
-    // Diamond rotation
-    val diamondRotation by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(12000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart,
-        ),
-        label = "diamondRotation",
+    // Star icon rotation (slow)
+    val starRotation by infiniteTransition.animateFloat(
+        initialValue = 0f, targetValue = 360f,
+        animationSpec = infiniteRepeatable(tween(20000, easing = LinearEasing), RepeatMode.Restart),
+        label = "starRotation",
     )
 
-    // Diamond slow bob
-    val diamondBob by infiniteTransition.animateFloat(
-        initialValue = -6f,
-        targetValue = 6f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(2400, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "diamondBob",
+    // Star gentle bob
+    val starBob by infiniteTransition.animateFloat(
+        initialValue = -5f, targetValue = 5f,
+        animationSpec = infiniteRepeatable(tween(2800, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "starBob",
     )
 
     // Expanding rings
     val ringProgress by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(3000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart,
-        ),
+        initialValue = 0f, targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(4000, easing = LinearEasing), RepeatMode.Restart),
         label = "ringProgress",
     )
 
-    // Beam sweep angle
-    val beamAngle by infiniteTransition.animateFloat(
-        initialValue = -90f,
-        targetValue = 270f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(8000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart,
-        ),
-        label = "beamAngle",
-    )
-
-    // Particle positions (computed in the Canvas draw)
-    // We'll animate a single "globalTime" float that particles use
+    // Particle time
     val particleTime by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1000f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(4000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart,
-        ),
+        initialValue = 0f, targetValue = 1000f,
+        animationSpec = infiniteRepeatable(tween(5000, easing = LinearEasing), RepeatMode.Restart),
         label = "particleTime",
     )
 
-    // ── Phase-driven animatables ─────────────────────────────────────────
-    val diamondAlpha = remember { Animatable(0f) }
+    // ── Phase-driven animatables ─────────────────────────────────
+    val starAlpha = remember { Animatable(0f) }
     val titleAlpha = remember { Animatable(0f) }
     val titleOffset = remember { Animatable(12f) }
     val taglineAlpha = remember { Animatable(0f) }
@@ -182,50 +162,68 @@ fun SplashScreen(
 
     LaunchedEffect(phase) {
         when (phase) {
-            2 -> {
-                diamondAlpha.snapTo(0f)
-                diamondAlpha.animateTo(1f, tween(800, easing = FastOutSlowInEasing))
+            2 -> { starAlpha.snapTo(0f); starAlpha.animateTo(1f, tween(800, easing = FastOutSlowInEasing)) }
+            3 -> { titleAlpha.snapTo(0f); titleOffset.snapTo(16f); titleAlpha.animateTo(1f, tween(600)); titleOffset.animateTo(0f, tween(600, easing = FastOutSlowInEasing)) }
+            4 -> { taglineAlpha.snapTo(0f); taglineOffset.snapTo(16f); taglineAlpha.animateTo(1f, tween(600)); taglineOffset.animateTo(0f, tween(600, easing = FastOutSlowInEasing)) }
+            6 -> { buttonAlpha.animateTo(1f, tween(800, easing = FastOutSlowInEasing)) }
+        }
+    }
+
+    // ── Build star field ─────────────────────────────────────────
+    val stars = remember {
+        val rng = Random(42)
+        buildList {
+            // Large nebulous coloured specks (8)
+            repeat(8) {
+                add(StarParticle(
+                    size = 2.5f + rng.nextFloat() * 3f,
+                    baseAlpha = 0.25f + rng.nextFloat() * 0.2f,
+                    twinkleSpeed = 0.6f + rng.nextFloat() * 0.8f,
+                    twinkleOffset = rng.nextFloat() * 6.28f,
+                    isTwinkler = false,
+                    isNebula = true,
+                    color = listOf(CyanGlow, PurpleGlow, TealGlow, GoldGlow)[rng.nextInt(4)],
+                    orbitAngle = rng.nextFloat() * 6.28f,
+                    orbitRadius = 40f + rng.nextFloat() * 100f,
+                    orbitSpeed = 0.15f + rng.nextFloat() * 0.25f,
+                ))
             }
-            3 -> {
-                titleAlpha.snapTo(0f)
-                titleOffset.snapTo(16f)
-                titleAlpha.animateTo(1f, tween(600))
-                titleOffset.animateTo(0f, tween(600, easing = FastOutSlowInEasing))
+            // Tiny twinkling stars (50)
+            repeat(50) {
+                add(StarParticle(
+                    size = 0.8f + rng.nextFloat() * 1.8f,
+                    baseAlpha = 0.3f + rng.nextFloat() * 0.7f,
+                    twinkleSpeed = 1.5f + rng.nextFloat() * 3f,
+                    twinkleOffset = rng.nextFloat() * 6.28f,
+                    isTwinkler = true,
+                    isNebula = false,
+                    color = StarWhite,
+                    orbitAngle = rng.nextFloat() * 6.28f,
+                    orbitRadius = 20f + rng.nextFloat() * 180f,
+                    orbitSpeed = 0.05f + rng.nextFloat() * 0.15f,
+                ))
             }
-            4 -> {
-                taglineAlpha.snapTo(0f)
-                taglineOffset.snapTo(16f)
-                taglineAlpha.animateTo(1f, tween(600))
-                taglineOffset.animateTo(0f, tween(600, easing = FastOutSlowInEasing))
-            }
-            6 -> {
-                buttonAlpha.animateTo(1f, tween(800, easing = FastOutSlowInEasing))
+            // Medium dim stars for constellation lines (20)
+            repeat(20) {
+                add(StarParticle(
+                    size = 1.2f + rng.nextFloat() * 1.2f,
+                    baseAlpha = 0.2f + rng.nextFloat() * 0.3f,
+                    twinkleSpeed = 1f + rng.nextFloat() * 1.5f,
+                    twinkleOffset = rng.nextFloat() * 6.28f,
+                    isTwinkler = false,
+                    isNebula = false,
+                    color = StarWhite.copy(alpha = 0.5f),
+                    orbitAngle = rng.nextFloat() * 6.28f,
+                    orbitRadius = 50f + rng.nextFloat() * 130f,
+                    orbitSpeed = 0.08f + rng.nextFloat() * 0.12f,
+                ))
             }
         }
     }
 
-    // ── Build particle list ──────────────────────────────────────────────
-    val particles = remember {
-        val colors = listOf(
-            SecondaryContainer.copy(alpha = 0.5f),
-            Primary.copy(alpha = 0.35f),
-            Tertiary.copy(alpha = 0.3f),
-            OnSurface.copy(alpha = 0.2f),
-        )
-        List(30) { i ->
-            val angle = (i.toFloat() / 30f) * PI.toFloat() * 2f
-            val radius = 60f + (i % 7) * 25f
-            Particle(
-                x = 0f,
-                y = 0f,
-                size = 1.5f + (i % 4) * 1.2f,
-                speedY = -(0.15f + (i % 5) * 0.06f),
-                speedX = sin(angle) * 0.12f,
-                alpha = 0.3f + (i % 6) * 0.1f,
-                color = colors[i % colors.size],
-                phaseOffset = (i.toFloat() / 30f) * 1000f,
-            )
-        }
+    // ── Shooting star generator ──────────────────────────────────
+    val shootingStars = remember {
+        mutableListOf<ShootingStar>()
     }
 
     Box(
@@ -234,194 +232,211 @@ fun SplashScreen(
             .background(Surface)
             .statusBarsPadding()
     ) {
-        // ── Deep gradient background ────────────────────────────────────
+        // ── Deep space gradient background ─────────────────────────
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.radialGradient(
-                        colors = listOf(Color(0x18103632), Color(0x000B1514)),
-                        radius = 900f,
-                    )
+            modifier = Modifier.fillMaxSize().background(
+                Brush.radialGradient(
+                    colors = listOf(
+                        Color(0x1A103632),  // teal centre
+                        Color(0x120A1822),  // purple mid
+                        Color(0x08000000),  // deep void
+                    ),
+                    radius = 1000f,
                 )
+            )
         )
 
-        // ── Sweeping beam light ─────────────────────────────────────────
-        if (phase >= 5) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    val cX = size.width / 2f
-                    val cY = size.height * 0.42f
-                    val angleRad = beamAngle * PI.toFloat() / 180f
-                    val beamLen = size.height * 1.5f
-                    val beamWidth = size.width * 0.5f
+        // ── Nebula glow ────────────────────────────────────────────
+        if (phase >= 1) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 160.dp)
+                    .size(300.dp)
+                    .scale(nebulaScale)
+                    .alpha(0.6f)
+            ) {
+                // Cyan nebula
+                Box(
+                    modifier = Modifier
+                        .size(300.dp).blur(120.dp)
+                        .background(CyanGlow.copy(alpha = 0.08f), CircleShape)
+                )
+                // Purple nebula (offset)
+                Box(
+                    modifier = Modifier
+                        .offset(x = (-40).dp, y = 20.dp)
+                        .size(240.dp).blur(100.dp)
+                        .background(PurpleGlow.copy(alpha = 0.10f), CircleShape)
+                )
+                // Gold core
+                Box(
+                    modifier = Modifier
+                        .offset(x = 30.dp, y = (-20).dp)
+                        .size(160.dp).blur(80.dp)
+                        .background(GoldGlow.copy(alpha = 0.06f), CircleShape)
+                )
+            }
 
-                    // Soft light beam
-                    drawRect(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(
-                                CyanGlow.copy(alpha = 0.06f),
-                                Color.Transparent,
-                            ),
-                            startY = cY - 80f,
-                            endY = cY + 150f,
-                        ),
-                        topLeft = Offset(
-                            cX + cos(angleRad) * beamLen * 0.3f - beamWidth / 2f,
-                            cY + sin(angleRad) * beamLen * 0.3f - 80f,
-                        ),
-                        size = androidx.compose.ui.geometry.Size(beamWidth, 230f),
-                        alpha = 0.5f + 0.5f * sin(particleTime * 0.02f),
-                        style = Fill,
-                    )
-                }
+            // ── Expanding rings ────────────────────────────────────
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val cX = size.width / 2f
+                val cY = size.height * 0.36f
+                val maxR = size.width * 0.85f
+                val r1 = ringProgress * maxR * 0.25f
+                val r2 = ringProgress * maxR * 0.50f
+                val r3 = ringProgress * maxR * 0.75f
+
+                drawCircle(Color(0x0A00F4FE), r1, Offset(cX, cY), style = Stroke(0.5f))
+                drawCircle(Color(0x0800F4FE), r2, Offset(cX, cY), style = Stroke(0.4f))
+                drawCircle(Color(0x0600F4FE), r3, Offset(cX, cY), style = Stroke(0.3f))
             }
         }
 
-        // ── Particle system ─────────────────────────────────────────────
+        // ── Star field + constellation lines ───────────────────────
         if (phase >= 1) {
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val cX = size.width / 2f
-                val cY = size.height * 0.42f
+                val cY = size.height * 0.36f
                 val t = particleTime
 
-                particles.forEachIndexed { idx, p ->
-                    // base position: random-ish orbit around center
-                    val angle = (idx.toFloat() / particles.size) * PI.toFloat() * 2f +
-                                t * 0.0008f
-                    val radius = 80f + (idx % 7) * 35f + 20f * sin(t * 0.003f + p.phaseOffset)
+                // Compute star positions
+                val positions = stars.map { s ->
+                    val angle = s.orbitAngle + t * 0.001f * s.orbitSpeed
+                    val px = cX + cos(angle) * s.orbitRadius
+                    val py = cY + sin(angle) * s.orbitRadius * 0.55f
+                    Offset(px, py)
+                }
 
-                    val px = cX + cos(angle) * radius + sin(t * 0.001f + p.phaseOffset) * 30f
-                    val py = cY + sin(angle) * radius * 0.6f +
-                            (t * p.speedY * 0.5f) % size.height +
-                            (idx * 7f)
+                // Constellation lines between medium-dim stars (indices 58..77)
+                val constStars = stars.indices.filter { it in 58..<78 && it < positions.size }
+                for (i in constStars.indices) {
+                    for (j in i + 1 until constStars.size) {
+                        val a = positions[constStars[i]]
+                        val b = positions[constStars[j]]
+                        val dist = (a - b).getDistance()
+                        if (dist < 120f) {
+                            val lineAlpha = 0.08f * (1f - dist / 120f)
+                            drawLine(
+                                StarWhite.copy(alpha = lineAlpha),
+                                a, b, strokeWidth = 0.5f,
+                            )
+                        }
+                    }
+                }
 
-                    // wrap Y
-                    val wrapY = ((py % size.height) + size.height) % size.height
-                    val fadeAlpha = p.alpha * (0.4f + 0.6f * (0.5f + 0.5f * sin(t * 0.005f + p.phaseOffset)))
+                // Draw stars
+                stars.forEachIndexed { idx, s ->
+                    val pos = positions[idx]
+                    val twinkle = 0.5f + 0.5f * sin(t * 0.005f * s.twinkleSpeed + s.twinkleOffset)
+                    val fadeAlpha = s.baseAlpha * if (s.isTwinkler) twinkle else 1f
 
-                    drawCircle(
-                        color = p.color.copy(alpha = fadeAlpha * 0.5f),
-                        radius = p.size,
-                        center = Offset(px, wrapY),
-                    )
+                    if (s.isTwinkler) {
+                        // Tiny twinkling star (draw as 4-point cross)
+                        val crossSize = s.size
+                        drawLine(s.color.copy(alpha = fadeAlpha * 0.6f),
+                            Offset(pos.x - crossSize, pos.y), Offset(pos.x + crossSize, pos.y),
+                            strokeWidth = 0.8f)
+                        drawLine(s.color.copy(alpha = fadeAlpha * 0.6f),
+                            Offset(pos.x, pos.y - crossSize), Offset(pos.x, pos.y + crossSize),
+                            strokeWidth = 0.8f)
+                        // Core dot
+                        drawCircle(s.color.copy(alpha = fadeAlpha), 0.6f, pos)
+                    } else if (s.isNebula) {
+                        drawCircle(s.color.copy(alpha = fadeAlpha * 0.5f), s.size, pos)
+                    } else {
+                        drawCircle(s.color.copy(alpha = fadeAlpha * 0.4f), s.size, pos)
+                    }
+                }
+
+                // ── Shooting stars ─────────────────────────────────
+                if (phase >= 5) {
+                    // Periodically spawn a new shooting star
+                    val spawnPhase = (t * 0.2f).toInt() % 15
+                    if (spawnPhase == 0 && shootingStars.size < 3) {
+                        val rng = Random(t.toInt() + 1000)
+                        shootingStars.add(ShootingStar(
+                            startX = cX + (rng.nextFloat() - 0.5f) * size.width * 0.6f,
+                            startY = -20f,
+                            angle = 0.6f + rng.nextFloat() * 0.5f,
+                            speed = 400f + rng.nextFloat() * 300f,
+                            length = 40f + rng.nextFloat() * 60f,
+                        ))
+                    }
+
+                    val toRemove = mutableListOf<ShootingStar>()
+                    for (ss in shootingStars) {
+                        ss.life += 0.03f
+                        if (ss.life >= 1f) { toRemove.add(ss); continue }
+                        val sx = ss.startX + cos(ss.angle) * ss.speed * ss.life
+                        val sy = ss.startY + sin(ss.angle) * ss.speed * ss.life
+                        val tailX = ss.startX + cos(ss.angle) * (ss.speed * ss.life - ss.length)
+                        val tailY = ss.startY + sin(ss.angle) * (ss.speed * ss.life - ss.length)
+                        val ssAlpha = (1f - ss.life).coerceIn(0f, 0.6f)
+                        drawLine(
+                            ShootingStarColor.copy(alpha = ssAlpha),
+                            Offset(tailX, tailY), Offset(sx, sy),
+                            strokeWidth = 1.5f,
+                        )
+                        drawCircle(ShootingStarColor.copy(alpha = ssAlpha + 0.2f), 2f, Offset(sx, sy))
+                    }
+                    shootingStars.removeAll(toRemove)
                 }
             }
         }
 
-        // ── Expanding rings ─────────────────────────────────────────────
-        if (phase >= 1) {
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val cX = size.width / 2f
-                val cY = size.height * 0.42f
-                val maxR = size.width * 0.9f
-                val r1 = ringProgress * maxR * 0.3f
-                val r2 = ringProgress * maxR * 0.6f
-
-                val ringAlpha1 = (1f - ringProgress).coerceIn(0f, 0.25f)
-                val ringAlpha2 = (1f - ringProgress).coerceIn(0f, 0.12f)
-
-                drawCircle(
-                    color = RingColor.copy(alpha = ringAlpha1),
-                    radius = r1,
-                    center = Offset(cX, cY),
-                    style = Stroke(width = 1f),
-                )
-                drawCircle(
-                    color = RingColor.copy(alpha = ringAlpha2),
-                    radius = r2,
-                    center = Offset(cX, cY),
-                    style = Stroke(width = 0.5f),
-                )
-            }
-        }
-
-        // ── Central content ─────────────────────────────────────────────
+        // ── Scrollable content layer ───────────────────────────────
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
         ) {
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(56.dp))
 
-            // ── Glow orb behind diamond ────────────────────────────────
-            Box(
-                modifier = Modifier
-                    .size(140.dp)
-                    .scale(orbScale)
-                    .alpha(if (phase >= 1) 1f else 0f),
-                contentAlignment = Alignment.Center,
-            ) {
-                // Outer glow
+            // ── Star icon ───────────────────────────────────────────
+            if (phase >= 2) {
                 Box(
                     modifier = Modifier
-                        .size(140.dp)
-                        .blur(70.dp)
-                        .background(CyanGlow.copy(alpha = 0.12f), CircleShape)
-                )
-                // Mid glow
-                Box(
-                    modifier = Modifier
-                        .size(96.dp)
-                        .blur(44.dp)
-                        .background(TealGlow.copy(alpha = 0.15f), CircleShape)
-                )
-                // Inner warm glow
-                Box(
-                    modifier = Modifier
-                        .size(60.dp)
-                        .blur(26.dp)
-                        .background(GoldGlow.copy(alpha = 0.10f), CircleShape)
-                )
-
-                // ── Diamond / Knowledge Cube ─────────────────────────────
-                if (phase >= 2) {
+                        .size(100.dp)
+                        .alpha(starAlpha.value)
+                        .rotate(starRotation)
+                        .offset(y = starBob.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    // Glass orb
                     Box(
                         modifier = Modifier
-                            .size(100.dp)
-                            .alpha(diamondAlpha.value)
-                            .rotate(diamondRotation)
-                            .offset(y = diamondBob.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        // Glassmorphic backing
-                        Box(
-                            modifier = Modifier
-                                .size(92.dp)
-                                .clip(RoundedCornerShape(24.dp))
-                                .background(
-                                    Brush.linearGradient(
-                                        colors = listOf(
-                                            Color(0x331A3C38),
-                                            Color(0x220B221F),
-                                        )
-                                    )
+                            .size(96.dp)
+                            .clip(RoundedCornerShape(24.dp))
+                            .background(
+                                Brush.linearGradient(
+                                    colors = listOf(Color(0x281A3C38), Color(0x180B221F))
                                 )
-                                .blur(4.dp)
-                        )
-                        // Diamond symbol
-                        Text(
-                            text = "\u25C7",
-                            style = MaterialTheme.typography.displayLarge,
-                            color = SecondaryContainer.copy(alpha = 0.9f),
-                            fontWeight = FontWeight.Light,
-                            modifier = Modifier.scale(1.3f),
-                        )
-                    }
+                            ).blur(3.dp)
+                    )
+                    // Star symbol
+                    Text(
+                        text = "\u2606",
+                        style = MaterialTheme.typography.displayLarge,
+                        color = SecondaryContainer.copy(alpha = 0.85f),
+                        fontWeight = FontWeight.Light,
+                        modifier = Modifier.scale(1.4f),
+                    )
                 }
             }
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // ── Curio title ─────────────────────────────────────────────
+            // ── Title ───────────────────────────────────────────────
             if (phase >= 3) {
                 Text(
                     text = "Curio",
                     style = MaterialTheme.typography.displayLarge,
                     color = OnSurface,
                     fontWeight = FontWeight.ExtraBold,
+                    textAlign = TextAlign.Center,
                     modifier = Modifier
                         .alpha(titleAlpha.value)
                         .offset(y = titleOffset.value.dp),
@@ -430,12 +445,12 @@ fun SplashScreen(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // ── Tagline ─────────────────────────────────────────────────
+            // ── Tagline ─────────────────────────────────────────────
             if (phase >= 4) {
                 Text(
                     text = "One interesting thing at a time.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = OnSurfaceVariant.copy(alpha = 0.7f),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = OnSurfaceVariant.copy(alpha = 0.75f),
                     textAlign = TextAlign.Center,
                     modifier = Modifier
                         .alpha(taglineAlpha.value)
@@ -445,14 +460,14 @@ fun SplashScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // ── Get Started button ──────────────────────────────────────
+            // ── Get Started button ──────────────────────────────────
             if (phase >= 6) {
                 Button(
                     onClick = onNavigateToOnboarding,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp)
-                        .height(56.dp)
+                        .height(54.dp)
                         .alpha(buttonAlpha.value),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
@@ -461,15 +476,11 @@ fun SplashScreen(
                     ),
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp),
                 ) {
-                    Text(
-                        text = "Get Started",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                    )
+                    Text("Get Started", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(40.dp))
         }
     }
 }

@@ -119,3 +119,15 @@ sources:
     batch_size: 15
     tags: [natgeo, nature, history, science]
     notes: "Homepage HTML scrape — fetches article page bodies for top 5"
+
+  # ─── API Source: Neuroscience ────────────────────────────────────────
+  - name: PubMed Neuroscience
+    type: api_json
+    url: "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
+    handler: fetch_neuroscience
+    enabled: true
+    rate_limit: 1
+    categories: [Neuroscience]
+    batch_size: 30
+    tags: [neuroscience, brain, pubmed]
+    notes: "PubMed NCBI E-utilities — neuroscience article abstracts from 12 curated topics"

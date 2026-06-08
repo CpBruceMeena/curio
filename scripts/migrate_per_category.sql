@@ -5,7 +5,8 @@
 -- VIEW that assigns unique IDs via (category_id * 10000000 + local_id).
 --
 -- Uses dynamic SQL so it works with any category IDs.
--- Re-run anytime categories change.
+-- Does NOT drop existing tables — preserves all data.
+-- Run this after categories are seeded to create the VIEW.
 --
 -- Usage:
 --   psql "$DATABASE_URL" -f scripts/migrate_per_category.sql
@@ -14,22 +15,7 @@
 BEGIN;
 
 -- -------------------------------------------------------------------
--- 1. Drop any existing per-category tables (from previous runs)
--- -------------------------------------------------------------------
-DO $$
-DECLARE
-    rec RECORD;
-BEGIN
-    FOR rec IN SELECT table_name FROM information_schema.tables
-               WHERE table_schema = 'public'
-                 AND (table_name ~ '^contents_\d+$' OR table_name ~ '^archive_\d+$')
-    LOOP
-        EXECUTE 'DROP TABLE IF EXISTS ' || quote_ident(rec.table_name) || ' CASCADE';
-    END LOOP;
-END $$;
-
--- -------------------------------------------------------------------
--- 2. Create per-category content + archive tables
+-- 1. Create per-category content + archive tables (if not exist)
 -- -------------------------------------------------------------------
 DO $$
 DECLARE
@@ -42,7 +28,7 @@ BEGIN
         archive_name := 'archive_' || COALESCE(NULLIF(cat.content_table_id, 0), cat.id);
 
         EXECUTE format(
-            'CREATE TABLE %I (
+            'CREATE TABLE IF NOT EXISTS %I (
                 id SERIAL PRIMARY KEY,
                 title TEXT NOT NULL,
                 body TEXT NOT NULL,
@@ -60,7 +46,7 @@ BEGIN
         );
 
         EXECUTE format(
-            'CREATE TABLE %I (
+            'CREATE TABLE IF NOT EXISTS %I (
                 id SERIAL PRIMARY KEY,
                 title TEXT NOT NULL,
                 body TEXT NOT NULL,
@@ -78,49 +64,25 @@ BEGIN
             archive_name, '', '', '', '', ''
         );
 
-        RAISE NOTICE 'Created % and %', tbl_name, archive_name;
+        RAISE NOTICE 'Ensured % and %', tbl_name, archive_name;
     END LOOP;
 END $$;
 
 -- -------------------------------------------------------------------
--- 3. Migrate existing data from old contents table
+-- 2. Ensure GORM-compatible constraint name on categories
 -- -------------------------------------------------------------------
-DO $$
-DECLARE
-    cat RECORD;
-    tbl_name TEXT;
-    migrated BIGINT;
-BEGIN
-    IF EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'contents') THEN
-        FOR cat IN SELECT * FROM categories ORDER BY id LOOP
-            tbl_name := 'contents_' || COALESCE(NULLIF(cat.content_table_id, 0), cat.id);
-            EXECUTE format(
-                'INSERT INTO %I (title, body, source, source_url, read_time_secs, tags, likes, created_at)
-                 SELECT title, body, source, source_url, read_time_secs, tags, likes, created_at
-                 FROM contents WHERE category_id = %s
-                 ON CONFLICT (title) DO NOTHING',
-                tbl_name, cat.id
-            );
-            GET DIAGNOSTICS migrated = ROW_COUNT;
-            IF migrated > 0 THEN
-                RAISE NOTICE '  Migrated % rows to %', migrated, tbl_name;
-            END IF;
-        END LOOP;
-    END IF;
-END $$;
-
--- -------------------------------------------------------------------
--- 4. Drop old contents table FIRST (before creating the VIEW)
--- -------------------------------------------------------------------
-DROP TABLE IF EXISTS contents CASCADE;
-
--- Ensure GORM-compatible constraint name on categories
 ALTER TABLE categories DROP CONSTRAINT IF EXISTS uni_categories_name;
 ALTER TABLE categories DROP CONSTRAINT IF EXISTS categories_name_key;
 ALTER TABLE categories ADD CONSTRAINT uni_categories_name UNIQUE (name);
 
 -- -------------------------------------------------------------------
--- 5. Create global VIEW dynamically
+-- 3. Drop old contents table FIRST (before creating the VIEW)
+--    This is the legacy flat table, NOT the per-category tables.
+-- -------------------------------------------------------------------
+DROP TABLE IF EXISTS contents CASCADE;
+
+-- -------------------------------------------------------------------
+-- 4. Create global VIEW dynamically
 --    Assigns unique IDs via (category_id * 10000000 + local_id)
 -- -------------------------------------------------------------------
 DO $$
@@ -156,7 +118,7 @@ END $$;
 COMMIT;
 
 -- -------------------------------------------------------------------
--- 6. Verify
+-- 5. Verify
 -- -------------------------------------------------------------------
 SELECT '✅ Migration complete' AS status;
 SELECT table_name FROM information_schema.tables 

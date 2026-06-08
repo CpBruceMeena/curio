@@ -232,10 +232,21 @@ internal fun FullPageCard(
                 textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // Description — contextual explanation (poems, shayari)
+            // Body — poem/shayari text first
+            Text(
+                text = body,
+                modifier = Modifier.weight(1f, fill = false),
+                style = MaterialTheme.typography.bodyLarge,
+                color = OnSurfaceVariant.copy(alpha = 0.9f),
+                textAlign = TextAlign.Center,
+                lineHeight = 26.sp
+            )
+
+            // Description — contextual explanation below the poem
             if (description.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(12.dp))
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -245,24 +256,13 @@ internal fun FullPageCard(
                 ) {
                     Text(
                         text = description,
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodySmall,
                         color = OnSurfaceVariant.copy(alpha = 0.85f),
                         textAlign = TextAlign.Start,
-                        lineHeight = 22.sp
+                        lineHeight = 20.sp
                     )
                 }
-                Spacer(modifier = Modifier.height(16.dp))
             }
-
-            // Body — takes remaining space, full content visible
-            Text(
-                text = body,
-                modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.bodyLarge,
-                color = OnSurfaceVariant.copy(alpha = 0.9f),
-                textAlign = TextAlign.Center,
-                lineHeight = 26.sp
-            )
 
             // Bottom metadata + share
             Row(

@@ -77,11 +77,12 @@ def insert_content(db: DB, item: dict) -> bool:
     table_id = get_content_table_id(db, cat_id)
     try:
         db.execute(
-            f"INSERT INTO contents_{table_id} (title, body, source, read_time_secs, tags, likes) "
-            "VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT (title) DO NOTHING",
+            f"INSERT INTO contents_{table_id} (title, body, poet, source, read_time_secs, tags, likes) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s) ON CONFLICT (title) DO NOTHING",
             [
                 (item.get("title") or "")[:1000],
                 (item.get("body") or "")[:10000],
+                item.get("poet", ""),
                 item.get("source", ""),
                 item.get("readTime", 15),
                 item.get("tags", ""),
