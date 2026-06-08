@@ -38,29 +38,20 @@ func Migrate() {
 	fmt.Println("Database migrated successfully")
 }
 
-// ContentTableName returns the per-category content table name for a category.
-// Uses ContentTableID for stable table naming (not auto-increment ID).
-func ContentTableName(categoryID uint) string {
-	var cat models.Category
-	if err := DB.First(&cat, categoryID).Error; err != nil {
-		// Fallback to category ID for backward compatibility
-		return fmt.Sprintf("contents_%d", categoryID)
-	}
-	if cat.ContentTableID > 0 {
-		return fmt.Sprintf("contents_%d", cat.ContentTableID)
+// ContentTableName returns the per-category content table name using the stable
+// ContentTableID. Falls back to categoryID if ContentTableID is 0.
+func ContentTableName(contentTableID, categoryID uint) string {
+	if contentTableID > 0 {
+		return fmt.Sprintf("contents_%d", contentTableID)
 	}
 	return fmt.Sprintf("contents_%d", categoryID)
 }
 
-// ArchiveTableName returns the archive table name for a category.
-// Uses ContentTableID for stable table naming (not auto-increment ID).
-func ArchiveTableName(categoryID uint) string {
-	var cat models.Category
-	if err := DB.First(&cat, categoryID).Error; err != nil {
-		return fmt.Sprintf("archive_%d", categoryID)
-	}
-	if cat.ContentTableID > 0 {
-		return fmt.Sprintf("archive_%d", cat.ContentTableID)
+// ArchiveTableName returns the archive table name using the stable
+// ContentTableID. Falls back to categoryID if ContentTableID is 0.
+func ArchiveTableName(contentTableID, categoryID uint) string {
+	if contentTableID > 0 {
+		return fmt.Sprintf("archive_%d", contentTableID)
 	}
 	return fmt.Sprintf("archive_%d", categoryID)
 }

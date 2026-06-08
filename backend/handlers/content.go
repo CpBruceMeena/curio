@@ -39,7 +39,7 @@ func GetContent(c *gin.Context) {
 
 	// Find related content from the same per-category table
 	_, localID := decodeContentID(globalID)
-	tableName := database.ContentTableName(content.CategoryID)
+	tableName := database.ContentTableName(uint(category.ContentTableID), content.CategoryID)
 	var related []models.Content
 	database.DB.Table(tableName).
 		Where("id != ?", localID).
@@ -77,7 +77,8 @@ func LikeContent(c *gin.Context) {
 	}
 
 	// Must update the per-category table directly (VIEW is UNION ALL, not updatable)
-	tableName := database.ContentTableName(catID)
+	// ContentTableName falls back to catID when contentTableID is 0
+	tableName := database.ContentTableName(0, catID)
 	result := database.DB.Table(tableName).
 		Where("id = ?", localID).
 		UpdateColumn("likes", gorm.Expr("likes + 1"))
