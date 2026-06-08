@@ -111,6 +111,13 @@ private fun getIconEmoji(iconName: String): String {
         "design" -> "🎨"
         "nature" -> "🌲"
         "technology" -> "💻"
+        "auto_stories" -> "📖"
+        "movie" -> "🎬"
+        "menu_book" -> "📚"
+        "public" -> "🌍"
+        "music_note" -> "🎵"
+        "sports_soccer" -> "⚽"
+        "ramen_dining" -> "🍜"
         else -> "✨"
     }
 }

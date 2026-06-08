@@ -116,22 +116,37 @@ fun OnboardingScreen(
             }
 
             // Interest grid
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(3),
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = 8.dp),
-                contentPadding = PaddingValues(8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(viewModel.interestOptions) { (name, icon) ->
-                    InterestChip(
-                        name = name,
-                        icon = icon,
-                        isSelected = uiState.selectedInterests.contains(name),
-                        onClick = { viewModel.toggleInterest(name) }
+            if (uiState.isLoading) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Loading interests...",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = OnSurfaceVariant
                     )
+                }
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(3),
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 8.dp),
+                    contentPadding = PaddingValues(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(uiState.categories) { category ->
+                        InterestChip(
+                            name = category.name,
+                            icon = category.icon,
+                            isSelected = uiState.selectedInterests.contains(category.name),
+                            onClick = { viewModel.toggleInterest(category.name) }
+                        )
+                    }
                 }
             }
 
