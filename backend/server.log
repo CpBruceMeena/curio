@@ -1,0 +1,20 @@
+2026/06/08 19:25:20 No .env file found, using environment variables and defaults
+Connected to PostgreSQL
+Database migrated successfully
+[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /health                   --> github.com/curio/backend/router.Setup.func1 (4 handlers)
+[GIN-debug] GET    /api/v1/feed              --> github.com/curio/backend/handlers.GetFeed (4 handlers)
+[GIN-debug] GET    /api/v1/content/:id       --> github.com/curio/backend/handlers.GetContent (4 handlers)
+[GIN-debug] POST   /api/v1/content/:id/like  --> github.com/curio/backend/handlers.LikeContent (4 handlers)
+[GIN-debug] GET    /api/v1/categories        --> github.com/curio/backend/handlers.GetCategories (4 handlers)
+2026/06/08 19:25:20 Curio backend starting on :8080
+[GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
+Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.
+[GIN-debug] Listening and serving HTTP on :8080
+[GIN-debug] [ERROR] listen tcp :8080: bind: address already in use
+2026/06/08 19:25:20 Failed to start server: listen tcp :8080: bind: address already in use

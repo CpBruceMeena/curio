@@ -28,6 +28,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.curio.app.ui.theme.Error
 import com.curio.app.ui.theme.OnSurface
 import com.curio.app.ui.theme.OnSurfaceVariant
 import com.curio.app.ui.theme.Primary
@@ -77,6 +78,29 @@ fun FeedScreen(
                         style = MaterialTheme.typography.bodyLarge,
                         color = OnSurfaceVariant
                     )
+                }
+            }
+            uiState.error != null && uiState.content.isEmpty() -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(text = "⚠️", fontSize = 64.sp)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "Couldn't load feed",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Error
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = uiState.error ?: "Network error",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = OnSurfaceVariant.copy(alpha = 0.6f),
+                            textAlign = TextAlign.Center
+                        )
+                    }
                 }
             }
             uiState.content.isEmpty() -> {

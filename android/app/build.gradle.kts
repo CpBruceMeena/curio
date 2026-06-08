@@ -19,7 +19,7 @@ android {
             useSupportLibrary = true
         }
 
-        buildConfigField("String", "API_BASE_URL", "\"https://helpful-supposedly-moose.ngrok-free.app/api/v1/\"")
+        buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:8080/api/v1/\"")
     }
 
     signingConfigs {
@@ -95,7 +95,7 @@ dependencies {
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
 
-    implementation("com.google.code.gson:gson:2.10.1")
+
 
     // Splash Screen
     implementation("androidx.core:core-splashscreen:1.0.1")
