@@ -156,6 +156,7 @@ fun FeedScreen(
                         FullPageCard(
                             title = item.title,
                             description = item.description,
+                            poet = item.poet,
                             body = item.body,
                             category = item.categoryName,
                             readTime = item.readTimeSecs,
@@ -172,6 +173,7 @@ fun FeedScreen(
 internal fun FullPageCard(
     title: String,
     description: String = "",
+    poet: String = "",
     body: String,
     category: String,
     readTime: Int,
@@ -207,7 +209,19 @@ internal fun FullPageCard(
                 )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Poet name (poems, shayari)
+            if (poet.isNotEmpty()) {
+                Text(
+                    text = poet,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Primary.copy(alpha = 0.8f),
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
 
             // Title — full, no truncation
             Text(

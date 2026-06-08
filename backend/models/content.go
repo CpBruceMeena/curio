@@ -13,6 +13,7 @@ type Content struct {
 	Title        string    `json:"title" gorm:"not null"`
 	Body         string    `json:"body" gorm:"type:text;not null"`
 	Description  string    `json:"description" gorm:"default:''"`
+	Poet         string    `json:"poet" gorm:"default:''"`
 	Source       string    `json:"source"`
 	SourceURL    string    `json:"source_url"`
 	ReadTimeSecs int       `json:"read_time_secs" gorm:"default:15"`

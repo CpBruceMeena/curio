@@ -11,6 +11,7 @@ data class Content(
     val title: String = "",
     val body: String = "",
     val description: String = "",
+    val poet: String = "",
     val source: String = "",
     @SerializedName("source_url")
     val sourceUrl: String = "",
