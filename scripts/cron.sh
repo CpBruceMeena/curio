@@ -4,7 +4,7 @@
 
 set -euo pipefail
 
-cd "$(dirname "$0")/scraper"
+cd "$(dirname "$0")"
 
 # Load env vars if .env exists
 if [ -f .env ]; then
@@ -18,5 +18,5 @@ fi
 
 echo "[$(date)] Starting daily scrape..."
 echo "[$(date)] Target: 200 new items"
-python3 scraper.py --batch 200
+python3 -m scraper --batch 200
 echo "[$(date)] Scrape complete"
