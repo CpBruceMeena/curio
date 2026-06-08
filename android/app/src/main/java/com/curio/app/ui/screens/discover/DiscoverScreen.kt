@@ -47,7 +47,8 @@ import com.curio.app.viewmodel.FeedViewModel
 @Composable
 fun DiscoverScreen(
     viewModel: FeedViewModel,
-    onCardClick: (Long) -> Unit = {}
+    onCardClick: (Long) -> Unit = {},
+    onApplyFilter: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     // Local pending category selection — only applied when "Apply" is tapped
@@ -152,6 +153,7 @@ fun DiscoverScreen(
             Button(
                 onClick = {
                     viewModel.setSelectedCategoryIds(pendingCategoryIds)
+                    onApplyFilter()
                 },
                 modifier = Modifier
                     .fillMaxWidth()

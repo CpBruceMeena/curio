@@ -218,10 +218,10 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             repository.getFeed(
                 page = 1,
-                pageSize = 50,
+                pageSize = 8,
                 random = true
             ).onSuccess { response ->
-                _uiState.value = _uiState.value.copy(discoverContent = response.content)
+                _uiState.value = _uiState.value.copy(discoverContent = response.content.take(8))
             }
         }
     }

@@ -91,6 +91,9 @@ fun MainTabScreen(
                     onCardClick = { contentId ->
                         feedViewModel.navigateToContent(contentId)
                         selectedTab = 0
+                    },
+                    onApplyFilter = {
+                        selectedTab = 0
                     }
                 )
             }
