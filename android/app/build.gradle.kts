@@ -22,9 +22,19 @@ android {
         buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:8080/api/v1/\"")
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("curio-keystore.jks")
+            storePassword = "curio123"
+            keyAlias = "curio"
+            keyPassword = "curio123"
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }

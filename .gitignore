@@ -31,6 +31,7 @@ android/.gradle/
 android/build/
 android/app/build/
 android/local.properties
+android/app/curio-keystore.jks
 android/.idea/
 *.iml
 *.hprof
