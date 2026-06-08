@@ -204,11 +204,33 @@ def seed_categories(conn):
 
 
 def seed_content(conn):
+    # Map hardcoded category_id in CONTENT to actual DB id
+    # This mapping is needed because after --reset, auto-increment IDs may differ
+    OLD_ID_TO_NAME = {
+        1: "Science", 2: "Space", 3: "History", 4: "Biology",
+        5: "Psychology", 6: "Philosophy", 7: "Physics", 8: "Startups",
+        9: "AI", 10: "Economics", 11: "Nature", 12: "Technology",
+        25: "Poetry", 33: "Shayari",
+    }
+
+    with conn.cursor() as cur:
+        # Build actual id lookup by category name
+        cur.execute("SELECT id, name FROM categories")
+        name_to_id = {row[1]: row[0] for row in cur.fetchall()}
+
     count = 0
     with conn.cursor() as cur:
         for item in CONTENT:
-            cat_id = item["category_id"]
-            sql = INSERT_CONTENT.format(cat_id=cat_id)
+            old_id = item["category_id"]
+            cat_name = OLD_ID_TO_NAME.get(old_id)
+            if not cat_name:
+                print(f"  ⚠ Skipping content with unknown category_id={old_id}: {item['title'][:50]}")
+                continue
+            actual_id = name_to_id.get(cat_name)
+            if not actual_id:
+                print(f"  ⚠ Category '{cat_name}' not found in DB, skipping: {item['title'][:50]}")
+                continue
+            sql = INSERT_CONTENT.format(cat_id=actual_id)
             cur.execute(sql, (
                 item["title"],
                 item["body"],
