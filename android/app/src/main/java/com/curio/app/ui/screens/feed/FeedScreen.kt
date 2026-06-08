@@ -6,10 +6,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -27,7 +27,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.curio.app.ui.theme.Error
 import com.curio.app.ui.theme.OnSurface
 import com.curio.app.ui.theme.OnSurfaceVariant
@@ -40,12 +39,21 @@ import com.curio.app.viewmodel.FeedViewModel
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun FeedScreen(
-    viewModel: FeedViewModel = viewModel()
+    viewModel: FeedViewModel
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val pagerState = rememberPagerState(pageCount = {
         uiState.content.size
     })
+
+    // Jump to a specific content item when feedStartIndex is set
+    LaunchedEffect(uiState.feedStartIndex) {
+        val index = uiState.feedStartIndex
+        if (index != null && index in 0 until uiState.content.size) {
+            pagerState.animateScrollToPage(index)
+            viewModel.clearFeedStartIndex()
+        }
+    }
 
     // Load more when approaching last page
     val nearEnd by remember {
@@ -168,7 +176,7 @@ fun FeedScreen(
 }
 
 @Composable
-private fun FullPageCard(
+internal fun FullPageCard(
     title: String,
     body: String,
     category: String,

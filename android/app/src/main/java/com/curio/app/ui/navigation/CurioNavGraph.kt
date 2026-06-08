@@ -36,11 +36,7 @@ fun CurioNavGraph(navController: NavHostController) {
         }
 
         composable(Screen.Main.route) {
-            MainTabScreen(
-                onNavigateToContent = { contentId ->
-                    navController.navigate(Screen.ContentDetail.createRoute(contentId))
-                }
-            )
+            MainTabScreen()
         }
 
         composable(Screen.ContentDetail.route) { backStackEntry ->

@@ -31,7 +31,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.curio.app.ui.screens.discover.DiscoverScreen
 import com.curio.app.ui.theme.OnSecondaryContainer
-import com.curio.app.ui.theme.OnSurface
 import com.curio.app.ui.theme.OnSurfaceVariant
 import com.curio.app.ui.theme.SecondaryContainer
 import com.curio.app.ui.theme.Surface
@@ -40,7 +39,6 @@ import com.curio.app.viewmodel.FeedViewModel
 
 @Composable
 fun MainTabScreen(
-    onNavigateToContent: (Long) -> Unit = {},
     feedViewModel: FeedViewModel = viewModel()
 ) {
     var selectedTab by remember { mutableStateOf(0) }
@@ -68,6 +66,9 @@ fun MainTabScreen(
             ) {
                 TabPill(
                     label = "Feed",
+                    selectedCount = if (selectedTab == 0 && uiState.content.isNotEmpty()) {
+                        uiState.content.size
+                    } else null,
                     isSelected = selectedTab == 0,
                     onClick = { selectedTab = 0 },
                     modifier = Modifier.weight(1f)
@@ -91,16 +92,10 @@ fun MainTabScreen(
             when (tab) {
                 0 -> FeedScreen(viewModel = feedViewModel)
                 1 -> DiscoverScreen(
-                    onNavigateToContent = onNavigateToContent,
-                    categories = uiState.categories,
-                    onCategoryClick = { categoryName ->
-                        // Find category ID by name and switch to feed tab
-                        val category = uiState.categories.find {
-                            it.name.equals(categoryName, ignoreCase = true)
-                        }
-                        if (category != null) {
-                            feedViewModel.selectCategory(category.id)
-                        }
+                    viewModel = feedViewModel,
+                    onCardClick = { contentId ->
+                        // Navigate to content in feed and switch to Feed tab
+                        feedViewModel.navigateToContent(contentId)
                         selectedTab = 0
                     }
                 )
@@ -114,7 +109,8 @@ private fun TabPill(
     label: String,
     isSelected: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    selectedCount: Int? = null
 ) {
     Box(
         modifier = modifier
@@ -125,7 +121,7 @@ private fun TabPill(
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = label,
+            text = if (selectedCount != null) "$label ($selectedCount)" else label,
             style = MaterialTheme.typography.labelLarge,
             color = if (isSelected) OnSecondaryContainer else OnSurfaceVariant,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
