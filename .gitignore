@@ -16,7 +16,11 @@ crg-cache/
 
 # --- Go ---
 backend/server
+backend/curio-server
 backend/tmp/
+
+# --- Backend runtime ---
+.backend.pid
 *.exe
 *.exe~
 *.dll
