@@ -46,8 +46,9 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
 
             val result = repository.getFeed(
                 page = page,
-                pageSize = 30,
+                pageSize = 100,
                 categoryId = _uiState.value.selectedCategoryId,
+                random = true,
             )
 
             result.onSuccess { feedResponse ->

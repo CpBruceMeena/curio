@@ -71,10 +71,10 @@ fun DiscoverScreen(
     var discoverContent by remember { mutableStateOf<List<Content>>(emptyList()) }
 
     LaunchedEffect(Unit) {
-        repository.getFeed(page = 1, pageSize = 10).onSuccess { response ->
+        repository.getFeed(page = 1, pageSize = 20, random = true).onSuccess { response ->
             trendingContent = response.content.take(5)
         }
-        repository.getFeed(page = 1, pageSize = 20).onSuccess { response ->
+        repository.getFeed(page = 1, pageSize = 50, random = true).onSuccess { response ->
             discoverContent = response.content
         }
     }

@@ -10,13 +10,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-const defaultPageSize = 10
-const maxPageSize = 50
+const defaultPageSize = 100
+const maxPageSize = 200
 
 func GetFeed(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "100"))
 	categoryID := c.Query("category_id")
+	useRandom := c.DefaultQuery("random", "false") == "true"
 
 	if page < 1 {
 		page = 1
@@ -37,7 +38,11 @@ func GetFeed(c *gin.Context) {
 
 	// Fetch content
 	var content []models.Content
-	dataQuery := database.DB.Order("likes DESC, created_at DESC").Offset(offset).Limit(pageSize)
+	orderClause := "likes DESC, created_at DESC"
+	if useRandom {
+		orderClause = "RANDOM()"
+	}
+	dataQuery := database.DB.Order(orderClause).Offset(offset).Limit(pageSize)
 	if categoryID != "" {
 		dataQuery = dataQuery.Where("category_id = ?", categoryID)
 	}

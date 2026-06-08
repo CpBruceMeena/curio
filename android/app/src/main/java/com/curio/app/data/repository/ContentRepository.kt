@@ -11,11 +11,12 @@ class ContentRepository {
 
     suspend fun getFeed(
         page: Int = 1,
-        pageSize: Int = 10,
-        categoryId: Long? = null
+        pageSize: Int = 100,
+        categoryId: Long? = null,
+        random: Boolean = false
     ): Result<FeedResponse> {
         return try {
-            val response = api.getFeed(page, pageSize, categoryId)
+            val response = api.getFeed(page, pageSize, categoryId, random)
             if (response.isSuccessful) {
                 Result.success(response.body() ?: FeedResponse())
             } else {

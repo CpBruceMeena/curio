@@ -14,8 +14,9 @@ interface CurioApi {
     @GET("feed")
     suspend fun getFeed(
         @Query("page") page: Int = 1,
-        @Query("page_size") pageSize: Int = 10,
-        @Query("category_id") categoryId: Long? = null
+        @Query("page_size") pageSize: Int = 100,
+        @Query("category_id") categoryId: Long? = null,
+        @Query("random") random: Boolean = false
     ): Response<FeedResponse>
 
     @GET("content/{id}")
