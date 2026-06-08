@@ -17,7 +17,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,7 +41,6 @@ fun MainTabScreen(
     feedViewModel: FeedViewModel = viewModel()
 ) {
     var selectedTab by remember { mutableStateOf(0) }
-    val uiState by feedViewModel.uiState.collectAsState()
 
     Column(
         modifier = Modifier
@@ -66,9 +64,6 @@ fun MainTabScreen(
             ) {
                 TabPill(
                     label = "Feed",
-                    selectedCount = if (selectedTab == 0 && uiState.content.isNotEmpty()) {
-                        uiState.content.size
-                    } else null,
                     isSelected = selectedTab == 0,
                     onClick = { selectedTab = 0 },
                     modifier = Modifier.weight(1f)
@@ -94,7 +89,6 @@ fun MainTabScreen(
                 1 -> DiscoverScreen(
                     viewModel = feedViewModel,
                     onCardClick = { contentId ->
-                        // Navigate to content in feed and switch to Feed tab
                         feedViewModel.navigateToContent(contentId)
                         selectedTab = 0
                     }
@@ -109,8 +103,7 @@ private fun TabPill(
     label: String,
     isSelected: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    selectedCount: Int? = null
+    modifier: Modifier = Modifier
 ) {
     Box(
         modifier = modifier
@@ -121,7 +114,7 @@ private fun TabPill(
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = if (selectedCount != null) "$label ($selectedCount)" else label,
+            text = label,
             style = MaterialTheme.typography.labelLarge,
             color = if (isSelected) OnSecondaryContainer else OnSurfaceVariant,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,

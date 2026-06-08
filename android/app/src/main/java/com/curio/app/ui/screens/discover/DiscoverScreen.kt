@@ -12,25 +12,24 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Icon
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -40,11 +39,9 @@ import com.curio.app.ui.theme.OnSecondaryContainer
 import com.curio.app.ui.theme.OnSurface
 import com.curio.app.ui.theme.OnSurfaceVariant
 import com.curio.app.ui.theme.Primary
-import com.curio.app.ui.theme.PrimaryContainer
 import com.curio.app.ui.theme.SecondaryContainer
 import com.curio.app.ui.theme.Surface
 import com.curio.app.ui.theme.SurfaceContainerHigh
-import com.curio.app.ui.theme.SurfaceContainerLow
 import com.curio.app.viewmodel.FeedViewModel
 
 @Composable
@@ -53,6 +50,8 @@ fun DiscoverScreen(
     onCardClick: (Long) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    // Local pending category selection — only applied when "Apply" is tapped
+    var pendingCategoryIds by remember { mutableStateOf(uiState.selectedCategoryIds) }
 
     LazyColumn(
         modifier = Modifier
@@ -82,33 +81,7 @@ fun DiscoverScreen(
             }
         }
 
-        // Search bar
-        item {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(SurfaceContainerHigh.copy(alpha = 0.6f))
-                    .padding(horizontal = 16.dp, vertical = 14.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Search,
-                    contentDescription = "Search",
-                    tint = OnSurfaceVariant,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = "Search any topic...",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = OnSurfaceVariant.copy(alpha = 0.6f)
-                )
-            }
-        }
-
-        // Multi-select categories header
+        // Categories header
         item { Spacer(modifier = Modifier.height(8.dp)) }
         item {
             Row(
@@ -124,19 +97,19 @@ fun DiscoverScreen(
                     color = OnSurface,
                     fontWeight = FontWeight.Bold
                 )
-                if (uiState.selectedCategoryIds.isNotEmpty()) {
+                if (pendingCategoryIds.isNotEmpty()) {
                     Text(
                         text = "Clear",
                         style = MaterialTheme.typography.labelMedium,
                         color = Primary,
                         fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.clickable { viewModel.clearCategorySelection() }
+                        modifier = Modifier.clickable { pendingCategoryIds = emptySet() }
                     )
                 }
             }
         }
 
-        // Multi-select category chips
+        // Multi-select category chips (local pending state)
         if (uiState.categories.isNotEmpty()) {
             item {
                 Column(
@@ -153,23 +126,56 @@ fun DiscoverScreen(
                             row.forEach { category ->
                                 CategoryChip(
                                     name = category.name,
-                                    isSelected = uiState.selectedCategoryIds.contains(category.id),
-                                    onClick = { viewModel.toggleCategorySelection(category.id) },
+                                    isSelected = pendingCategoryIds.contains(category.id),
+                                    onClick = {
+                                        pendingCategoryIds = if (pendingCategoryIds.contains(category.id)) {
+                                            pendingCategoryIds - category.id
+                                        } else {
+                                            pendingCategoryIds + category.id
+                                        }
+                                    },
                                     modifier = Modifier.weight(1f)
                                 )
                             }
-                            // Fill empty slots
                             repeat(4 - row.size) {
                                 Spacer(modifier = Modifier.weight(1f))
                             }
                         }
                     }
                 }
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
             }
         }
 
-        // Content header
+        // Apply button
+        item {
+            Button(
+                onClick = {
+                    viewModel.setSelectedCategoryIds(pendingCategoryIds)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .height(48.dp),
+                shape = RoundedCornerShape(24.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = SecondaryContainer,
+                    contentColor = Color(0xFF002021),
+                    disabledContainerColor = SurfaceContainerHigh.copy(alpha = 0.3f),
+                    disabledContentColor = OnSurfaceVariant.copy(alpha = 0.5f)
+                ),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+            ) {
+                Text(
+                    text = if (pendingCategoryIds.isNotEmpty()) "Apply Filters" else "Show All",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            Spacer(modifier = Modifier.height(20.dp))
+        }
+
+        // "For You" header
         item {
             Row(
                 modifier = Modifier
@@ -194,7 +200,6 @@ fun DiscoverScreen(
 
         // Content grid
         if (uiState.discoverContent.isNotEmpty()) {
-            // Use item + non-lazy grid to stay inside LazyColumn
             val chunked = uiState.discoverContent.chunked(2)
             items(chunked.size) { rowIndex ->
                 val row = chunked[rowIndex]
@@ -217,7 +222,6 @@ fun DiscoverScreen(
                 }
                 Spacer(modifier = Modifier.height(8.dp))
             }
-
             item { Spacer(modifier = Modifier.height(16.dp)) }
         }
 
@@ -267,7 +271,6 @@ private fun ContentCard(
         Column(
             modifier = Modifier.fillMaxWidth().padding(14.dp)
         ) {
-            // Category tag
             Row(
                 modifier = Modifier
                     .clip(RoundedCornerShape(8.dp))
@@ -285,7 +288,6 @@ private fun ContentCard(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Title
             Text(
                 text = content.title,
                 style = MaterialTheme.typography.labelLarge,
@@ -297,7 +299,6 @@ private fun ContentCard(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Body preview
             Text(
                 text = content.body,
                 style = MaterialTheme.typography.bodySmall,
@@ -308,7 +309,6 @@ private fun ContentCard(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Footer: read time + likes
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
