@@ -1,0 +1,121 @@
+# Curio Content Sources Registry
+# ==============================
+# Each source defines a fetchable content provider.
+# To add a new source:
+#   1. Write a handler function in scraper.py with signature fn(limit, filter_category) -> list
+#   2. Register it here with type, url, handler name, and categories
+#   3. The handler name must match the function name in scraper.py
+
+sources:
+  # ─── JSON API Sources ──────────────────────────────────────────────
+  - name: Wikipedia
+    type: api_json
+    url: "https://en.wikipedia.org/w/api.php"
+    handler: fetch_wikipedia
+    enabled: true
+    rate_limit: 0
+    categories: all          # auto-classified via keyword matching
+    batch_size: 50
+    tags: [wikipedia, encyclopedia]
+    notes: "Random article extracts via MediaWiki API"
+
+  - name: Quotes API
+    type: api_json
+    url: "https://quotesapi.prayushadhikari.com.np/api/quotes/random"
+    handler: fetch_quotes
+    enabled: true
+    rate_limit: 0
+    categories: [Philosophy, Psychology, Literature, History]
+    batch_size: 30
+    tags: [quotes, philosophy]
+    notes: "Famous quotes with author and category tags"
+
+  - name: PoetryDB
+    type: api_json
+    url: "https://poetrydb.org"
+    handler: fetch_poems
+    enabled: true
+    rate_limit: 0
+    categories: [Poetry]
+    batch_size: 30
+    tags: [poetry, poems]
+    notes: "Poems from classic authors via /author/{name} endpoint"
+
+  - name: Open Trivia DB
+    type: api_json
+    url: "https://opentdb.com/api.php"
+    handler: fetch_trivia
+    enabled: true
+    rate_limit: 1              # 1 req/s to avoid throttling
+    categories: [Science, Literature, Movies, Music, Technology, History, Sports, Geography, Nature]
+    batch_size: 30
+    tags: [trivia, quiz]
+    notes: "True/false trivia questions across 14 category IDs"
+
+  - name: Hacker News
+    type: api_json
+    url: "https://hacker-news.firebaseio.com/v0"
+    handler: fetch_hacker_news
+    enabled: true
+    rate_limit: 0
+    categories: [Technology, AI, Startups]
+    batch_size: 30
+    tags: [tech, news, hackernews]
+    notes: "Top stories from Hacker News Firebase API"
+
+  - name: Numbers API
+    type: api_json
+    url: "http://numbersapi.com"
+    handler: fetch_numbers
+    enabled: true
+    rate_limit: 0
+    categories: all
+    batch_size: 10
+    tags: [numbers, trivia]
+    notes: "Number facts (flaky - uses HTTP, not HTTPS)"
+
+  - name: iNaturalist
+    type: api_json
+    url: "https://api.inaturalist.org/v1/observations/species_counts"
+    handler: fetch_nature
+    enabled: true
+    rate_limit: 0
+    categories: [Nature, Biology]
+    batch_size: 30
+    tags: [nature, species, biology]
+    notes: "Species observation counts via iNaturalist API"
+
+  # ─── RSS Feed Sources ──────────────────────────────────────────────
+  - name: Science Daily
+    type: rss
+    url: "https://www.sciencedaily.com/rss/all.xml"
+    handler: fetch_sciencedaily
+    enabled: true
+    rate_limit: 0
+    categories: all
+    batch_size: 30
+    tags: [science, news, research]
+    notes: "Science news RSS feed — 60 items with full descriptions"
+
+  - name: Smithsonian
+    type: rss
+    url: "https://www.smithsonianmag.com/rss/history/"
+    handler: fetch_smithsonian
+    enabled: true
+    rate_limit: 0.3            # 0.3s between its 5 sub-feeds
+    categories: [History, Science, Technology, Geography, Literature]
+    batch_size: 20
+    tags: [smithsonian, history, culture]
+    notes: "5 RSS feeds: History, Science-Nature, Innovation, Travel, Arts-Culture"
+
+  # ─── HTML Scraping Sources ─────────────────────────────────────────
+  - name: Nat Geo
+    type: html
+    url: "https://www.nationalgeographic.com"
+    handler: fetch_natgeo
+    enabled: true
+    rate_limit: 0
+    categories: all
+    batch_size: 15
+    tags: [natgeo, nature, history, science]
+    notes: "Homepage HTML scrape — fetches article page bodies for top 5"

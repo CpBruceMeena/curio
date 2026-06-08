@@ -26,6 +26,7 @@ import argparse
 import time
 import xml.etree.ElementTree as ET
 from urllib.parse import urljoin
+from datetime import datetime
 
 import requests
 import psycopg2
@@ -33,6 +34,16 @@ from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 
 from bs4 import BeautifulSoup
+
+# Try loading PyYAML (for sources.yaml), fall back to JSON
+# yaml is not required — sources can also be loaded from JSON
+# but yaml is more readable for a config file
+try:
+    import yaml
+    HAS_YAML = True
+except ImportError:
+    HAS_YAML = False
+    import json
 
 
 # ─── Config ────────────────────────────────────────────────────────────────────
@@ -701,6 +712,123 @@ def fetch_natgeo(limit: int, filter_category: str = None) -> list:
     return items
 
 
+# ─── Source Registry ──────────────────────────────────────────────────────────
+
+SOURCE_REGISTRY = {
+    # Maps handler function names (from sources.yaml) to actual function references
+    "fetch_wikipedia": fetch_wikipedia,
+    "fetch_quotes": fetch_quotes,
+    "fetch_poems": fetch_poems,
+    "fetch_trivia": fetch_trivia,
+    "fetch_hacker_news": fetch_hacker_news,
+    "fetch_numbers": fetch_numbers,
+    "fetch_nature": fetch_nature,
+    "fetch_sciencedaily": fetch_sciencedaily,
+    "fetch_smithsonian": fetch_smithsonian,
+    "fetch_natgeo": fetch_natgeo,
+}
+
+
+def load_sources():
+    """Load source definitions from sources.yaml (or sources.json fallback).
+    
+    Returns a list of source dicts with keys:
+        name, type, url, handler, enabled, rate_limit, categories, batch_size, tags, notes
+    """
+    yaml_path = os.path.join(os.path.dirname(__file__), "sources.yaml")
+    json_path = os.path.join(os.path.dirname(__file__), "sources.json")
+    
+    if HAS_YAML and os.path.exists(yaml_path):
+        with open(yaml_path, "r") as f:
+            data = yaml.safe_load(f)
+        return data.get("sources", [])
+    elif os.path.exists(json_path):
+        with open(json_path, "r") as f:
+            data = json.load(f)
+        return data.get("sources", [])
+    else:
+        raise FileNotFoundError(
+            f"No sources config found. Create {yaml_path} or {json_path}"
+        )
+
+
+def get_enabled_sources():
+    """Get list of enabled source configs from sources.yaml."""
+    return [s for s in load_sources() if s.get("enabled", True)]
+
+
+def log_source_result(db: DB, source_name: str, item_count: int, error: str = ""):
+    """Update the sources DB table with crawl results from a fetch run.
+    
+    Assumes the source row already exists (created by sync_source_configs).
+    Only UPDATEs tracking fields — never INSERTs.
+    This is best-effort — failure won't crash the scraper.
+    """
+    try:
+        now = datetime.now()
+        if error:
+            db.execute(
+                """UPDATE sources SET
+                    last_fetched_at = %s,
+                    last_error = %s,
+                    error_count = error_count + 1,
+                    consecutive_errors = consecutive_errors + 1
+                WHERE name = %s
+                """,
+                [now, error[:500], source_name]
+            )
+        else:
+            db.execute(
+                """UPDATE sources SET
+                    total_items = total_items + %s,
+                    last_fetched_at = %s,
+                    last_error = '',
+                    consecutive_errors = 0
+                WHERE name = %s
+                """,
+                [item_count, now, source_name]
+            )
+    except Exception:
+        pass  # best-effort tracking
+
+
+def sync_source_configs(db: DB):
+    """Sync sources.yaml entries into the sources DB table (insert new, update existing).
+    
+    This ensures the DB always reflects the YAML config. Run once at startup.
+    """
+    try:
+        sources = load_sources()
+        for src in sources:
+            cats = src.get("categories", "all")
+            if isinstance(cats, list):
+                cats = ",".join(cats)
+            tags = src.get("tags", [])
+            if isinstance(tags, list):
+                tags = ",".join(tags)
+            db.execute(
+                """INSERT INTO sources (name, source_type, url, handler, enabled, 
+                   rate_limit, categories, tags, batch_size)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (name) DO UPDATE SET
+                    source_type = EXCLUDED.source_type,
+                    url = EXCLUDED.url,
+                    handler = EXCLUDED.handler,
+                    enabled = EXCLUDED.enabled,
+                    rate_limit = EXCLUDED.rate_limit,
+                    categories = EXCLUDED.categories,
+                    tags = EXCLUDED.tags,
+                    batch_size = EXCLUDED.batch_size,
+                    updated_at = NOW()
+                """,
+                [src["name"], src["type"], src["url"], src["handler"],
+                 src.get("enabled", True), src.get("rate_limit", 0),
+                 cats, tags, src.get("batch_size", 30)]
+            )
+    except Exception as e:
+        print(f"  ⚠ Source sync warning: {e}")
+
+
 # ─── Main Scraper Logic ─────────────────────────────────────────────────────────
 
 def scrape(db: DB, target: int, is_batch: bool, filter_category: str = None, dry_run: bool = False):
@@ -723,19 +851,12 @@ def scrape(db: DB, target: int, is_batch: bool, filter_category: str = None, dry
     except Exception as e:
         print(f"⚠ Category insert error: {e}")
 
-    sources = [
-        ("Wikipedia", lambda: fetch_wikipedia(50 if is_batch else target * 2, filter_category)),
-        ("Quotable Quotes", lambda: fetch_quotes(50 if is_batch else target, filter_category)),
-        ("PoetryDB", lambda: fetch_poems(30 if is_batch else target, filter_category)),
-        ("Hacker News", lambda: fetch_hacker_news(30 if is_batch else target, filter_category)),
-        ("Open Trivia DB", lambda: fetch_trivia(50 if is_batch else target, filter_category)),
-        ("Numbers API", lambda: fetch_numbers(20 if is_batch else target, filter_category)),
-        ("iNaturalist", lambda: fetch_nature(30 if is_batch else target, filter_category)),
-        # Web scraping sources (added via cron)
-        ("Science Daily", lambda: fetch_sciencedaily(30 if is_batch else target, filter_category)),
-        ("Smithsonian", lambda: fetch_smithsonian(20 if is_batch else target, filter_category)),
-        ("Nat Geo", lambda: fetch_natgeo(15 if is_batch else target, filter_category)),
-    ]
+    # Sync source configs from YAML into DB for tracking
+    sync_source_configs(db)
+
+    # Load sources from registry (sources.yaml)
+    source_configs = get_enabled_sources()
+    print(f"   Sources loaded: {len(source_configs)} total")
 
     total_inserted = 0
     run_count = 0
@@ -747,11 +868,26 @@ def scrape(db: DB, target: int, is_batch: bool, filter_category: str = None, dry
             print(f"\n📦 Batch run #{run_count} (inserted so far: {total_inserted}/{target})")
 
         all_items = []
-        for name, fetch_fn in sources:
-            print(f"📖 {name}...")
-            items = fetch_fn()
-            print(f"   → {len(items)} candidate(s)")
-            all_items.extend(items)
+        for src in source_configs:
+            handler_name = src["handler"]
+            handler_fn = SOURCE_REGISTRY.get(handler_name)
+            if not handler_fn:
+                print(f"  ⚠ Unknown handler '{handler_name}' for source '{src['name']}'")
+                continue
+            batch_size = src.get("batch_size", 30)
+            limit = batch_size if is_batch else target
+            print(f"📖 {src['name']}...")
+            try:
+                items = handler_fn(limit, filter_category)
+                print(f"   → {len(items)} candidate(s)")
+                all_items.extend(items)
+                if not dry_run:
+                    log_source_result(db, src["name"], len(items))
+            except Exception as e:
+                error_msg = f"{type(e).__name__}: {e}"
+                print(f"  ⚠ {src['name']} failed: {error_msg}")
+                if not dry_run:
+                    log_source_result(db, src["name"], 0, error_msg)
 
         random.shuffle(all_items)
 
