@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.curio.app.ui.screens.content.ContentDetailScreen
 import com.curio.app.ui.screens.feed.MainTabScreen
 import com.curio.app.ui.screens.onboarding.OnboardingScreen
 import com.curio.app.ui.screens.splash.SplashScreen
@@ -44,7 +45,10 @@ fun CurioNavGraph(navController: NavHostController) {
 
         composable(Screen.ContentDetail.route) { backStackEntry ->
             val contentId = backStackEntry.arguments?.getString("contentId")?.toLongOrNull() ?: 0L
-            // Content detail screen placeholder (Phase 2)
+            ContentDetailScreen(
+                contentId = contentId,
+                onBack = { navController.popBackStack() }
+            )
         }
     }
 }
