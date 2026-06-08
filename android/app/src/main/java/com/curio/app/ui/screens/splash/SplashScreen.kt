@@ -349,7 +349,7 @@ fun SplashScreen(
             // ── Glow orb behind diamond ────────────────────────────────
             Box(
                 modifier = Modifier
-                    .size(160.dp)
+                    .size(140.dp)
                     .scale(orbScale)
                     .alpha(if (phase >= 1) 1f else 0f),
                 contentAlignment = Alignment.Center,
@@ -357,22 +357,22 @@ fun SplashScreen(
                 // Outer glow
                 Box(
                     modifier = Modifier
-                        .size(160.dp)
-                        .blur(80.dp)
+                        .size(140.dp)
+                        .blur(70.dp)
                         .background(CyanGlow.copy(alpha = 0.12f), CircleShape)
                 )
                 // Mid glow
                 Box(
                     modifier = Modifier
-                        .size(110.dp)
-                        .blur(50.dp)
+                        .size(96.dp)
+                        .blur(44.dp)
                         .background(TealGlow.copy(alpha = 0.15f), CircleShape)
                 )
                 // Inner warm glow
                 Box(
                     modifier = Modifier
-                        .size(70.dp)
-                        .blur(30.dp)
+                        .size(60.dp)
+                        .blur(26.dp)
                         .background(GoldGlow.copy(alpha = 0.10f), CircleShape)
                 )
 
@@ -380,7 +380,7 @@ fun SplashScreen(
                 if (phase >= 2) {
                     Box(
                         modifier = Modifier
-                            .size(120.dp)
+                            .size(100.dp)
                             .alpha(diamondAlpha.value)
                             .rotate(diamondRotation)
                             .offset(y = diamondBob.dp),
@@ -389,8 +389,8 @@ fun SplashScreen(
                         // Glassmorphic backing
                         Box(
                             modifier = Modifier
-                                .size(112.dp)
-                                .clip(RoundedCornerShape(28.dp))
+                                .size(92.dp)
+                                .clip(RoundedCornerShape(24.dp))
                                 .background(
                                     Brush.linearGradient(
                                         colors = listOf(
@@ -413,7 +413,7 @@ fun SplashScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             // ── Curio title ─────────────────────────────────────────────
             if (phase >= 3) {
@@ -428,13 +428,13 @@ fun SplashScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             // ── Tagline ─────────────────────────────────────────────────
             if (phase >= 4) {
                 Text(
                     text = "One interesting thing at a time.",
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = OnSurfaceVariant.copy(alpha = 0.7f),
                     textAlign = TextAlign.Center,
                     modifier = Modifier
@@ -443,7 +443,7 @@ fun SplashScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(32.dp))
 
             // ── Get Started button ──────────────────────────────────────
             if (phase >= 6) {
@@ -469,7 +469,7 @@ fun SplashScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
