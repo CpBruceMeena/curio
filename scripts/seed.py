@@ -32,24 +32,24 @@ CATEGORIES = [
     {"name": "Science", "icon": "biotech", "color_hex": "#00f4fe", "priority": 1},
     {"name": "Space", "icon": "rocket_launch", "color_hex": "#a8cec8", "priority": 2},
     {"name": "History", "icon": "history_edu", "color_hex": "#e9c400", "priority": 3},
-    {"name": "Biology", "icon": "psychology", "color_hex": "#63f7ff", "priority": 4},
+    {"name": "Biology", "icon": "eco", "color_hex": "#63f7ff", "priority": 4},
     {"name": "Psychology", "icon": "psychology", "color_hex": "#c3eae4", "priority": 5},
-    {"name": "Philosophy", "icon": "psychology", "color_hex": "#ffe16d", "priority": 6},
+    {"name": "Philosophy", "icon": "balance_scale", "color_hex": "#ffe16d", "priority": 6},
     {"name": "Physics", "icon": "atom", "color_hex": "#00dce5", "priority": 7},
     {"name": "Startups", "icon": "lightbulb", "color_hex": "#e9c400", "priority": 8},
-    {"name": "AI", "icon": "neurology", "color_hex": "#00f4fe", "priority": 9},
+    {"name": "AI", "icon": "smart_toy", "color_hex": "#00f4fe", "priority": 9},
     {"name": "Economics", "icon": "account_balance", "color_hex": "#63f7ff", "priority": 10},
     {"name": "Nature", "icon": "forest", "color_hex": "#a8cec8", "priority": 11},
-    {"name": "Technology", "icon": "memory", "color_hex": "#00dce5", "priority": 12},
+    {"name": "Technology", "icon": "computer", "color_hex": "#00dce5", "priority": 12},
     {"name": "Poetry", "icon": "auto_stories", "color_hex": "#f472b6", "priority": 13},
     {"name": "Movies", "icon": "movie", "color_hex": "#fb923c", "priority": 14},
-    {"name": "Neuroscience", "icon": "psychology", "color_hex": "#a78bfa", "priority": 15},
+    {"name": "Neuroscience", "icon": "microscope", "color_hex": "#a78bfa", "priority": 15},
     {"name": "Literature", "icon": "menu_book", "color_hex": "#fbbf24", "priority": 16},
     {"name": "Geography", "icon": "public", "color_hex": "#34d399", "priority": 17},
     {"name": "Music", "icon": "music_note", "color_hex": "#f472b6", "priority": 18},
     {"name": "Sports", "icon": "sports_soccer", "color_hex": "#fb923c", "priority": 19},
     {"name": "Food", "icon": "ramen_dining", "color_hex": "#f59e0b", "priority": 20},
-    {"name": "Shayari", "icon": "auto_stories", "color_hex": "#d946ef", "priority": 21},
+    {"name": "Shayari", "icon": "edit_note", "color_hex": "#d946ef", "priority": 21},
 ]
 
 CONTENT = [
@@ -226,7 +226,7 @@ def seed_content(conn):
 
 def reset_tables(conn):
     with conn.cursor() as cur:
-        cur.execute("DROP TABLE IF EXISTS contents CASCADE;")
+        cur.execute("DROP VIEW IF EXISTS contents CASCADE;")
         for cat in CATEGORIES:
             cat_order = [c["name"] for c in CATEGORIES].index(cat["name"])
             if cat_order < 12:

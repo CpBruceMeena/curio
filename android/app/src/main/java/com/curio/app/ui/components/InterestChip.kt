@@ -97,27 +97,27 @@ fun InterestChip(
 
 private fun getIconEmoji(iconName: String): String {
     return when (iconName) {
-        "neurology" -> "🧠"
-        "history_edu" -> "📜"
-        "rocket_launch" -> "🚀"
-        "biotech" -> "🧬"
-        "lightbulb" -> "💡"
-        "psychology" -> "🧠"
-        "atom" -> "⚛️"
-        "account_balance" -> "🏛️"
-        "palette" -> "🎨"
-        "forest" -> "🌲"
-        "memory" -> "💾"
-        "design" -> "🎨"
-        "nature" -> "🌲"
-        "technology" -> "💻"
-        "auto_stories" -> "📖"
-        "movie" -> "🎬"
-        "menu_book" -> "📚"
-        "public" -> "🌍"
-        "music_note" -> "🎵"
-        "sports_soccer" -> "⚽"
-        "ramen_dining" -> "🍜"
-        else -> "✨"
+        "biotech" -> "\uD83E\uDDEC"       // 🧬 Science
+        "rocket_launch" -> "\uD83D\uDE80" // 🚀 Space
+        "history_edu" -> "\uD83D\uDCDC"  // 📜 History
+        "eco" -> "\uD83C\uDF3F"          // 🌿 Biology
+        "psychology" -> "\uD83E\uDDE0"   // 🧠 Psychology
+        "balance_scale" -> "\u2696\uFE0F" // ⚖️ Philosophy
+        "atom" -> "\u269B\uFE0F"         // ⚛️ Physics
+        "lightbulb" -> "\uD83D\uDCA1"    // 💡 Startups
+        "smart_toy" -> "\uD83E\uDD16"    // 🤖 AI
+        "account_balance" -> "\uD83C\uDFDB\uFE0F" // 🏛️ Economics
+        "forest" -> "\uD83C\uDF32"       // 🌲 Nature
+        "computer" -> "\uD83D\uDCBB"     // 💻 Technology
+        "auto_stories" -> "\uD83D\uDCD6" // 📖 Poetry
+        "movie" -> "\uD83C\uDFAC"        // 🎬 Movies
+        "microscope" -> "\uD83D\uDD2C"   // 🔬 Neuroscience
+        "menu_book" -> "\uD83D\uDCDA"    // 📚 Literature
+        "public" -> "\uD83C\uDF0D"       // 🌍 Geography
+        "music_note" -> "\uD83C\uDFB5"   // 🎵 Music
+        "sports_soccer" -> "\u26BD"      // ⚽ Sports
+        "ramen_dining" -> "\uD83C\uDF5C" // 🍜 Food
+        "edit_note" -> "\u270D\uFE0F"    // ✍️ Shayari
+        else -> "\u2728"                 // ✨ fallback
     }
 }
