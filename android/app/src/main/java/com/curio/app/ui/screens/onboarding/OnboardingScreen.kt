@@ -109,7 +109,7 @@ fun OnboardingScreen(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Select at least three interests to personalize your feed.",
+                    text = "Select at least one interest to personalize your feed.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = OnSurfaceVariant
                 )
@@ -186,12 +186,11 @@ fun OnboardingScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                Text(
-                    text = if (uiState.canProceed) {
-                        "Great! ${uiState.selectedInterests.size} interests selected"
-                    } else {
-                        "Select ${3 - uiState.selectedInterests.size} more to continue"
-                    },
+                Text(                        text = if (uiState.canProceed) {
+                                "Great! ${uiState.selectedInterests.size} interest${if (uiState.selectedInterests.size > 1) "s" else ""} selected"
+                            } else {
+                                "Select at least one interest to continue"
+                            },
                     style = MaterialTheme.typography.labelMedium,
                     color = if (uiState.canProceed) SecondaryContainer else OnSurfaceVariant
                 )

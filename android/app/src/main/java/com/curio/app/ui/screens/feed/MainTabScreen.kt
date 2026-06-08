@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -49,9 +49,9 @@ fun MainTabScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Surface)
-            .statusBarsPadding()
+            .systemBarsPadding()
     ) {
-        // Top pill tab switcher + feedback button
+        // Top pill tab switcher
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -78,17 +78,6 @@ fun MainTabScreen(
                     modifier = Modifier.weight(1f)
                 )
             }
-
-            // Feedback button - positioned on the right side of the tab bar
-            Text(
-                text = "💬",
-                fontSize = 18.sp,
-                modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .clip(RoundedCornerShape(12.dp))
-                    .clickable { showFeedbackDialog = true }
-                    .padding(horizontal = 12.dp, vertical = 8.dp)
-            )
         }
 
         // Tab content
@@ -111,6 +100,26 @@ fun MainTabScreen(
                     }
                 )
             }
+        }
+
+        // Bottom feedback bar
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Surface)
+                .padding(horizontal = 16.dp, vertical = 4.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "💬  Send Feedback",
+                fontSize = 13.sp,
+                color = OnSurfaceVariant.copy(alpha = 0.6f),
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(16.dp))
+                    .clickable { showFeedbackDialog = true }
+                    .padding(horizontal = 20.dp, vertical = 8.dp)
+            )
         }
     }
 

@@ -26,7 +26,7 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
     private val _uiState = MutableStateFlow(OnboardingUiState())
     val uiState: StateFlow<OnboardingUiState> = _uiState.asStateFlow()
 
-    private val minSelection = 3
+    private val minSelection = 1
 
     init {
         loadCategories()
