@@ -155,6 +155,7 @@ fun FeedScreen(
                     ) {
                         FullPageCard(
                             title = item.title,
+                            description = item.description,
                             body = item.body,
                             category = item.categoryName,
                             readTime = item.readTimeSecs,
@@ -170,6 +171,7 @@ fun FeedScreen(
 @Composable
 internal fun FullPageCard(
     title: String,
+    description: String = "",
     body: String,
     category: String,
     readTime: Int,
@@ -216,7 +218,27 @@ internal fun FullPageCard(
                 textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Description — contextual explanation (poems, shayari)
+            if (description.isNotEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(SecondaryContainer.copy(alpha = 0.08f))
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                ) {
+                    Text(
+                        text = description,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = OnSurfaceVariant.copy(alpha = 0.85f),
+                        textAlign = TextAlign.Start,
+                        lineHeight = 22.sp
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
 
             // Body — takes remaining space, full content visible
             Text(

@@ -12,6 +12,7 @@ type Content struct {
 	CategoryName string    `json:"category_name" gorm:"-"`
 	Title        string    `json:"title" gorm:"not null"`
 	Body         string    `json:"body" gorm:"type:text;not null"`
+	Description  string    `json:"description" gorm:"default:''"`
 	Source       string    `json:"source"`
 	SourceURL    string    `json:"source_url"`
 	ReadTimeSecs int       `json:"read_time_secs" gorm:"default:15"`

@@ -46,6 +46,7 @@ BEGIN
                 id SERIAL PRIMARY KEY,
                 title TEXT NOT NULL,
                 body TEXT NOT NULL,
+                description TEXT DEFAULT %L,
                 source TEXT DEFAULT %L,
                 source_url TEXT DEFAULT %L,
                 read_time_secs INTEGER DEFAULT 15,
@@ -54,7 +55,7 @@ BEGIN
                 created_at TIMESTAMP DEFAULT NOW(),
                 UNIQUE(title)
             )',
-            tbl_name, '', '', ''
+            tbl_name, '', '', '', ''
         );
 
         EXECUTE format(
@@ -62,6 +63,7 @@ BEGIN
                 id SERIAL PRIMARY KEY,
                 title TEXT NOT NULL,
                 body TEXT NOT NULL,
+                description TEXT DEFAULT %L,
                 source TEXT DEFAULT %L,
                 source_url TEXT DEFAULT %L,
                 read_time_secs INTEGER DEFAULT 15,
@@ -71,7 +73,7 @@ BEGIN
                 archived_at TIMESTAMP DEFAULT NOW(),
                 UNIQUE(title)
             )',
-            archive_name, '', '', ''
+            archive_name, '', '', '', ''
         );
 
         RAISE NOTICE 'Created % and %', tbl_name, archive_name;
@@ -134,11 +136,11 @@ BEGIN
             E'        (c%s.id + %s0000000)::integer AS id,\n' ||
             E'        %s AS category_id,\n' ||
             E'        %L::varchar(255) AS category_name,\n' ||
-            E'        c%s.title, c%s.body, c%s.source, c%s.source_url,\n' ||
+            E'        c%s.title, c%s.body, c%s.description, c%s.source, c%s.source_url,\n' ||
             E'        c%s.read_time_secs, c%s.tags, c%s.likes, c%s.created_at\n' ||
             E'    FROM %I c%s',
             cat.id, cat.id, cat.id, cat.name,
-            cat.id, cat.id, cat.id, cat.id,
+            cat.id, cat.id, cat.id, cat.id, cat.id,
             cat.id, cat.id, cat.id, cat.id,
             'contents_' || cat.id, cat.id
         );

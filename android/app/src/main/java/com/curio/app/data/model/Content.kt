@@ -10,6 +10,7 @@ data class Content(
     val categoryName: String = "",
     val title: String = "",
     val body: String = "",
+    val description: String = "",
     val source: String = "",
     @SerializedName("source_url")
     val sourceUrl: String = "",
