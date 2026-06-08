@@ -13,8 +13,8 @@ from dotenv import load_dotenv
 # ─── Env Loading ──────────────────────────────────────────────────────────────────
 
 ENV_PATHS = [
-    os.path.join(os.path.dirname(__file__), "..", "backend", ".env"),
-    os.path.join(os.path.dirname(__file__), "..", ".env"),
+    os.path.join(os.path.dirname(__file__), "..", "..", "backend", ".env"),
+    os.path.join(os.path.dirname(__file__), "..", "..", ".env"),
     os.path.join(os.path.dirname(__file__), ".env"),
 ]
 for env_path in ENV_PATHS:
@@ -36,23 +36,24 @@ CATEGORIES = [
     {"name": "Science",     "icon": "biotech",        "color": "#00f4fe"},
     {"name": "Space",       "icon": "rocket_launch",  "color": "#a8cec8"},
     {"name": "History",     "icon": "history_edu",    "color": "#e9c400"},
-    {"name": "Biology",     "icon": "psychology",     "color": "#63f7ff"},
+    {"name": "Biology",     "icon": "eco",            "color": "#63f7ff"},
     {"name": "Psychology",  "icon": "psychology",     "color": "#c3eae4"},
-    {"name": "Philosophy",  "icon": "psychology",     "color": "#ffe16d"},
+    {"name": "Philosophy",  "icon": "balance_scale",  "color": "#ffe16d"},
     {"name": "Physics",     "icon": "atom",           "color": "#00dce5"},
     {"name": "Startups",    "icon": "lightbulb",      "color": "#e9c400"},
-    {"name": "AI",          "icon": "neurology",      "color": "#00f4fe"},
+    {"name": "AI",          "icon": "smart_toy",      "color": "#00f4fe"},
     {"name": "Economics",   "icon": "account_balance","color": "#63f7ff"},
     {"name": "Nature",      "icon": "forest",         "color": "#a8cec8"},
-    {"name": "Technology",  "icon": "memory",         "color": "#00dce5"},
+    {"name": "Technology",  "icon": "computer",       "color": "#00dce5"},
     {"name": "Poetry",      "icon": "auto_stories",   "color": "#f472b6"},
     {"name": "Movies",      "icon": "movie",          "color": "#fb923c"},
-    {"name": "Neuroscience","icon": "psychology",     "color": "#a78bfa"},
+    {"name": "Neuroscience","icon": "microscope",     "color": "#a78bfa"},
     {"name": "Literature",  "icon": "menu_book",      "color": "#fbbf24"},
     {"name": "Geography",   "icon": "public",         "color": "#34d399"},
     {"name": "Music",       "icon": "music_note",     "color": "#f472b6"},
     {"name": "Sports",      "icon": "sports_soccer",  "color": "#fb923c"},
     {"name": "Food",        "icon": "ramen_dining",   "color": "#f59e0b"},
+    {"name": "Shayari",     "icon": "edit_note",      "color": "#d946ef"},
 ]
 
 

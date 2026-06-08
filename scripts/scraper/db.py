@@ -54,17 +54,30 @@ def get_category_id(db: DB, name: str):
     return row["id"] if row else None
 
 
+def get_content_table_id(db: DB, cat_id: int) -> int:
+    """Get the stable content_table_id for a category. Falls back to cat_id."""
+    row = db.query_one(
+        "SELECT content_table_id FROM categories WHERE id = %s",
+        [cat_id]
+    )
+    if row and row["content_table_id"]:
+        return row["content_table_id"]
+    return cat_id
+
+
 def insert_content(db: DB, item: dict) -> bool:
     """Insert one content item into its per-category table (contents_X).
 
+    Uses content_table_id for stable table naming.
     Returns True if inserted, False if duplicate or category not found.
     """
     cat_id = get_category_id(db, item["category"])
     if not cat_id:
         return False
+    table_id = get_content_table_id(db, cat_id)
     try:
         db.execute(
-            f"INSERT INTO contents_{cat_id} (title, body, source, read_time_secs, tags, likes) "
+            f"INSERT INTO contents_{table_id} (title, body, source, read_time_secs, tags, likes) "
             "VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT (title) DO NOTHING",
             [
                 (item.get("title") or "")[:1000],
@@ -85,14 +98,15 @@ def archive_category(db: DB, cat_id: int) -> int:
 
     Returns the number of rows archived.
     """
+    table_id = get_content_table_id(db, cat_id)
     try:
         result = db.execute(
-            f"INSERT INTO archive_{cat_id} "
+            f"INSERT INTO archive_{table_id} "
             "(title, body, source, source_url, read_time_secs, tags, likes, created_at, archived_at) "
             f"SELECT title, body, source, source_url, read_time_secs, tags, likes, created_at, NOW() "
-            f"FROM contents_{cat_id} ON CONFLICT (title) DO NOTHING"
+            f"FROM contents_{table_id} ON CONFLICT (title) DO NOTHING"
         )
-        db.execute(f"TRUNCATE contents_{cat_id}")
+        db.execute(f"TRUNCATE contents_{table_id}")
         return result or 0
     except Exception as e:
         print(f"  ⚠ Archive failed for category {cat_id}: {e}")
