@@ -318,7 +318,7 @@ private fun CategoryCard(
             Text(
                 text = name, style = MaterialTheme.typography.labelMedium,
                 color = OnSurface, fontWeight = FontWeight.SemiBold,
-                textAlign = TextAlign.Center, maxLines = 1
+                textAlign = TextAlign.Center
             )
             Text(
                 text = "$contentCount items", style = MaterialTheme.typography.labelSmall,
@@ -362,7 +362,7 @@ private fun TrendingCard(
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = title, style = MaterialTheme.typography.labelLarge,
-                color = OnSurface, fontWeight = FontWeight.Bold, maxLines = 2
+                color = OnSurface, fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(4.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -395,7 +395,7 @@ private fun QuickReadItem(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title, style = MaterialTheme.typography.bodyMedium,
-                color = OnSurface, fontWeight = FontWeight.SemiBold, maxLines = 1
+                color = OnSurface, fontWeight = FontWeight.SemiBold
             )
             Spacer(modifier = Modifier.height(2.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {

@@ -209,8 +209,8 @@ def insert_content(db: DB, item: dict) -> bool:
             f"INSERT INTO contents_{cat_id} (title, body, source, read_time_secs, tags, likes) "
             "VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT (title) DO NOTHING",
             [
-                item["title"][:500] if item.get("title") else "",
-                item["body"][:2000] if item.get("body") else "",
+                item["title"][:1000] if item.get("title") else "",
+                item["body"][:10000] if item.get("body") else "",
                 item.get("source", ""),
                 item.get("readTime", 15),
                 item.get("tags", ""),
@@ -328,7 +328,7 @@ def fetch_quotes(limit: int, filter_category: str = None) -> list:
                      if c.lower() in cat_str),
                     "Philosophy"
                 )
-                title = (text[:117] + "...") if len(text) > 120 else text
+                title = text[:150] if len(text) > 150 else text
                 author = q.get("author") or "Unknown"
                 items.append({
                     "title": title,

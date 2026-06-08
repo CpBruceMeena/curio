@@ -25,7 +25,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -193,14 +192,13 @@ private fun FullPageCard(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Body — takes remaining space
+            // Body — takes remaining space, full content visible
             Text(
                 text = body,
                 modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.bodyLarge,
                 color = OnSurfaceVariant.copy(alpha = 0.9f),
                 textAlign = TextAlign.Center,
-                overflow = TextOverflow.Ellipsis,
                 lineHeight = 26.sp
             )
 
@@ -218,8 +216,7 @@ private fun FullPageCard(
                     text = source,
                     style = MaterialTheme.typography.labelSmall,
                     color = OnSurfaceVariant.copy(alpha = 0.4f),
-                    textAlign = TextAlign.Center,
-                    maxLines = 1
+                    textAlign = TextAlign.Center
                 )
             }
         }
