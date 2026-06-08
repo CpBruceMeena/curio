@@ -24,12 +24,15 @@ import re
 import html as html_module
 import argparse
 import time
-from urllib.parse import urlencode
+import xml.etree.ElementTree as ET
+from urllib.parse import urljoin
 
 import requests
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
+
+from bs4 import BeautifulSoup
 
 
 # ─── Config ────────────────────────────────────────────────────────────────────
@@ -549,6 +552,155 @@ def fetch_nature(limit: int, filter_category: str = None) -> list:
     return items
 
 
+# ─── Source 8: ScienceDaily (RSS-based web scraping) ──────────────────────────────
+
+def fetch_sciencedaily(limit: int, filter_category: str = None) -> list:
+    """Scrape ScienceDaily via RSS feed for science news with full body text."""
+    items = []
+    try:
+        r = requests.get(
+            "https://www.sciencedaily.com/rss/all.xml",
+            timeout=15,
+            headers={"User-Agent": "Curio/1.0 (curio@example.com)"}
+        )
+        if r.status_code != 200:
+            return items
+        root = ET.fromstring(r.content)
+        rss_items = root.findall(".//item")
+        for entry in rss_items:
+            if len(items) >= limit:
+                break
+            title = (entry.findtext("title") or "").strip()
+            desc_html = entry.findtext("description") or ""
+            body = BeautifulSoup(desc_html, "lxml").get_text(strip=True)[:800]
+            link = entry.findtext("link") or ""
+            if not title or not body or len(body) < 50:
+                continue
+            cat = categorize(title, body)
+            if filter_category and cat.lower() != filter_category.lower():
+                continue
+            items.append({
+                "title": title[:200],
+                "body": body[:2000],
+                "source": "Science Daily",
+                "category": cat,
+                "readTime": estimate_read_time(body),
+                "tags": f"science,{cat.lower()},curated,news",
+                "likes": random.randint(50, 400),
+            })
+    except Exception as e:
+        print(f"  ⚠ ScienceDaily: {e}")
+    return items
+
+
+# ─── Source 9: Smithsonian Magazine (RSS-based web scraping) ────────────────────
+
+def fetch_smithsonian(limit: int, filter_category: str = None) -> list:
+    """Scrape Smithsonian Magazine RSS feeds for history, science, and more."""
+    items = []
+    rss_feeds = [
+        ("https://www.smithsonianmag.com/rss/history/", "History"),
+        ("https://www.smithsonianmag.com/rss/science-nature/", "Science"),
+        ("https://www.smithsonianmag.com/rss/innovation/", "Technology"),
+        ("https://www.smithsonianmag.com/rss/travel/", "Geography"),
+        ("https://www.smithsonianmag.com/rss/arts-culture/", "Literature"),
+    ]
+    try:
+        for feed_url, default_cat in rss_feeds:
+            if len(items) >= limit:
+                break
+            r = requests.get(feed_url, timeout=10, headers={"User-Agent": "Curio/1.0 (curio@example.com)"})
+            if r.status_code != 200:
+                continue
+            root = ET.fromstring(r.content)
+            time.sleep(0.3)  # polite delay between RSS feed fetches
+            for entry in root.findall(".//item"):
+                if len(items) >= limit:
+                    break
+                title = (entry.findtext("title") or "").strip()
+                desc_html = entry.findtext("description") or ""
+                body = BeautifulSoup(desc_html, "lxml").get_text(strip=True)[:800]
+                link = entry.findtext("link") or ""
+                if not title or not body or len(body) < 40:
+                    continue
+                cat = categorize(title, body)
+                # If keyword matching didn't yield a good category, use the feed's default
+                if cat == "Science" and default_cat != "Science":
+                    cat = default_cat
+                if filter_category and cat.lower() != filter_category.lower():
+                    continue
+                items.append({
+                    "title": title[:200],
+                    "body": body[:2000],
+                    "source": "Smithsonian",
+                    "category": cat,
+                    "readTime": estimate_read_time(body),
+                    "tags": f"smithsonian,{cat.lower()},curated",
+                    "likes": random.randint(50, 400),
+                })
+    except Exception as e:
+        print(f"  ⚠ Smithsonian: {e}")
+    return items
+
+
+# ─── Source 10: National Geographic (HTML-based web scraping) ────────────────────
+
+def fetch_natgeo(limit: int, filter_category: str = None) -> list:
+    """Scrape National Geographic homepage for diverse content."""
+    items = []
+    try:
+        r = requests.get(
+            "https://www.nationalgeographic.com",
+            timeout=15,
+            headers={"User-Agent": "Curio/1.0 (curio@example.com)"}
+        )
+        if r.status_code != 200:
+            return items
+        soup = BeautifulSoup(r.text, "lxml")
+        seen = set()
+        for a in soup.find_all("a"):
+            if len(items) >= limit:
+                break
+            title = a.get_text(strip=True)
+            href = a.get("href", "")
+            if not title or len(title) < 20 or len(title) > 120:
+                continue
+            if title in seen:
+                continue
+            seen.add(title)
+            # Only title is available (no body in homepage HTML), so categorize on title alone
+            cat = categorize(title, "")
+            if filter_category and cat.lower() != filter_category.lower():
+                continue
+            # Attempt to fetch the article for a real body (first few only for speed)
+            body = f"{title} — from National Geographic."
+            full_url = href if href.startswith("http") else urljoin("https://www.nationalgeographic.com", href)
+            if len(items) < 5 and (href.startswith("http") or href.startswith("/")):
+                try:
+                    ar = requests.get(full_url, timeout=8, headers={"User-Agent": "Curio/1.0 (curio@example.com)"})
+                    if ar.status_code == 200:
+                        asoup = BeautifulSoup(ar.text, "lxml")
+                        for tag in asoup.find_all(["p", "div"]):
+                            txt = tag.get_text(strip=True)
+                            if txt and len(txt) > 80:
+                                body = txt[:600]
+                                break
+                except Exception:
+                    pass
+            items.append({
+                "title": title[:200],
+                "body": body[:2000],
+                "source": "Nat Geo",
+                "category": cat,
+                "readTime": estimate_read_time(body) if len(body) > 30 else 10,
+                "tags": f"natgeo,{cat.lower()},curated",
+                "likes": random.randint(50, 400),
+            })
+    except Exception as e:
+        print(f"  ⚠ NatGeo: {e}")
+    return items
+
+
 # ─── Main Scraper Logic ─────────────────────────────────────────────────────────
 
 def scrape(db: DB, target: int, is_batch: bool, filter_category: str = None, dry_run: bool = False):
@@ -579,6 +731,10 @@ def scrape(db: DB, target: int, is_batch: bool, filter_category: str = None, dry
         ("Open Trivia DB", lambda: fetch_trivia(50 if is_batch else target, filter_category)),
         ("Numbers API", lambda: fetch_numbers(20 if is_batch else target, filter_category)),
         ("iNaturalist", lambda: fetch_nature(30 if is_batch else target, filter_category)),
+        # Web scraping sources (added via cron)
+        ("Science Daily", lambda: fetch_sciencedaily(30 if is_batch else target, filter_category)),
+        ("Smithsonian", lambda: fetch_smithsonian(20 if is_batch else target, filter_category)),
+        ("Nat Geo", lambda: fetch_natgeo(15 if is_batch else target, filter_category)),
     ]
 
     total_inserted = 0
