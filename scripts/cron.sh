@@ -18,5 +18,5 @@ fi
 
 echo "[$(date)] Starting daily scrape..."
 echo "[$(date)] Target: 200 new items"
-node src/index.js --batch 200
+python3 scraper.py --batch 200
 echo "[$(date)] Scrape complete"
