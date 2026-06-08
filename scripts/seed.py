@@ -29,27 +29,27 @@ for path in env_paths:
         break
 
 CATEGORIES = [
-    {"name": "Science", "icon": "biotech", "color_hex": "#00f4fe", "priority": 1},
-    {"name": "Space", "icon": "rocket_launch", "color_hex": "#a8cec8", "priority": 2},
-    {"name": "History", "icon": "history_edu", "color_hex": "#e9c400", "priority": 3},
-    {"name": "Biology", "icon": "eco", "color_hex": "#63f7ff", "priority": 4},
-    {"name": "Psychology", "icon": "psychology", "color_hex": "#c3eae4", "priority": 5},
-    {"name": "Philosophy", "icon": "balance_scale", "color_hex": "#ffe16d", "priority": 6},
-    {"name": "Physics", "icon": "atom", "color_hex": "#00dce5", "priority": 7},
-    {"name": "Startups", "icon": "lightbulb", "color_hex": "#e9c400", "priority": 8},
-    {"name": "AI", "icon": "smart_toy", "color_hex": "#00f4fe", "priority": 9},
-    {"name": "Economics", "icon": "account_balance", "color_hex": "#63f7ff", "priority": 10},
-    {"name": "Nature", "icon": "forest", "color_hex": "#a8cec8", "priority": 11},
-    {"name": "Technology", "icon": "computer", "color_hex": "#00dce5", "priority": 12},
-    {"name": "Poetry", "icon": "auto_stories", "color_hex": "#f472b6", "priority": 13},
-    {"name": "Movies", "icon": "movie", "color_hex": "#fb923c", "priority": 14},
-    {"name": "Neuroscience", "icon": "microscope", "color_hex": "#a78bfa", "priority": 15},
-    {"name": "Literature", "icon": "menu_book", "color_hex": "#fbbf24", "priority": 16},
-    {"name": "Geography", "icon": "public", "color_hex": "#34d399", "priority": 17},
-    {"name": "Music", "icon": "music_note", "color_hex": "#f472b6", "priority": 18},
-    {"name": "Sports", "icon": "sports_soccer", "color_hex": "#fb923c", "priority": 19},
-    {"name": "Food", "icon": "ramen_dining", "color_hex": "#f59e0b", "priority": 20},
-    {"name": "Shayari", "icon": "edit_note", "color_hex": "#d946ef", "priority": 21},
+    {"name": "Science", "icon": "biotech", "color_hex": "#00f4fe", "priority": 1, "table_id": 1},
+    {"name": "Space", "icon": "rocket_launch", "color_hex": "#a8cec8", "priority": 2, "table_id": 2},
+    {"name": "History", "icon": "history_edu", "color_hex": "#e9c400", "priority": 3, "table_id": 3},
+    {"name": "Biology", "icon": "eco", "color_hex": "#63f7ff", "priority": 4, "table_id": 4},
+    {"name": "Psychology", "icon": "psychology", "color_hex": "#c3eae4", "priority": 5, "table_id": 5},
+    {"name": "Philosophy", "icon": "balance_scale", "color_hex": "#ffe16d", "priority": 6, "table_id": 6},
+    {"name": "Physics", "icon": "atom", "color_hex": "#00dce5", "priority": 7, "table_id": 7},
+    {"name": "Startups", "icon": "lightbulb", "color_hex": "#e9c400", "priority": 8, "table_id": 8},
+    {"name": "AI", "icon": "smart_toy", "color_hex": "#00f4fe", "priority": 9, "table_id": 9},
+    {"name": "Economics", "icon": "account_balance", "color_hex": "#63f7ff", "priority": 10, "table_id": 10},
+    {"name": "Nature", "icon": "forest", "color_hex": "#a8cec8", "priority": 11, "table_id": 11},
+    {"name": "Technology", "icon": "computer", "color_hex": "#00dce5", "priority": 12, "table_id": 12},
+    {"name": "Poetry", "icon": "auto_stories", "color_hex": "#f472b6", "priority": 13, "table_id": 25},
+    {"name": "Movies", "icon": "movie", "color_hex": "#fb923c", "priority": 14, "table_id": 26},
+    {"name": "Neuroscience", "icon": "microscope", "color_hex": "#a78bfa", "priority": 15, "table_id": 27},
+    {"name": "Literature", "icon": "menu_book", "color_hex": "#fbbf24", "priority": 16, "table_id": 28},
+    {"name": "Geography", "icon": "public", "color_hex": "#34d399", "priority": 17, "table_id": 29},
+    {"name": "Music", "icon": "music_note", "color_hex": "#f472b6", "priority": 18, "table_id": 30},
+    {"name": "Sports", "icon": "sports_soccer", "color_hex": "#fb923c", "priority": 19, "table_id": 31},
+    {"name": "Food", "icon": "ramen_dining", "color_hex": "#f59e0b", "priority": 20, "table_id": 32},
+    {"name": "Shayari", "icon": "edit_note", "color_hex": "#d946ef", "priority": 21, "table_id": 33},
 ]
 
 CONTENT = [
@@ -111,7 +111,8 @@ CREATE TABLE IF NOT EXISTS categories (
     name VARCHAR(255) NOT NULL UNIQUE,
     icon VARCHAR(100) DEFAULT '',
     color_hex VARCHAR(7) DEFAULT '',
-    priority INTEGER DEFAULT 0
+    priority INTEGER DEFAULT 0,
+    content_table_id INTEGER UNIQUE DEFAULT 0
 );
 """
 
@@ -150,6 +151,10 @@ CREATE TABLE IF NOT EXISTS archive_{id} (
 );
 """
 
+UPDATE_CATEGORY_TABLE_ID = """
+UPDATE categories SET content_table_id = %s WHERE name = %s AND content_table_id = 0;
+"""
+
 INSERT_CATEGORY = """
 INSERT INTO categories (name, icon, color_hex, priority)
 VALUES (%s, %s, %s, %s)
@@ -182,11 +187,7 @@ def migrate(conn):
     with conn.cursor() as cur:
         cur.execute(CREATE_CATEGORIES_TABLE)
         for cat in CATEGORIES:
-            cat_order = [c["name"] for c in CATEGORIES].index(cat["name"])
-            if cat_order < 12:
-                db_id = cat_order + 1
-            else:
-                db_id = 25 + (cat_order - 12)
+            db_id = cat["table_id"]
             cur.execute(CREATE_PER_CATEGORY_TABLE.format(id=db_id))
             cur.execute(CREATE_ARCHIVE_TABLE.format(id=db_id))
     print("✓ Tables ensured (categories + per-category content + archive)")
@@ -200,37 +201,20 @@ def seed_categories(conn):
             if cur.rowcount > 0:
                 count += 1
                 print(f"  Created category: {cat['name']}")
+            # Set the stable content_table_id for this category
+            cur.execute(UPDATE_CATEGORY_TABLE_ID, (cat["table_id"], cat["name"]))
     print(f"✓ Categories: {count} new, {len(CATEGORIES) - count} existing")
 
 
 def seed_content(conn):
-    # Map hardcoded category_id in CONTENT to actual DB id
-    # This mapping is needed because after --reset, auto-increment IDs may differ
-    OLD_ID_TO_NAME = {
-        1: "Science", 2: "Space", 3: "History", 4: "Biology",
-        5: "Psychology", 6: "Philosophy", 7: "Physics", 8: "Startups",
-        9: "AI", 10: "Economics", 11: "Nature", 12: "Technology",
-        25: "Poetry", 33: "Shayari",
-    }
-
-    with conn.cursor() as cur:
-        # Build actual id lookup by category name
-        cur.execute("SELECT id, name FROM categories")
-        name_to_id = {row[1]: row[0] for row in cur.fetchall()}
-
+    # Content items use category_id values that match content_table_id directly
     count = 0
     with conn.cursor() as cur:
         for item in CONTENT:
-            old_id = item["category_id"]
-            cat_name = OLD_ID_TO_NAME.get(old_id)
-            if not cat_name:
-                print(f"  ⚠ Skipping content with unknown category_id={old_id}: {item['title'][:50]}")
-                continue
-            actual_id = name_to_id.get(cat_name)
-            if not actual_id:
-                print(f"  ⚠ Category '{cat_name}' not found in DB, skipping: {item['title'][:50]}")
-                continue
-            sql = INSERT_CONTENT.format(cat_id=actual_id)
+            # Map CONTENT's category_id to category name, then to content_table_id
+            # The CONTENT category_ids match the content_table_id values directly
+            table_id = item["category_id"]
+            sql = INSERT_CONTENT.format(cat_id=table_id)
             cur.execute(sql, (
                 item["title"],
                 item["body"],
@@ -250,11 +234,7 @@ def reset_tables(conn):
     with conn.cursor() as cur:
         cur.execute("DROP VIEW IF EXISTS contents CASCADE;")
         for cat in CATEGORIES:
-            cat_order = [c["name"] for c in CATEGORIES].index(cat["name"])
-            if cat_order < 12:
-                db_id = cat_order + 1
-            else:
-                db_id = 25 + (cat_order - 12)
+            db_id = cat["table_id"]
             cur.execute(f"DROP TABLE IF EXISTS contents_{db_id} CASCADE;")
             cur.execute(f"DROP TABLE IF EXISTS archive_{db_id} CASCADE;")
         cur.execute("DROP TABLE IF EXISTS categories CASCADE;")

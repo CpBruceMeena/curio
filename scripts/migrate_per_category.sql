@@ -38,8 +38,8 @@ DECLARE
     archive_name TEXT;
 BEGIN
     FOR cat IN SELECT * FROM categories ORDER BY id LOOP
-        tbl_name := 'contents_' || cat.id;
-        archive_name := 'archive_' || cat.id;
+        tbl_name := 'contents_' || COALESCE(NULLIF(cat.content_table_id, 0), cat.id);
+        archive_name := 'archive_' || COALESCE(NULLIF(cat.content_table_id, 0), cat.id);
 
         EXECUTE format(
             'CREATE TABLE %I (
@@ -93,7 +93,7 @@ DECLARE
 BEGIN
     IF EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'contents') THEN
         FOR cat IN SELECT * FROM categories ORDER BY id LOOP
-            tbl_name := 'contents_' || cat.id;
+            tbl_name := 'contents_' || COALESCE(NULLIF(cat.content_table_id, 0), cat.id);
             EXECUTE format(
                 'INSERT INTO %I (title, body, source, source_url, read_time_secs, tags, likes, created_at)
                  SELECT title, body, source, source_url, read_time_secs, tags, likes, created_at
@@ -144,7 +144,7 @@ BEGIN
             cat.id, cat.id, cat.id, cat.name,
             cat.id, cat.id, cat.id, cat.id, cat.id, cat.id,
             cat.id, cat.id, cat.id, cat.id,
-            'contents_' || cat.id, cat.id
+            'contents_' || COALESCE(NULLIF(cat.content_table_id, 0), cat.id), cat.id
         );
         sep := E'\nUNION ALL\n';
     END LOOP;

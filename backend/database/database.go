@@ -38,12 +38,29 @@ func Migrate() {
 	fmt.Println("Database migrated successfully")
 }
 
-// ContentTableName returns the per-category content table name for a category ID.
+// ContentTableName returns the per-category content table name for a category.
+// Uses ContentTableID for stable table naming (not auto-increment ID).
 func ContentTableName(categoryID uint) string {
+	var cat models.Category
+	if err := DB.First(&cat, categoryID).Error; err != nil {
+		// Fallback to category ID for backward compatibility
+		return fmt.Sprintf("contents_%d", categoryID)
+	}
+	if cat.ContentTableID > 0 {
+		return fmt.Sprintf("contents_%d", cat.ContentTableID)
+	}
 	return fmt.Sprintf("contents_%d", categoryID)
 }
 
-// ArchiveTableName returns the archive table name for a category ID.
+// ArchiveTableName returns the archive table name for a category.
+// Uses ContentTableID for stable table naming (not auto-increment ID).
 func ArchiveTableName(categoryID uint) string {
+	var cat models.Category
+	if err := DB.First(&cat, categoryID).Error; err != nil {
+		return fmt.Sprintf("archive_%d", categoryID)
+	}
+	if cat.ContentTableID > 0 {
+		return fmt.Sprintf("archive_%d", cat.ContentTableID)
+	}
 	return fmt.Sprintf("archive_%d", categoryID)
 }

@@ -23,11 +23,12 @@ type Content struct {
 }
 
 type Category struct {
-	ID       uint   `json:"id" gorm:"primaryKey"`
-	Name     string `json:"name" gorm:"uniqueIndex;not null"`
-	Icon     string `json:"icon"`
-	ColorHex string `json:"color_hex"`
-	Priority int    `json:"priority" gorm:"default:0"`
+	ID            uint   `json:"id" gorm:"primaryKey"`
+	Name          string `json:"name" gorm:"uniqueIndex;not null"`
+	Icon          string `json:"icon"`
+	ColorHex      string `json:"color_hex"`
+	Priority      int    `json:"priority" gorm:"default:0"`
+	ContentTableID int   `json:"content_table_id" gorm:"default:0"`
 }
 
 type Feedback struct {
