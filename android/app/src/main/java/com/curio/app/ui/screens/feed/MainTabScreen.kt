@@ -28,9 +28,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.curio.app.ui.components.FeedbackDialog
 import com.curio.app.ui.screens.discover.DiscoverScreen
 import com.curio.app.ui.theme.OnSecondaryContainer
 import com.curio.app.ui.theme.OnSurfaceVariant
+import com.curio.app.ui.theme.Primary
 import com.curio.app.ui.theme.SecondaryContainer
 import com.curio.app.ui.theme.Surface
 import com.curio.app.ui.theme.SurfaceContainerHigh
@@ -41,6 +43,7 @@ fun MainTabScreen(
     feedViewModel: FeedViewModel = viewModel()
 ) {
     var selectedTab by remember { mutableStateOf(0) }
+    var showFeedbackDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -48,7 +51,7 @@ fun MainTabScreen(
             .background(Surface)
             .statusBarsPadding()
     ) {
-        // Top pill tab switcher
+        // Top pill tab switcher + feedback button
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -75,6 +78,17 @@ fun MainTabScreen(
                     modifier = Modifier.weight(1f)
                 )
             }
+
+            // Feedback button - positioned on the right side of the tab bar
+            Text(
+                text = "💬",
+                fontSize = 18.sp,
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable { showFeedbackDialog = true }
+                    .padding(horizontal = 12.dp, vertical = 8.dp)
+            )
         }
 
         // Tab content
@@ -98,6 +112,13 @@ fun MainTabScreen(
                 )
             }
         }
+    }
+
+    // Feedback dialog
+    if (showFeedbackDialog) {
+        FeedbackDialog(
+            onDismiss = { showFeedbackDialog = false }
+        )
     }
 }
 

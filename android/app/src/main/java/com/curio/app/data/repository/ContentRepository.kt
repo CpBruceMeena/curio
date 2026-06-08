@@ -3,6 +3,8 @@ package com.curio.app.data.repository
 import com.curio.app.data.api.RetrofitClient
 import com.curio.app.data.model.CategoriesResponse
 import com.curio.app.data.model.Content
+import com.curio.app.data.model.FeedbackRequest
+import com.curio.app.data.model.FeedbackResponse
 import com.curio.app.data.model.FeedResponse
 
 class ContentRepository {
@@ -60,6 +62,19 @@ class ContentRepository {
                 Result.success(response.body()!!)
             } else {
                 Result.failure(Exception("Failed to fetch categories: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun submitFeedback(message: String): Result<FeedbackResponse> {
+        return try {
+            val response = api.submitFeedback(FeedbackRequest(message = message))
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Failed to submit feedback: ${response.code()}"))
             }
         } catch (e: Exception) {
             Result.failure(e)

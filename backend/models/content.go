@@ -1,6 +1,10 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type Content struct {
 	ID           uint      `json:"id" gorm:"primaryKey"`
@@ -22,6 +26,13 @@ type Category struct {
 	Icon     string `json:"icon"`
 	ColorHex string `json:"color_hex"`
 	Priority int    `json:"priority" gorm:"default:0"`
+}
+
+type Feedback struct {
+	ID        uint           `json:"id" gorm:"primaryKey"`
+	Message   string         `json:"message" gorm:"type:text;not null"`
+	CreatedAt time.Time      `json:"created_at"`
+	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
 }
 
 type FeedResponse struct {

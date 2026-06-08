@@ -46,3 +46,13 @@ data class CategoriesResponse(
     val categories: List<Category> = emptyList(),
     val total: Int = 0
 )
+
+data class FeedbackRequest(
+    val message: String
+)
+
+data class FeedbackResponse(
+    val success: Boolean = false,
+    val message: String = "",
+    val id: Long = 0
+)

@@ -30,6 +30,7 @@ func Migrate() {
 	// Run scripts/migrate_per_category.sql to set up the new structure.
 	err := DB.AutoMigrate(
 		&models.Category{},
+		&models.Feedback{},
 	)
 	if err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)
