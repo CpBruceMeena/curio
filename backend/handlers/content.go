@@ -77,8 +77,13 @@ func LikeContent(c *gin.Context) {
 	}
 
 	// Must update the per-category table directly (VIEW is UNION ALL, not updatable)
-	// ContentTableName falls back to catID when contentTableID is 0
-	tableName := database.ContentTableName(0, catID)
+	// Look up the content_table_id to find the correct per-category table
+	var category models.Category
+	if err := database.DB.First(&category, catID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Category not found"})
+		return
+	}
+	tableName := database.ContentTableName(uint(category.ContentTableID), catID)
 	result := database.DB.Table(tableName).
 		Where("id = ?", localID).
 		UpdateColumn("likes", gorm.Expr("likes + 1"))
