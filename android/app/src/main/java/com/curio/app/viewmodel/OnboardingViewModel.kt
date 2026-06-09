@@ -4,7 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.curio.app.CurioApp
-import com.curio.app.data.model.Category
+import com.curio.app.data.model.L1Group
 import com.curio.app.data.repository.ContentRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 data class OnboardingUiState(
-    val categories: List<Category> = emptyList(),
+    val l1Groups: List<L1Group> = emptyList(),
     val isLoading: Boolean = true,
     val selectedInterests: Set<String> = emptySet(),
     val canProceed: Boolean = false
@@ -29,14 +29,14 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
     private val minSelection = 1
 
     init {
-        loadCategories()
+        loadL1Groups()
     }
 
-    private fun loadCategories() {
+    private fun loadL1Groups() {
         viewModelScope.launch {
-            repository.getCategories().onSuccess { response ->
+            repository.getL1Categories().onSuccess { response ->
                 _uiState.value = _uiState.value.copy(
-                    categories = response.categories,
+                    l1Groups = response.groups,
                     isLoading = false
                 )
             }.onFailure {
@@ -45,12 +45,12 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
-    fun toggleInterest(interest: String) {
+    fun toggleInterest(l1Name: String) {
         val current = _uiState.value.selectedInterests.toMutableSet()
-        if (current.contains(interest)) {
-            current.remove(interest)
+        if (current.contains(l1Name)) {
+            current.remove(l1Name)
         } else {
-            current.add(interest)
+            current.add(l1Name)
         }
         _uiState.value = _uiState.value.copy(
             selectedInterests = current,
@@ -59,7 +59,15 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     fun saveInterests() {
-        prefs.selectedCategories = _uiState.value.selectedInterests
+        val selectedL1Names = _uiState.value.selectedInterests
+        // Expand selected L1 groups into their subcategory names for the feed filter
+        val expandedCategories = mutableSetOf<String>()
+        for (l1Group in _uiState.value.l1Groups) {
+            if (selectedL1Names.contains(l1Group.name)) {
+                expandedCategories.addAll(l1Group.categories.map { it.name })
+            }
+        }
+        prefs.selectedCategories = expandedCategories
         prefs.hasCompletedOnboarding = true
     }
 }

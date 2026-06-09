@@ -1,10 +1,10 @@
 package com.curio.app.ui.screens.onboarding
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,10 +13,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -27,12 +27,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.curio.app.ui.components.InterestChip
 import com.curio.app.ui.theme.OnSurface
 import com.curio.app.ui.theme.OnSurfaceVariant
 import com.curio.app.ui.theme.Primary
@@ -41,12 +43,32 @@ import com.curio.app.ui.theme.Surface
 import com.curio.app.ui.theme.SurfaceContainer
 import com.curio.app.viewmodel.OnboardingViewModel
 
+private fun l1Emoji(name: String): String = when (name) {
+    "Facts" -> "\uD83D\uDCD6"
+    "Poems" -> "\uD83C\uDFB5"
+    "Short Stories" -> "\uD83D\uDCC4"
+    "Puzzles" -> "\uD83E\uDDE9"
+    else -> "\u2728"
+}
+
+private fun l1Gradient(name: String): Pair<Color, Color> = when (name) {
+    "Facts" -> Color(0xFF00f4fe) to Color(0xFF0A4A4E)
+    "Poems" -> Color(0xFFf472b6) to Color(0xFF4A1A2E)
+    "Short Stories" -> Color(0xFF06b6d4) to Color(0xFF0A3A44)
+    "Puzzles" -> Color(0xFFf97316) to Color(0xFF4A1E0A)
+    else -> Color(0xFFA8CEC8) to Color(0xFF1A2E2A)
+}
+
 @Composable
 fun OnboardingScreen(
     onNavigateToFeed: () -> Unit,
     viewModel: OnboardingViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+
+    val sortedGroups = uiState.l1Groups.sortedBy { g ->
+        when (g.name) { "Facts" -> 0; "Poems" -> 1; "Short Stories" -> 2; "Puzzles" -> 3; else -> 4 }
+    }
 
     Box(
         modifier = Modifier
@@ -92,7 +114,7 @@ fun OnboardingScreen(
                     fontWeight = FontWeight.ExtraBold
                 )
                 Text(
-                    text = "Step 2 of 3",
+                    text = "1 / 3",
                     style = MaterialTheme.typography.labelMedium,
                     color = OnSurfaceVariant
                 )
@@ -109,13 +131,15 @@ fun OnboardingScreen(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Select at least one interest to personalize your feed.",
+                    text = "Pick what you'd like to discover. You can always change later.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = OnSurfaceVariant
                 )
             }
 
-            // Interest grid
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // L1 Cards (2x2 grid)
             if (uiState.isLoading) {
                 Box(
                     modifier = Modifier
@@ -130,22 +154,32 @@ fun OnboardingScreen(
                     )
                 }
             } else {
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(3),
+                Column(
                     modifier = Modifier
                         .weight(1f)
-                        .padding(horizontal = 8.dp),
-                    contentPadding = PaddingValues(8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(uiState.categories) { category ->
-                        InterestChip(
-                            name = category.name,
-                            icon = category.icon,
-                            isSelected = uiState.selectedInterests.contains(category.name),
-                            onClick = { viewModel.toggleInterest(category.name) }
-                        )
+                    sortedGroups.chunked(2).forEach { row ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            row.forEach { group ->
+                                val isSelected = uiState.selectedInterests.contains(group.name)
+                                OnboardingL1Card(
+                                    name = group.name,
+                                    emoji = l1Emoji(group.name),
+                                    gradient = l1Gradient(group.name),
+                                    subCount = group.categories.size,
+                                    isSelected = isSelected,
+                                    onClick = { viewModel.toggleInterest(group.name) },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                            if (row.size < 2) Spacer(modifier = Modifier.weight(1f))
+                        }
                     }
                 }
             }
@@ -186,14 +220,66 @@ fun OnboardingScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                Text(                        text = if (uiState.canProceed) {
-                                "Great! ${uiState.selectedInterests.size} interest${if (uiState.selectedInterests.size > 1) "s" else ""} selected"
-                            } else {
-                                "Select at least one interest to continue"
-                            },
+                Text(
+                    text = if (uiState.canProceed) {
+                        "Great! ${uiState.selectedInterests.size} section${if (uiState.selectedInterests.size > 1) "s" else ""} selected"
+                    } else {
+                        "Select at least one section to continue"
+                    },
                     style = MaterialTheme.typography.labelMedium,
                     color = if (uiState.canProceed) SecondaryContainer else OnSurfaceVariant
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun OnboardingL1Card(
+    name: String, emoji: String, gradient: Pair<Color, Color>,
+    subCount: Int, isSelected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .height(170.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .background(
+                if (isSelected) {
+                    Brush.linearGradient(listOf(gradient.first.copy(alpha = 0.4f), gradient.second.copy(alpha = 0.6f)))
+                } else {
+                    Brush.linearGradient(listOf(gradient.first.copy(alpha = 0.18f), gradient.second.copy(alpha = 0.25f)))
+                }
+            )
+            .clickable { onClick() }
+            .padding(20.dp)
+    ) {
+        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Text(emoji, fontSize = 40.sp)
+                // Selection indicator
+                if (isSelected) {
+                    Box(
+                        modifier = Modifier
+                            .size(28.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(SecondaryContainer),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("\u2713", color = Color(0xFF002021),
+                            fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    }
+                }
+            }
+            Column {
+                Text(name, style = MaterialTheme.typography.titleLarge,
+                    color = OnSurface, fontWeight = FontWeight.ExtraBold)
+                Spacer(modifier = Modifier.height(2.dp))
+                Text("$subCount topics", style = MaterialTheme.typography.labelSmall,
+                    color = OnSurfaceVariant.copy(alpha = 0.7f), fontWeight = FontWeight.Medium)
             }
         }
     }
