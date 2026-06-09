@@ -65,7 +65,10 @@ fun DiscoverScreen(
         val group = uiState.l1Groups.find { it.name == selectedL1 }
         group?.categories ?: emptyList()
     } else {
-        uiState.categories
+        // "All Categories" — only show Facts subcategories (Poems/Short Stories/Puzzles have their own L1 pills)
+        uiState.categories.filter { cat ->
+            cat.l1Category.isNullOrEmpty() || cat.l1Category == "Facts"
+        }
     }
 
     LazyColumn(

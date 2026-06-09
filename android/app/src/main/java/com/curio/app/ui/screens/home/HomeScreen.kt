@@ -96,13 +96,10 @@ fun HomeScreen(viewModel: FeedViewModel) {
                 error = uiState.error,
                 onL1Click = { name ->
                     activeL1Group = name
-                    if (name == "Facts") {
-                        l2SelectedCategoryIds = emptySet()
-                        viewModel.loadL1Feed(null)
-                    } else {
-                        val l1Group = uiState.l1Groups.find { it.name == name }
-                        viewModel.loadL1Feed(l1Group?.categories?.map { it.id }?.toSet())
-                    }
+                    val l1Group = uiState.l1Groups.find { it.name == name }
+                    val allSubCategoryIds = l1Group?.categories?.map { it.id }?.toSet()
+                    l2SelectedCategoryIds = emptySet()
+                    viewModel.loadL1Feed(allSubCategoryIds)
                 }
             )
         } else {
@@ -117,8 +114,10 @@ fun HomeScreen(viewModel: FeedViewModel) {
                         } else {
                             l2SelectedCategoryIds + id
                         }
+                        val group = uiState.l1Groups.find { it.name == "Facts" }
+                        val allFactIds = group?.categories?.map { it.id }?.toSet() ?: emptySet()
                         viewModel.loadL1Feed(
-                            if (l2SelectedCategoryIds.isEmpty()) null else l2SelectedCategoryIds
+                            if (l2SelectedCategoryIds.isEmpty()) allFactIds else l2SelectedCategoryIds
                         )
                     },
                     onBack = { activeL1Group = null },
