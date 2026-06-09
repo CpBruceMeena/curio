@@ -188,13 +188,12 @@ internal fun FullPageCard(
             .fillMaxSize()
             .clip(RoundedCornerShape(24.dp))
             .background(SurfaceContainer)
-    ) {
-        Column(
+    ) {            Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(start = 32.dp, end = 32.dp, top = 32.dp, bottom = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.Start
         ) {
             // Category tag at top
             Box(
@@ -221,7 +220,7 @@ internal fun FullPageCard(
                     style = MaterialTheme.typography.titleMedium,
                     color = Primary.copy(alpha = 0.8f),
                     fontWeight = FontWeight.SemiBold,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Start
                 )
                 Spacer(modifier = Modifier.height(8.dp))
             }
@@ -232,17 +231,17 @@ internal fun FullPageCard(
                 style = MaterialTheme.typography.headlineLarge,
                 color = OnSurface,
                 fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Start
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Body — poem/shayari text first
+            // Body — left-aligned for readability across all content types
             Text(
                 text = body,
                 style = MaterialTheme.typography.bodyLarge,
                 color = OnSurfaceVariant.copy(alpha = 0.9f),
-                textAlign = TextAlign.Center,
+                textAlign = TextAlign.Start,
                 lineHeight = 26.sp
             )
 
@@ -266,17 +265,16 @@ internal fun FullPageCard(
                 }
             }
 
-            // Bottom metadata + share
+            // Bottom metadata + share (left-aligned to match body)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 12.dp),
-                horizontalArrangement = Arrangement.Center,
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.weight(1f)
+                    horizontalAlignment = Alignment.Start
                 ) {
                     Text(
                         text = "${readTime}s read",
@@ -289,7 +287,7 @@ internal fun FullPageCard(
                         text = source,
                         style = MaterialTheme.typography.labelSmall,
                         color = OnSurfaceVariant.copy(alpha = 0.4f),
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Start
                     )
                 }
 
