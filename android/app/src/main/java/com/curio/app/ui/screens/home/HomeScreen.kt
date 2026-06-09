@@ -18,12 +18,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -73,6 +76,7 @@ private fun l1Gradient(name: String): Pair<Color, Color> = when (name) {
 fun HomeScreen(viewModel: FeedViewModel) {
     val uiState by viewModel.uiState.collectAsState()
     var activeL1Group by remember { mutableStateOf<String?>(null) }
+    var selectedL1Name by remember { mutableStateOf<String?>(null) }
     var l2SelectedCategoryIds by remember { mutableStateOf(emptySet<Long>()) }
 
     AnimatedContent(
@@ -94,16 +98,23 @@ fun HomeScreen(viewModel: FeedViewModel) {
                 groups = uiState.l1Groups,
                 isLoading = uiState.isLoading,
                 error = uiState.error,
-                onL1Click = { name ->
-                    activeL1Group = name
-                    val l1Group = uiState.l1Groups.find { it.name == name }
-                    val allSubCategoryIds = l1Group?.categories?.map { it.id }?.toSet()
-                    l2SelectedCategoryIds = emptySet()
-                    viewModel.loadL1Feed(allSubCategoryIds)
+                selectedL1Name = selectedL1Name,
+                onL1Select = { name ->
+                    selectedL1Name = if (selectedL1Name == name) null else name
+                },
+                onGetStarted = {
+                    val name = selectedL1Name
+                    if (name != null) {
+                        activeL1Group = name
+                        val l1Group = uiState.l1Groups.find { it.name == name }
+                        val allSubCategoryIds = l1Group?.categories?.map { it.id }?.toSet()
+                        l2SelectedCategoryIds = emptySet()
+                        viewModel.loadL1Feed(allSubCategoryIds)
+                    }
                 }
             )
         } else {
-            BackHandler { activeL1Group = null }
+            BackHandler { activeL1Group = null; selectedL1Name = null }
             if (groupName == "Facts") {
                 L2FactsView(
                     group = uiState.l1Groups.find { it.name == "Facts" },
@@ -120,13 +131,13 @@ fun HomeScreen(viewModel: FeedViewModel) {
                             if (l2SelectedCategoryIds.isEmpty()) allFactIds else l2SelectedCategoryIds
                         )
                     },
-                    onBack = { activeL1Group = null },
+                    onBack = { activeL1Group = null; selectedL1Name = null },
                     viewModel = viewModel
                 )
             } else {
                 L2FeedView(
                     title = groupName,
-                    onBack = { activeL1Group = null },
+                    onBack = { activeL1Group = null; selectedL1Name = null },
                     viewModel = viewModel
                 )
             }
@@ -135,28 +146,35 @@ fun HomeScreen(viewModel: FeedViewModel) {
 }
 
 @Composable
-private fun L1View(groups: List<L1Group>, isLoading: Boolean, error: String?, onL1Click: (String) -> Unit) {
+private fun L1View(groups: List<L1Group>, isLoading: Boolean, error: String?,
+                   selectedL1Name: String?, onL1Select: (String) -> Unit,
+                   onGetStarted: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Surface)
             .verticalScroll(rememberScrollState())
     ) {
+        // Header
         Column(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 20.dp)
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("Curio", style = MaterialTheme.typography.headlineLarge,
+            Text("☆", fontSize = 44.sp, color = Primary.copy(alpha = 0.8f))
+            Spacer(modifier = Modifier.height(8.dp))
+            Text("Curio", style = MaterialTheme.typography.displaySmall,
                 color = Primary, fontWeight = FontWeight.ExtraBold)
-            Spacer(modifier = Modifier.height(4.dp))
-            Text("One interesting thing at a time.",
-                style = MaterialTheme.typography.bodyMedium, color = OnSurfaceVariant)
+            Spacer(modifier = Modifier.height(6.dp))
+            Text("Discovering one interesting thing at a time.",
+                style = MaterialTheme.typography.bodyMedium, color = OnSurfaceVariant,
+                textAlign = TextAlign.Center)
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(4.dp))
 
         if (groups.isEmpty()) {
             Column(
-                modifier = Modifier.fillMaxWidth().height(400.dp),
+                modifier = Modifier.fillMaxWidth().height(300.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
@@ -186,10 +204,6 @@ private fun L1View(groups: List<L1Group>, isLoading: Boolean, error: String?, on
                         Text("No categories yet",
                             style = MaterialTheme.typography.bodyLarge,
                             color = OnSurfaceVariant)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text("Check back soon for new discoveries!",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = OnSurfaceVariant.copy(alpha = 0.6f))
                     }
                 }
             }
@@ -203,30 +217,87 @@ private fun L1View(groups: List<L1Group>, isLoading: Boolean, error: String?, on
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     row.forEach { group ->
+                        val isSelected = selectedL1Name == group.name
                         L1Card(
                             name = group.name, emoji = l1Emoji(group.name),
                             gradient = l1Gradient(group.name), subCount = group.categories.size,
-                            onClick = { onL1Click(group.name) }, modifier = Modifier.weight(1f)
+                            isSelected = isSelected,
+                            onClick = { onL1Select(group.name) },
+                            modifier = Modifier.weight(1f)
                         )
                     }
                     if (row.size < 2) Spacer(modifier = Modifier.weight(1f))
                 }
             }
         }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Get Started button
+        Button(
+            onClick = onGetStarted,
+            enabled = selectedL1Name != null,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .height(54.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = SecondaryContainer,
+                contentColor = Color(0xFF002021),
+                disabledContainerColor = SurfaceContainerHigh.copy(alpha = 0.3f),
+                disabledContentColor = OnSurfaceVariant.copy(alpha = 0.4f)
+            ),
+            elevation = ButtonDefaults.buttonElevation(
+                defaultElevation = if (selectedL1Name != null) 6.dp else 0.dp
+            )
+        ) {
+            Text(
+                text = if (selectedL1Name != null) "Explore $selectedL1Name" else "Pick a section to start",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
         Spacer(modifier = Modifier.height(24.dp))
     }
 }
 
 @Composable
 private fun L1Card(name: String, emoji: String, gradient: Pair<Color, Color>,
-                   subCount: Int, onClick: () -> Unit, modifier: Modifier = Modifier) {
+                   subCount: Int, isSelected: Boolean, onClick: () -> Unit,
+                   modifier: Modifier = Modifier) {
     Box(
         modifier = modifier.height(170.dp).clip(RoundedCornerShape(20.dp))
-            .background(Brush.linearGradient(listOf(gradient.first.copy(alpha = 0.25f), gradient.second.copy(alpha = 0.4f))))
+            .background(
+                if (isSelected) {
+                    Brush.linearGradient(listOf(gradient.first.copy(alpha = 0.40f), gradient.second.copy(alpha = 0.55f)))
+                } else {
+                    Brush.linearGradient(listOf(gradient.first.copy(alpha = 0.25f), gradient.second.copy(alpha = 0.40f)))
+                }
+            )
             .clickable { onClick() }.padding(20.dp)
     ) {
         Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
-            Text(emoji, fontSize = 40.sp)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Text(emoji, fontSize = 40.sp)
+                if (isSelected) {
+                    Box(
+                        modifier = Modifier
+                            .size(26.dp)
+                            .clip(RoundedCornerShape(13.dp))
+                            .background(SecondaryContainer),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("✓", color = Color(0xFF002021),
+                            fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    }
+                }
+            }
             Column {
                 Text(name, style = MaterialTheme.typography.titleLarge,
                     color = OnSurface, fontWeight = FontWeight.ExtraBold)
