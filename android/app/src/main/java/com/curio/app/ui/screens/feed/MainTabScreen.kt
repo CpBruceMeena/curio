@@ -66,23 +66,35 @@ fun MainTabScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (showDiscover) {
-                // Discover page: "Discover" on left, back arrow on right
+                // Discover page: back arrow on left, "Discover" centered, feed icon on right
+                IconButton(
+                    onClick = onBack
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = OnSurfaceVariant.copy(alpha = 0.7f),
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+
                 Text(
                     text = "Discover",
                     style = MaterialTheme.typography.titleMedium,
                     color = OnSurface,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
 
                 IconButton(
                     onClick = { showDiscover = false }
                 ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back to feed",
-                        tint = OnSurfaceVariant.copy(alpha = 0.7f),
-                        modifier = Modifier.size(28.dp)
+                    Text(
+                        text = "Feed",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = OnSurfaceVariant.copy(alpha = 0.7f)
                     )
                 }
             } else {
