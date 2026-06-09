@@ -54,6 +54,8 @@ CATEGORIES = [
     {"name": "Sports",      "icon": "sports_soccer",  "color": "#fb923c"},
     {"name": "Food",        "icon": "ramen_dining",   "color": "#f59e0b"},
     {"name": "Shayari",     "icon": "edit_note",      "color": "#d946ef"},
+    {"name": "Puzzles",     "icon": "psychology",      "color": "#f97316"},
+    {"name": "Short Stories","icon": "auto_stories",     "color": "#06b6d4"},
 ]
 
 
@@ -100,6 +102,10 @@ CATEGORY_MAP = [
       "network", "code", "algorithm", "chip", "processor", "technolog"], "Technology"),
     (["science", "experiment", "research", "study", "scientist", "laboratory",
       "discovery", "hypothesis", "theory", "scientific"], "Science"),
+    (["puzzle", "riddle", "math", "equation", "solve", "logic", "brainteaser",
+      "sequence", "pattern", "reasoning", "problem"], "Puzzles"),
+    (["story", "tale", "fiction", "chapter", "novel", "excerpt", "narrative",
+      "prose", "short story", "fable", "paragraph"], "Short Stories"),
 ]
 
 

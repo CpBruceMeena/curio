@@ -50,6 +50,8 @@ CATEGORIES = [
     {"name": "Sports", "icon": "sports_soccer", "color_hex": "#fb923c", "priority": 19, "table_id": 31},
     {"name": "Food", "icon": "ramen_dining", "color_hex": "#f59e0b", "priority": 20, "table_id": 32},
     {"name": "Shayari", "icon": "edit_note", "color_hex": "#d946ef", "priority": 21, "table_id": 33},
+    {"name": "Puzzles", "icon": "psychology", "color_hex": "#f97316", "priority": 22, "table_id": 34},
+    {"name": "Short Stories", "icon": "auto_stories", "color_hex": "#06b6d4", "priority": 23, "table_id": 35},
 ]
 
 CONTENT = [

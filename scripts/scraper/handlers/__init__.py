@@ -21,6 +21,8 @@ from .api_sources import (
     fetch_numbers,
     fetch_nature,
     fetch_neuroscience,
+    fetch_puzzles,
+    fetch_stories,
 )
 from .rss_sources import fetch_sciencedaily, fetch_smithsonian
 from .html_sources import fetch_natgeo
@@ -35,6 +37,8 @@ SOURCE_REGISTRY = {
     "fetch_numbers": fetch_numbers,
     "fetch_nature": fetch_nature,
     "fetch_neuroscience": fetch_neuroscience,
+    "fetch_puzzles": fetch_puzzles,
+    "fetch_stories": fetch_stories,
     "fetch_sciencedaily": fetch_sciencedaily,
     "fetch_smithsonian": fetch_smithsonian,
     "fetch_natgeo": fetch_natgeo,

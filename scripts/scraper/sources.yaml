@@ -131,3 +131,27 @@ sources:
     batch_size: 30
     tags: [neuroscience, brain, pubmed]
     notes: "PubMed NCBI E-utilities — neuroscience article abstracts from 12 curated topics"
+
+  # ─── API Source: Puzzles ──────────────────────────────────────────────
+  - name: Curio Puzzles
+    type: api_json
+    url: "https://curio.app/internal/puzzles"
+    handler: fetch_puzzles
+    enabled: true
+    rate_limit: 0
+    categories: [Puzzles]
+    batch_size: 30
+    tags: [puzzles, riddles, math, logic]
+    notes: "Generated math puzzles, riddles, pattern puzzles, and reasoning problems"
+
+  # ─── API Source: Short Stories ─────────────────────────────────────────
+  - name: Project Gutenberg
+    type: api_json
+    url: "https://gutendex.com/books"
+    handler: fetch_stories
+    enabled: true
+    rate_limit: 0.5
+    categories: [Short Stories]
+    batch_size: 15
+    tags: [stories, fiction, gutenberg]
+    notes: "Short story excerpts from Project Gutenberg via Gutendex API"
