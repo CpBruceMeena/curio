@@ -50,8 +50,7 @@ import com.curio.app.viewmodel.FeedViewModel
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun FeedScreen(
-    viewModel: FeedViewModel,
-    forceShow: Boolean = false
+    viewModel: FeedViewModel
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val pagerState = rememberPagerState(pageCount = {

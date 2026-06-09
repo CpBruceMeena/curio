@@ -1,5 +1,6 @@
 package com.curio.app.ui.screens.home
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -37,10 +38,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.curio.app.data.model.L1Group
 import com.curio.app.ui.screens.feed.FeedScreen
+import com.curio.app.ui.theme.Error
 import com.curio.app.ui.theme.OnSecondaryContainer
 import com.curio.app.ui.theme.OnSurface
 import com.curio.app.ui.theme.OnSurfaceVariant
@@ -89,6 +92,8 @@ fun HomeScreen(viewModel: FeedViewModel) {
         if (groupName == null) {
             L1View(
                 groups = uiState.l1Groups,
+                isLoading = uiState.isLoading,
+                error = uiState.error,
                 onL1Click = { name ->
                     activeL1Group = name
                     if (name == "Facts") {
@@ -100,35 +105,38 @@ fun HomeScreen(viewModel: FeedViewModel) {
                     }
                 }
             )
-        } else if (groupName == "Facts") {
-            L2FactsView(
-                group = uiState.l1Groups.find { it.name == "Facts" },
-                selectedCategoryIds = l2SelectedCategoryIds,
-                onToggleCategory = { id ->
-                    l2SelectedCategoryIds = if (l2SelectedCategoryIds.contains(id)) {
-                        l2SelectedCategoryIds - id
-                    } else {
-                        l2SelectedCategoryIds + id
-                    }
-                    viewModel.loadL1Feed(
-                        if (l2SelectedCategoryIds.isEmpty()) null else l2SelectedCategoryIds
-                    )
-                },
-                onBack = { activeL1Group = null },
-                viewModel = viewModel
-            )
         } else {
-            L2FeedView(
-                title = groupName,
-                onBack = { activeL1Group = null },
-                viewModel = viewModel
-            )
+            BackHandler { activeL1Group = null }
+            if (groupName == "Facts") {
+                L2FactsView(
+                    group = uiState.l1Groups.find { it.name == "Facts" },
+                    selectedCategoryIds = l2SelectedCategoryIds,
+                    onToggleCategory = { id ->
+                        l2SelectedCategoryIds = if (l2SelectedCategoryIds.contains(id)) {
+                            l2SelectedCategoryIds - id
+                        } else {
+                            l2SelectedCategoryIds + id
+                        }
+                        viewModel.loadL1Feed(
+                            if (l2SelectedCategoryIds.isEmpty()) null else l2SelectedCategoryIds
+                        )
+                    },
+                    onBack = { activeL1Group = null },
+                    viewModel = viewModel
+                )
+            } else {
+                L2FeedView(
+                    title = groupName,
+                    onBack = { activeL1Group = null },
+                    viewModel = viewModel
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun L1View(groups: List<L1Group>, onL1Click: (String) -> Unit) {
+private fun L1View(groups: List<L1Group>, isLoading: Boolean, error: String?, onL1Click: (String) -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -146,22 +154,64 @@ private fun L1View(groups: List<L1Group>, onL1Click: (String) -> Unit) {
         }
 
         Spacer(modifier = Modifier.height(8.dp))
-        val sortedGroups = groups.sortedBy { g ->
-            when (g.name) { "Facts" -> 0; "Poems" -> 1; "Short Stories" -> 2; "Puzzles" -> 3; else -> 4 }
-        }
-        sortedGroups.chunked(2).forEach { row ->
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+
+        if (groups.isEmpty()) {
+            Column(
+                modifier = Modifier.fillMaxWidth().height(400.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                row.forEach { group ->
-                    L1Card(
-                        name = group.name, emoji = l1Emoji(group.name),
-                        gradient = l1Gradient(group.name), subCount = group.categories.size,
-                        onClick = { onL1Click(group.name) }, modifier = Modifier.weight(1f)
-                    )
+                when {
+                    isLoading -> {
+                        Text(text = "⏳", fontSize = 48.sp)
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text("Loading categories...",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = OnSurfaceVariant)
+                    }
+                    error != null -> {
+                        Text(text = "⚠️", fontSize = 48.sp)
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text("Couldn't load categories",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Error)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(error,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = OnSurfaceVariant.copy(alpha = 0.6f),
+                            textAlign = TextAlign.Center)
+                    }
+                    else -> {
+                        Text(text = "🔍", fontSize = 48.sp)
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text("No categories yet",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = OnSurfaceVariant)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text("Check back soon for new discoveries!",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = OnSurfaceVariant.copy(alpha = 0.6f))
+                    }
                 }
-                if (row.size < 2) Spacer(modifier = Modifier.weight(1f))
+            }
+        } else {
+            val sortedGroups = groups.sortedBy { g ->
+                when (g.name) { "Facts" -> 0; "Poems" -> 1; "Short Stories" -> 2; "Puzzles" -> 3; else -> 4 }
+            }
+            sortedGroups.chunked(2).forEach { row ->
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    row.forEach { group ->
+                        L1Card(
+                            name = group.name, emoji = l1Emoji(group.name),
+                            gradient = l1Gradient(group.name), subCount = group.categories.size,
+                            onClick = { onL1Click(group.name) }, modifier = Modifier.weight(1f)
+                        )
+                    }
+                    if (row.size < 2) Spacer(modifier = Modifier.weight(1f))
+                }
             }
         }
         Spacer(modifier = Modifier.height(24.dp))
@@ -226,7 +276,7 @@ private fun L2FactsView(group: L1Group?, selectedCategoryIds: Set<Long>,
             }
         }
 
-        FeedScreen(viewModel = viewModel, forceShow = true)
+        FeedScreen(viewModel = viewModel)
     }
 }
 
@@ -245,6 +295,6 @@ private fun L2FeedView(title: String, onBack: () -> Unit, viewModel: FeedViewMod
             Text(title, style = MaterialTheme.typography.titleLarge,
                 color = OnSurface, fontWeight = FontWeight.Bold)
         }
-        FeedScreen(viewModel = viewModel, forceShow = true)
+        FeedScreen(viewModel = viewModel)
     }
 }

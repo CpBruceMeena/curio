@@ -20,3 +20,4 @@ Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust
 [GIN-debug] Listening and serving HTTP on :8080
 [GIN] 2026/06/09 - 13:35:55 | 200 |   1.27ms |             ::1 | GET      "/api/v1/categories/l1"
 [GIN] 2026/06/09 - 13:42:49 | 200 |  31.35ms |  223.185.16.243 | GET      "/api/v1/categories"
+[GIN] 2026/06/09 - 13:46:35 | 200 |  24.89ms |  223.185.16.243 | GET      "/api/v1/categories"
