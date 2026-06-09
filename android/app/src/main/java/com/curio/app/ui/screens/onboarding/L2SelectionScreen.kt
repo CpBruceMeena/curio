@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.curio.app.CurioApp
@@ -179,10 +180,10 @@ fun L2SelectionScreen(
             ) {
                 Spacer(modifier = Modifier.height(4.dp))
 
-                subcategories.chunked(2).forEach { row ->
+                subcategories.chunked(3).forEach { row ->
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         row.forEach { cat ->
                             val isSelected = selectedIds.contains(cat.id)
@@ -201,7 +202,7 @@ fun L2SelectionScreen(
                                 modifier = Modifier.weight(1f)
                             )
                         }
-                        if (row.size < 2) Spacer(modifier = Modifier.weight(1f))
+                        if (row.size < 3) Spacer(modifier = Modifier.weight(1f))
                     }
                 }
 
@@ -278,36 +279,34 @@ private fun L2SubCategoryCard(
 
     Box(
         modifier = modifier
-            .height(90.dp)
-            .clip(RoundedCornerShape(16.dp))
+            .height(76.dp)
+            .clip(RoundedCornerShape(14.dp))
             .then(bgModifier)
             .clickable { onClick() }
-            .padding(16.dp),
+            .padding(horizontal = 12.dp, vertical = 8.dp),
         contentAlignment = Alignment.Center
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Row(
-                modifier = Modifier.weight(1f),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(text = emoji, fontSize = 24.sp)
-                Spacer(modifier = Modifier.size(10.dp))
-                Text(
-                    text = name,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = if (isSelected) OnSurface else OnSurfaceVariant,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                )
-            }
+            Text(text = emoji, fontSize = 18.sp)
+            Text(
+                text = name,
+                style = MaterialTheme.typography.bodyMedium,
+                fontSize = 13.sp,
+                color = if (isSelected) OnSurface else OnSurfaceVariant,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
             if (isSelected) {
                 Box(
                     modifier = Modifier
-                        .size(26.dp)
-                        .clip(RoundedCornerShape(13.dp))
+                        .size(20.dp)
+                        .clip(RoundedCornerShape(10.dp))
                         .background(SecondaryContainer),
                     contentAlignment = Alignment.Center
                 ) {
@@ -315,7 +314,7 @@ private fun L2SubCategoryCard(
                         "✓",
                         color = Color(0xFF002021),
                         fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp
+                        fontSize = 10.sp
                     )
                 }
             }
