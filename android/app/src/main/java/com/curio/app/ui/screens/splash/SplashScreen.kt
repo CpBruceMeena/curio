@@ -34,9 +34,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.blur
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -62,11 +59,11 @@ fun SplashScreen(
     var showButton by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        delay(800)   // background fade-in
+        delay(800)
         showTitle = true
-        delay(300)   // 1.1s total
+        delay(300)
         showTagline = true
-        delay(300)   // 1.4s total
+        delay(300)
         showButton = true
     }
 
@@ -80,12 +77,6 @@ fun SplashScreen(
         ),
         label = "float"
     )
-
-    // ── Background fade-in ──────────────────────────────────────────
-    val bgAlpha = remember { Animatable(0f) }
-    LaunchedEffect(Unit) {
-        bgAlpha.animateTo(1f, tween(2000, easing = FastOutSlowInEasing))
-    }
 
     // ── Entrance slide-up animations (progress: 0→1) ────────────────
     val titleProgress = remember { Animatable(0f) }
@@ -111,39 +102,6 @@ fun SplashScreen(
             .fillMaxSize()
             .background(Surface)
     ) {
-        // ── Background layers (fade in over 2s) ─────────────────────
-        Box(modifier = Modifier.fillMaxSize().alpha(bgAlpha.value)) {
-            // Nebula gradient
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.radialGradient(
-                            colors = listOf(
-                                Color(0x1A103632),
-                                Color(0x120A1822),
-                                Surface
-                            ),
-                            radius = 1000f,
-                        )
-                    )
-            )
-            // Depth overlay — darker at top and bottom edges
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Surface.copy(alpha = 0.5f),
-                                Color.Transparent,
-                                Surface.copy(alpha = 0.3f),
-                            )
-                        )
-                    )
-            )
-        }
-
         // ── Main layout ─────────────────────────────────────────────
         Column(
             modifier = Modifier
@@ -170,30 +128,18 @@ fun SplashScreen(
                             .offset(y = floatOffset.dp)
                     )
 
-                    // ── Title "Curio" with glow ────────────────────
+                    // ── Title ───────────────────────────────────────
                     if (showTitle) {
-                        Box(
+                        Text(
+                            text = "Curio",
+                            style = MaterialTheme.typography.displayLarge,
+                            color = Secondary,
+                            fontWeight = FontWeight.ExtraBold,
+                            textAlign = TextAlign.Center,
                             modifier = Modifier
                                 .alpha(titleProgress.value)
-                                .offset(y = titleSlide(titleProgress.value)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            // Glow aura behind text
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(80.dp)
-                                    .blur(30.dp)
-                                    .background(Secondary.copy(alpha = 0.18f)),
-                            )
-                            Text(
-                                text = "Curio",
-                                style = MaterialTheme.typography.displayLarge,
-                                color = Secondary,
-                                fontWeight = FontWeight.ExtraBold,
-                                textAlign = TextAlign.Center,
-                            )
-                        }
+                                .offset(y = titleSlide(titleProgress.value))
+                        )
                     }
 
                     // ── Tagline ─────────────────────────────────────
