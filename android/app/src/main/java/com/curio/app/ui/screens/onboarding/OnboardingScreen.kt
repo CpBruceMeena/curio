@@ -221,23 +221,17 @@ fun OnboardingScreen(
                     )
                 ) {
                     Text(
-                        text = "Start Learning",
+                        text = if (uiState.selectedInterest != null) {
+                            "Explore ${uiState.selectedInterest}"
+                        } else {
+                            "Start Learning"
+                        },
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold
                     )
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = if (uiState.selectedInterest != null) {
-                        "Great! Ready to explore $uiState.selectedInterest"
-                    } else {
-                        "Pick a section to get started"
-                    },
-                    style = MaterialTheme.typography.labelMedium,
-                    color = if (uiState.canProceed) SecondaryContainer else OnSurfaceVariant
-                )
+                // No subtitle text below button — user explicitly removed this
             }
         }
     }

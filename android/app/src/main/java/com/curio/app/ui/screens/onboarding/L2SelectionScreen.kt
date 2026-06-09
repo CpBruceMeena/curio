@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.curio.app.CurioApp
@@ -59,6 +60,47 @@ private fun l1Emoji(name: String): String = when (name) {
     "Short Stories" -> "\uD83D\uDCC4"
     "Puzzles" -> "\uD83E\uDDE9"
     else -> "\u2728"
+}
+
+private fun subCategoryIcon(name: String): String = when (name.lowercase()) {
+    "science" -> "\uD83D\uDD2C"
+    "space" -> "\uD83D\uDE80"
+    "history" -> "\uD83C\uDFDB"
+    "nature" -> "\uD83C\uDF31"
+    "technology" -> "\uD83D\uDCBB"
+    "animals" -> "\uD83D\uDC3E"
+    "geography" -> "\uD83C\uDF0D"
+    "mathematics" -> "\u2797"
+    "physics" -> "\u26A1"
+    "chemistry" -> "\u2697"
+    "biology" -> "\uD83E\uDDEB"
+    "philosophy" -> "\uD83E\uDD14"
+    "psychology" -> "\uD83E\uDDD8"
+    "sports" -> "\u26BD"
+    "food" -> "\uD83C\uDF54"
+    "music" -> "\uD83C\uDFB5"
+    "art" -> "\uD83C\uDFA8"
+    "poetry" -> "\uD83D\uDCDD"
+    "culture" -> "\uD83C\uDF0F"
+    "health" -> "\u2764\uFE0F"
+    "fitness" -> "\uD83C\uDFCB"
+    "business" -> "\uD83D\uDCCA"
+    "politics" -> "\uD83C\uDFDB"
+    "language" -> "\uD83C\uDF10"
+    "literature" -> "\uD83D\uDCDA"
+    "programming" -> "\u2328\uFE0F"
+    "mythology" -> "\uD83D\uDC7D"
+    "ocean" -> "\uD83C\uDF0A"
+    "climate" -> "\uD83C\uDF26"
+    "engineering" -> "\uD83D\uDEE0"
+    "medicine" -> "\uD83D\uDC89"
+    "archaeology" -> "\uD83D\uDDFC"
+    "economics" -> "\uD83D\uDCB1"
+    "astronomy" -> "\uD83D\uDF0C"
+    "geology" -> "\uD83E\uDEA8"
+    "robotics" -> "\uD83E\uDD16"
+    "ai" -> "\uD83E\uDD16"
+    else -> "\uD83D\uDCCA"
 }
 
 @Composable
@@ -138,15 +180,16 @@ fun L2SelectionScreen(
             ) {
                 Spacer(modifier = Modifier.height(4.dp))
 
-                subcategories.chunked(2).forEach { row ->
+                subcategories.chunked(3).forEach { row ->
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         row.forEach { cat ->
                             val isSelected = selectedIds.contains(cat.id)
                             L2SubCategoryCard(
                                 name = cat.name,
+                                emoji = subCategoryIcon(cat.name),
                                 isSelected = isSelected,
                                 gradient = gradient,
                                 onClick = {
@@ -159,7 +202,7 @@ fun L2SelectionScreen(
                                 modifier = Modifier.weight(1f)
                             )
                         }
-                        if (row.size < 2) Spacer(modifier = Modifier.weight(1f))
+                        if (row.size < 3) Spacer(modifier = Modifier.weight(1f))
                     }
                 }
 
@@ -218,6 +261,7 @@ fun L2SelectionScreen(
 @Composable
 private fun L2SubCategoryCard(
     name: String,
+    emoji: String,
     isSelected: Boolean,
     gradient: Pair<Color, Color>,
     onClick: () -> Unit,
@@ -235,30 +279,34 @@ private fun L2SubCategoryCard(
 
     Box(
         modifier = modifier
-            .height(90.dp)
-            .clip(RoundedCornerShape(16.dp))
+            .height(76.dp)
+            .clip(RoundedCornerShape(14.dp))
             .then(bgModifier)
             .clickable { onClick() }
-            .padding(16.dp),
+            .padding(horizontal = 12.dp, vertical = 8.dp),
         contentAlignment = Alignment.Center
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
+            Text(text = emoji, fontSize = 18.sp)
             Text(
                 text = name,
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.bodyMedium,
+                fontSize = 13.sp,
                 color = if (isSelected) OnSurface else OnSurfaceVariant,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f)
             )
             if (isSelected) {
                 Box(
                     modifier = Modifier
-                        .size(26.dp)
-                        .clip(RoundedCornerShape(13.dp))
+                        .size(20.dp)
+                        .clip(RoundedCornerShape(10.dp))
                         .background(SecondaryContainer),
                     contentAlignment = Alignment.Center
                 ) {
@@ -266,7 +314,7 @@ private fun L2SubCategoryCard(
                         "✓",
                         color = Color(0xFF002021),
                         fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp
+                        fontSize = 10.sp
                     )
                 }
             }

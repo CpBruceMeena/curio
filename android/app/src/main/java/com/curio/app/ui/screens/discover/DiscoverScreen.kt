@@ -58,7 +58,7 @@ fun DiscoverScreen(
     val uiState by viewModel.uiState.collectAsState()
     var pendingCategoryIds by remember { mutableStateOf(uiState.selectedCategoryIds) }
     // Selected L1 group — shows its subcategories when non-null
-    var selectedL1 by remember { mutableStateOf<String?>(null) }
+    var selectedL1 by remember { mutableStateOf<String?>("Facts") }
 
     // Filtered categories based on selected L1
     val displayCategories = if (selectedL1 != null) {
