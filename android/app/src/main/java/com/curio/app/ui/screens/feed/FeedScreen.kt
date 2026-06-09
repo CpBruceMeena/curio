@@ -50,7 +50,8 @@ import com.curio.app.viewmodel.FeedViewModel
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun FeedScreen(
-    viewModel: FeedViewModel
+    viewModel: FeedViewModel,
+    onCategoryChange: (String) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val pagerState = rememberPagerState(pageCount = {
@@ -63,6 +64,20 @@ fun FeedScreen(
         if (index != null && index in 0 until uiState.content.size) {
             pagerState.animateScrollToPage(index)
             viewModel.clearFeedStartIndex()
+        }
+    }
+
+    // Report current category to the parent (for top bar display)
+    LaunchedEffect(uiState.content) {
+        if (uiState.content.isNotEmpty()) {
+            onCategoryChange(uiState.content[0].categoryName)
+        }
+    }
+
+    LaunchedEffect(pagerState.currentPage) {
+        val item = uiState.content.getOrNull(pagerState.currentPage)
+        if (item != null) {
+            onCategoryChange(item.categoryName)
         }
     }
 
@@ -160,7 +175,6 @@ fun FeedScreen(
                             description = item.description,
                             poet = item.poet,
                             body = item.body,
-                            category = item.categoryName,
                             readTime = item.readTimeSecs,
                             source = item.source
                         )
@@ -177,7 +191,6 @@ internal fun FullPageCard(
     description: String = "",
     poet: String = "",
     body: String,
-    category: String,
     readTime: Int,
     source: String
 ) {
@@ -195,24 +208,6 @@ internal fun FullPageCard(
                 .padding(start = 32.dp, end = 32.dp, top = 32.dp, bottom = 16.dp),
             horizontalAlignment = Alignment.Start
         ) {
-            // Category tag at top
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(SecondaryContainer.copy(alpha = 0.2f))
-                    .padding(horizontal = 14.dp, vertical = 6.dp)
-            ) {
-                Text(
-                    text = category.uppercase(),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = SecondaryContainer,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
             // Poet name (poems, shayari)
             if (poet.isNotEmpty()) {
                 Text(

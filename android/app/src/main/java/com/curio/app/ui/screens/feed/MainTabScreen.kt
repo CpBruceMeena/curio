@@ -8,6 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -35,8 +36,10 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.curio.app.ui.components.FeedbackDialog
 import com.curio.app.ui.screens.discover.DiscoverScreen
+import com.curio.app.ui.theme.OnSurface
 import com.curio.app.ui.theme.OnSurfaceVariant
 import com.curio.app.ui.theme.Surface
+import com.curio.app.ui.theme.SecondaryContainer
 import com.curio.app.viewmodel.FeedViewModel
 
 @Composable
@@ -45,6 +48,7 @@ fun MainTabScreen(
 ) {
     var showDiscover by remember { mutableStateOf(false) }
     var showFeedbackDialog by remember { mutableStateOf(false) }
+    var currentCategory by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
@@ -52,14 +56,24 @@ fun MainTabScreen(
             .background(Surface)
             .systemBarsPadding()
     ) {
-        // Top bar with discover toggle icon
-        Box(
+        // Top bar: category name on left, discover icon on right
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(Surface)
-                .padding(horizontal = 12.dp, vertical = 4.dp),
-            contentAlignment = Alignment.CenterEnd
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
+            // Category name (feed) or "Discover" (discover page) on the left
+            Text(
+                text = if (showDiscover) "Discover" else currentCategory.uppercase(),
+                style = MaterialTheme.typography.titleMedium,
+                color = if (showDiscover) OnSurface else SecondaryContainer,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f)
+            )
+
+            // Discover toggle icon on the right
             IconButton(
                 onClick = { showDiscover = !showDiscover }
             ) {
@@ -92,7 +106,10 @@ fun MainTabScreen(
                     }
                 )
             } else {
-                FeedScreen(viewModel = feedViewModel)
+                FeedScreen(
+                    viewModel = feedViewModel,
+                    onCategoryChange = { category -> currentCategory = category }
+                )
             }
         }
 
