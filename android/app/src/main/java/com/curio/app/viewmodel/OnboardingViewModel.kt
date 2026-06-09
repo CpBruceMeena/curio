@@ -14,7 +14,7 @@ import kotlinx.coroutines.launch
 data class OnboardingUiState(
     val l1Groups: List<L1Group> = emptyList(),
     val isLoading: Boolean = true,
-    val selectedInterests: Set<String> = emptySet(),
+    val selectedInterest: String? = null,
     val canProceed: Boolean = false
 )
 
@@ -25,8 +25,6 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
 
     private val _uiState = MutableStateFlow(OnboardingUiState())
     val uiState: StateFlow<OnboardingUiState> = _uiState.asStateFlow()
-
-    private val minSelection = 1
 
     init {
         loadL1Groups()
@@ -46,24 +44,21 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     fun toggleInterest(l1Name: String) {
-        val current = _uiState.value.selectedInterests.toMutableSet()
-        if (current.contains(l1Name)) {
-            current.remove(l1Name)
-        } else {
-            current.add(l1Name)
-        }
+        val current = _uiState.value.selectedInterest
+        val newSelection = if (current == l1Name) null else l1Name
         _uiState.value = _uiState.value.copy(
-            selectedInterests = current,
-            canProceed = current.size >= minSelection
+            selectedInterest = newSelection,
+            canProceed = newSelection != null
         )
     }
 
     fun saveInterests() {
-        val selectedL1Names = _uiState.value.selectedInterests
-        // Expand selected L1 groups into their subcategory names for the feed filter
+        val selectedL1Name = _uiState.value.selectedInterest
+        // Expand selected L1 group into its subcategory names for the feed filter
         val expandedCategories = mutableSetOf<String>()
-        for (l1Group in _uiState.value.l1Groups) {
-            if (selectedL1Names.contains(l1Group.name)) {
+        if (selectedL1Name != null) {
+            val l1Group = _uiState.value.l1Groups.find { it.name == selectedL1Name }
+            if (l1Group != null) {
                 expandedCategories.addAll(l1Group.categories.map { it.name })
             }
         }

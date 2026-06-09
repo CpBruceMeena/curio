@@ -167,7 +167,7 @@ fun OnboardingScreen(
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             row.forEach { group ->
-                                val isSelected = uiState.selectedInterests.contains(group.name)
+                                val isSelected = uiState.selectedInterest == group.name
                                 OnboardingL1Card(
                                     name = group.name,
                                     emoji = l1Emoji(group.name),
@@ -221,10 +221,10 @@ fun OnboardingScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = if (uiState.canProceed) {
-                        "Great! ${uiState.selectedInterests.size} section${if (uiState.selectedInterests.size > 1) "s" else ""} selected"
+                    text = if (uiState.selectedInterest != null) {
+                        "Great! Ready to explore $uiState.selectedInterest"
                     } else {
-                        "Select at least one section to continue"
+                        "Pick a section to get started"
                     },
                     style = MaterialTheme.typography.labelMedium,
                     color = if (uiState.canProceed) SecondaryContainer else OnSurfaceVariant
