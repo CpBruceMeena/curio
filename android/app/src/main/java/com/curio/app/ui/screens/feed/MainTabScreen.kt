@@ -44,7 +44,8 @@ import com.curio.app.viewmodel.FeedViewModel
 
 @Composable
 fun MainTabScreen(
-    feedViewModel: FeedViewModel = viewModel()
+    feedViewModel: FeedViewModel = viewModel(),
+    onBack: () -> Unit = {}
 ) {
     var showDiscover by remember { mutableStateOf(false) }
     var showFeedbackDialog by remember { mutableStateOf(false) }
@@ -56,34 +57,66 @@ fun MainTabScreen(
             .background(Surface)
             .systemBarsPadding()
     ) {
-        // Top bar: category name on left, discover icon on right
+        // Top bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(Surface)
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(horizontal = 8.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Category name (feed) or "Discover" (discover page) on the left
-            Text(
-                text = if (showDiscover) "Discover" else currentCategory.uppercase(),
-                style = MaterialTheme.typography.titleMedium,
-                color = if (showDiscover) OnSurface else SecondaryContainer,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.weight(1f)
-            )
-
-            // Discover toggle icon on the right
-            IconButton(
-                onClick = { showDiscover = !showDiscover }
-            ) {
-                Icon(
-                    imageVector = if (showDiscover) Icons.AutoMirrored.Filled.ArrowBack
-                                   else Icons.Filled.Explore,
-                    contentDescription = if (showDiscover) "Back to feed" else "Discover categories",
-                    tint = OnSurfaceVariant.copy(alpha = 0.7f),
-                    modifier = Modifier.size(28.dp)
+            if (showDiscover) {
+                // Discover page: "Discover" on left, back arrow on right
+                Text(
+                    text = "Discover",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = OnSurface,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f)
                 )
+
+                IconButton(
+                    onClick = { showDiscover = false }
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back to feed",
+                        tint = OnSurfaceVariant.copy(alpha = 0.7f),
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+            } else {
+                // Feed page: back arrow on left, category centered, discover icon on right
+                IconButton(
+                    onClick = onBack
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = OnSurfaceVariant.copy(alpha = 0.7f),
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+
+                Text(
+                    text = currentCategory.uppercase(),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = SecondaryContainer,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+
+                IconButton(
+                    onClick = { showDiscover = true }
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Explore,
+                        contentDescription = "Discover categories",
+                        tint = OnSurfaceVariant.copy(alpha = 0.7f),
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
             }
         }
 

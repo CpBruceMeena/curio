@@ -75,17 +75,6 @@ fun DiscoverScreen(
         modifier = Modifier.fillMaxSize().background(Surface),
         contentPadding = PaddingValues(bottom = 8.dp)
     ) {
-        // Header
-        item {
-            Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp)) {
-                Text("Discover", style = MaterialTheme.typography.headlineLarge,
-                    color = OnSurface, fontWeight = FontWeight.ExtraBold)
-                Spacer(modifier = Modifier.height(4.dp))
-                Text("Explore curated knowledge across every topic.",
-                    style = MaterialTheme.typography.bodyMedium, color = OnSurfaceVariant)
-            }
-        }
-
         // L1 Category pills
         item { Spacer(modifier = Modifier.height(8.dp)) }
         item {
