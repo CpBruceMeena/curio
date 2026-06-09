@@ -12,8 +12,15 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Explore
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,21 +37,19 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.curio.app.ui.components.FeedbackDialog
 import com.curio.app.ui.screens.discover.DiscoverScreen
-import com.curio.app.ui.screens.feed.FeedScreen
-import com.curio.app.ui.theme.OnSecondaryContainer
 import com.curio.app.ui.theme.OnSurfaceVariant
-import com.curio.app.ui.theme.Primary
-import com.curio.app.ui.theme.SecondaryContainer
 import com.curio.app.ui.theme.Surface
-import com.curio.app.ui.theme.SurfaceContainerHigh
+import com.curio.app.ui.theme.SecondaryContainer
 import com.curio.app.viewmodel.FeedViewModel
 
 @Composable
 fun MainTabScreen(
-    feedViewModel: FeedViewModel = viewModel()
+    feedViewModel: FeedViewModel = viewModel(),
+    onBack: () -> Unit = {}
 ) {
-    var selectedTab by remember { mutableStateOf(0) }
+    var showDiscover by remember { mutableStateOf(false) }
     var showFeedbackDialog by remember { mutableStateOf(false) }
+    var currentCategory by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
@@ -52,53 +57,103 @@ fun MainTabScreen(
             .background(Surface)
             .systemBarsPadding()
     ) {
-        // Top pill tab switcher
-        Box(
+        // Top bar
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(Surface)
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .padding(horizontal = 8.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(SurfaceContainerHigh.copy(alpha = 0.5f))
-                    .padding(4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                TabPill(
-                    label = "Feed",
-                    isSelected = selectedTab == 0,
-                    onClick = { selectedTab = 0 },
-                    modifier = Modifier.weight(1f)
+            if (showDiscover) {
+                // Discover page: back arrow on left, "Discover" centered, feed icon on right
+                IconButton(
+                    onClick = onBack
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = OnSurfaceVariant.copy(alpha = 0.7f),
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+
+                Text(
+                    text = "Discover",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = SecondaryContainer,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
-                TabPill(
-                    label = "Discover",
-                    isSelected = selectedTab == 1,
-                    onClick = { selectedTab = 1 },
-                    modifier = Modifier.weight(1f)
+
+                IconButton(
+                    onClick = { showDiscover = false }
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Home,
+                        contentDescription = "Feed",
+                        tint = OnSurfaceVariant.copy(alpha = 0.7f),
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+            } else {
+                // Feed page: back arrow on left, category centered, discover icon on right
+                IconButton(
+                    onClick = onBack
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = OnSurfaceVariant.copy(alpha = 0.7f),
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+
+                Text(
+                    text = currentCategory,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = SecondaryContainer,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
+
+                IconButton(
+                    onClick = { showDiscover = true }
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Explore,
+                        contentDescription = "Discover categories",
+                        tint = OnSurfaceVariant.copy(alpha = 0.7f),
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
             }
         }
 
-        // Tab content
+        // Main content — feed by default, discover on icon tap
         AnimatedContent(
-            targetState = selectedTab,
+            targetState = showDiscover,
             transitionSpec = { fadeIn() togetherWith fadeOut() },
-            label = "tabContent",
+            label = "mainContent",
             modifier = Modifier.weight(1f)
-        ) { tab ->
-            when (tab) {
-                0 -> FeedScreen(viewModel = feedViewModel)
-                1 -> DiscoverScreen(
+        ) { isDiscover ->
+            if (isDiscover) {
+                DiscoverScreen(
                     viewModel = feedViewModel,
                     onApplyFilter = {
-                        selectedTab = 0
+                        showDiscover = false
                     },
                     onCategoryClick = { categoryId ->
                         feedViewModel.setSelectedCategoryIds(setOf(categoryId))
-                        selectedTab = 0
+                        showDiscover = false
                     }
+                )
+            } else {
+                FeedScreen(
+                    viewModel = feedViewModel,
+                    onCategoryChange = { category -> currentCategory = category }
                 )
             }
         }
@@ -128,31 +183,6 @@ fun MainTabScreen(
     if (showFeedbackDialog) {
         FeedbackDialog(
             onDismiss = { showFeedbackDialog = false }
-        )
-    }
-}
-
-@Composable
-private fun TabPill(
-    label: String,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(20.dp))
-            .background(if (isSelected) SecondaryContainer else SurfaceContainerHigh.copy(alpha = 0f))
-            .clickable { onClick() }
-            .padding(vertical = 10.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelLarge,
-            color = if (isSelected) OnSecondaryContainer else OnSurfaceVariant,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-            fontSize = 15.sp
         )
     }
 }
