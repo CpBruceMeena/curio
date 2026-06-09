@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Explore
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -90,11 +91,11 @@ fun MainTabScreen(
                 IconButton(
                     onClick = { showDiscover = false }
                 ) {
-                    Text(
-                        text = "Feed",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.SemiBold,
-                        color = OnSurfaceVariant.copy(alpha = 0.7f)
+                    Icon(
+                        imageVector = Icons.Filled.Home,
+                        contentDescription = "Feed",
+                        tint = OnSurfaceVariant.copy(alpha = 0.7f),
+                        modifier = Modifier.size(28.dp)
                     )
                 }
             } else {
