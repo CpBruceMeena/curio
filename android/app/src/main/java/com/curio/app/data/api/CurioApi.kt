@@ -6,6 +6,9 @@ import com.curio.app.data.model.FeedbackRequest
 import com.curio.app.data.model.FeedbackResponse
 import com.curio.app.data.model.FeedResponse
 import com.curio.app.data.model.L1CategoriesResponse
+import com.curio.app.data.model.PuzzleResponse
+import com.curio.app.data.model.ValidateRequest
+import com.curio.app.data.model.ValidateResponse
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -43,4 +46,23 @@ interface CurioApi {
     suspend fun submitFeedback(
         @Body request: FeedbackRequest
     ): Response<FeedbackResponse>
+
+    // ── Puzzles ────────────────────────────────────────────────
+    @GET("puzzles")
+    suspend fun getPuzzles(
+        @Query("type") puzzleType: String? = null,
+        @Query("category_id") categoryId: Long? = null,
+        @Query("limit") limit: Int = 20
+    ): Response<PuzzleResponse>
+
+    @POST("puzzles/{id}/validate")
+    suspend fun validatePuzzle(
+        @Path("id") puzzleId: Long,
+        @Body request: ValidateRequest
+    ): Response<ValidateResponse>
+
+    @POST("puzzles/{id}/like")
+    suspend fun likePuzzle(
+        @Path("id") puzzleId: Long
+    ): Response<Map<String, Int>>
 }

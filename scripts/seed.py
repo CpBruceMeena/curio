@@ -41,7 +41,7 @@ CATEGORIES = [
     {"name": "Economics", "icon": "account_balance", "color_hex": "#63f7ff", "priority": 10, "table_id": 10},
     {"name": "Nature", "icon": "forest", "color_hex": "#a8cec8", "priority": 11, "table_id": 11},
     {"name": "Technology", "icon": "computer", "color_hex": "#00dce5", "priority": 12, "table_id": 12},
-    {"name": "Poetry", "icon": "auto_stories", "color_hex": "#f472b6", "priority": 13, "table_id": 25},
+    {"name": "Poetry", "icon": "auto_stories", "color_hex": "#f472b6", "priority": 13, "table_id": 25, "l1_category": "Poems"},
     {"name": "Movies", "icon": "movie", "color_hex": "#fb923c", "priority": 14, "table_id": 26},
     {"name": "Neuroscience", "icon": "microscope", "color_hex": "#a78bfa", "priority": 15, "table_id": 27},
     {"name": "Literature", "icon": "menu_book", "color_hex": "#fbbf24", "priority": 16, "table_id": 28},
@@ -49,9 +49,23 @@ CATEGORIES = [
     {"name": "Music", "icon": "music_note", "color_hex": "#f472b6", "priority": 18, "table_id": 30},
     {"name": "Sports", "icon": "sports_soccer", "color_hex": "#fb923c", "priority": 19, "table_id": 31},
     {"name": "Food", "icon": "ramen_dining", "color_hex": "#f59e0b", "priority": 20, "table_id": 32},
-    {"name": "Shayari", "icon": "edit_note", "color_hex": "#d946ef", "priority": 21, "table_id": 33},
-    {"name": "Puzzles", "icon": "extension", "color_hex": "#f97316", "priority": 22, "table_id": 34},
-    {"name": "Short Stories", "icon": "article", "color_hex": "#06b6d4", "priority": 23, "table_id": 35},
+    {"name": "Shayari", "icon": "edit_note", "color_hex": "#d946ef", "priority": 21, "table_id": 33, "l1_category": "Poems"},
+    {"name": "Puzzles", "icon": "extension", "color_hex": "#f97316", "priority": 22, "table_id": 34, "l1_category": "Puzzles"},
+    {"name": "Short Stories", "icon": "article", "color_hex": "#06b6d4", "priority": 23, "table_id": 35, "l1_category": "Short Stories"},
+
+    # ── Poems subcategories ──────────────────────────────────────
+    {"name": "Hindi Poetry", "icon": "auto_stories", "color_hex": "#f472b6", "priority": 24, "table_id": 36, "l1_category": "Poems"},
+
+    # ── Puzzles subcategories ────────────────────────────────────
+    {"name": "Sudoku", "icon": "grid_on", "color_hex": "#f97316", "priority": 25, "table_id": 37, "l1_category": "Puzzles"},
+    {"name": "Math Puzzles", "icon": "calculate", "color_hex": "#fb923c", "priority": 26, "table_id": 38, "l1_category": "Puzzles"},
+    {"name": "Logic Puzzles", "icon": "psychology", "color_hex": "#a78bfa", "priority": 27, "table_id": 39, "l1_category": "Puzzles"},
+    {"name": "Word Puzzles", "icon": "abc", "color_hex": "#fbbf24", "priority": 28, "table_id": 40, "l1_category": "Puzzles"},
+
+    # ── Short Stories subcategories ──────────────────────────────
+    {"name": "Classic Fiction", "icon": "menu_book", "color_hex": "#06b6d4", "priority": 29, "table_id": 41, "l1_category": "Short Stories"},
+    {"name": "Micro Stories", "icon": "auto_stories", "color_hex": "#34d399", "priority": 30, "table_id": 42, "l1_category": "Short Stories"},
+    {"name": "Serialized Stories", "icon": "library_books", "color_hex": "#6366f1", "priority": 31, "table_id": 43, "l1_category": "Short Stories"},
 ]
 
 CONTENT = [
@@ -158,12 +172,13 @@ UPDATE categories SET content_table_id = %s WHERE name = %s AND content_table_id
 """
 
 INSERT_CATEGORY = """
-INSERT INTO categories (name, icon, color_hex, priority)
-VALUES (%s, %s, %s, %s)
+INSERT INTO categories (name, icon, color_hex, priority, l1_category)
+VALUES (%s, %s, %s, %s, %s)
 ON CONFLICT (name) DO UPDATE SET
     icon = EXCLUDED.icon,
     color_hex = EXCLUDED.color_hex,
-    priority = EXCLUDED.priority;
+    priority = EXCLUDED.priority,
+    l1_category = EXCLUDED.l1_category;
 """
 
 INSERT_CONTENT = """
@@ -202,7 +217,7 @@ def seed_categories(conn):
     count = 0
     with conn.cursor() as cur:
         for cat in CATEGORIES:
-            cur.execute(INSERT_CATEGORY, (cat["name"], cat["icon"], cat["color_hex"], cat["priority"]))
+            cur.execute(INSERT_CATEGORY, (cat["name"], cat["icon"], cat["color_hex"], cat["priority"], cat.get("l1_category", "Facts")))
             if cur.rowcount > 0:
                 count += 1
                 print(f"  Created category: {cat['name']}")
