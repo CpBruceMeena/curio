@@ -160,7 +160,10 @@ UPDATE categories SET content_table_id = %s WHERE name = %s AND content_table_id
 INSERT_CATEGORY = """
 INSERT INTO categories (name, icon, color_hex, priority)
 VALUES (%s, %s, %s, %s)
-ON CONFLICT (name) DO NOTHING;
+ON CONFLICT (name) DO UPDATE SET
+    icon = EXCLUDED.icon,
+    color_hex = EXCLUDED.color_hex,
+    priority = EXCLUDED.priority;
 """
 
 INSERT_CONTENT = """

@@ -28,7 +28,8 @@ def scrape(db: DB, target: int, is_batch: bool, filter_category: str = None, dry
         for cat in CATEGORIES:
             db.execute(
                 "INSERT INTO categories (name, icon, color_hex, priority) "
-                "VALUES (%s, %s, %s, %s) ON CONFLICT (name) DO NOTHING",
+                "VALUES (%s, %s, %s, %s) "
+                "ON CONFLICT (name) DO UPDATE SET icon = EXCLUDED.icon, color_hex = EXCLUDED.color_hex, priority = EXCLUDED.priority",
                 [cat["name"], cat["icon"], cat["color"], CATEGORIES.index(cat) + 1]
             )
         print(f"✓ {len(CATEGORIES)} categories ensured")
