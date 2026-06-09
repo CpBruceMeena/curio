@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.curio.app.CurioApp
+import com.curio.app.data.model.Category
 import com.curio.app.data.model.L1Group
 import com.curio.app.data.repository.ContentRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -52,17 +53,20 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
         )
     }
 
+    /** Returns the list of subcategories for the currently selected L1 interest. */
+    fun getSelectedL1Subcategories(): List<Category> {
+        val selectedL1Name = _uiState.value.selectedInterest ?: return emptyList()
+        val group = _uiState.value.l1Groups.find { it.name == selectedL1Name }
+        return group?.categories ?: emptyList()
+    }
+
+    /** Mark onboarding as complete and save the L1 selection name. */
     fun saveInterests() {
-        val selectedL1Name = _uiState.value.selectedInterest
-        // Expand selected L1 group into its subcategory names for the feed filter
-        val expandedCategories = mutableSetOf<String>()
-        if (selectedL1Name != null) {
-            val l1Group = _uiState.value.l1Groups.find { it.name == selectedL1Name }
-            if (l1Group != null) {
-                expandedCategories.addAll(l1Group.categories.map { it.name })
-            }
-        }
-        prefs.selectedCategories = expandedCategories
         prefs.hasCompletedOnboarding = true
+    }
+
+    /** Save the final set of selected subcategory names (called from L2SelectionScreen). */
+    fun saveFinalSelection(categoryNames: Set<String>) {
+        prefs.selectedCategories = categoryNames
     }
 }

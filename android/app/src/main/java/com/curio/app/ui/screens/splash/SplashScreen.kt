@@ -21,10 +21,8 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -385,15 +383,16 @@ fun SplashScreen(
             }
         }
 
-        // ── Scrollable content layer ───────────────────────────────
+        // ── Content layer ───────────────────────────────────────────
+        // Center the logo, title, and subtitle in the available space
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Spacer(modifier = Modifier.height(56.dp))
+            // Pushes content to center (factors in button space at bottom)
+            Spacer(modifier = Modifier.weight(0.6f))
 
             // ── Star icon ───────────────────────────────────────────
             if (phase >= 2) {
@@ -458,9 +457,10 @@ fun SplashScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            // Fill remaining space above the button
+            Spacer(modifier = Modifier.weight(1f))
 
-            // ── Get Started button ──────────────────────────────────
+            // ── Get Started button (fixed at bottom) ────────────────
             if (phase >= 6) {
                 Button(
                     onClick = onNavigateToOnboarding,
@@ -480,7 +480,7 @@ fun SplashScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(36.dp))
         }
     }
 }

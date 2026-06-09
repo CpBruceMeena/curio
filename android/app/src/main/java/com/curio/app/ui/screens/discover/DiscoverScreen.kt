@@ -52,8 +52,8 @@ import com.curio.app.viewmodel.FeedViewModel
 @Composable
 fun DiscoverScreen(
     viewModel: FeedViewModel,
-    onCardClick: (Long) -> Unit = {},
-    onApplyFilter: () -> Unit = {}
+    onApplyFilter: () -> Unit = {},
+    onCategoryClick: (Long) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var pendingCategoryIds by remember { mutableStateOf(uiState.selectedCategoryIds) }
@@ -226,7 +226,9 @@ fun DiscoverScreen(
                 ) {
                     row.forEach { content ->
                         ContentCard(
-                            content = content, onClick = { onCardClick(content.id) },
+                            content = content, onClick = {
+                                onCategoryClick(content.categoryId)
+                            },
                             modifier = Modifier.weight(1f).fillMaxHeight()
                         )
                     }

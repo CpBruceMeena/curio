@@ -62,6 +62,7 @@ private fun l1Gradient(name: String): Pair<Color, Color> = when (name) {
 @Composable
 fun OnboardingScreen(
     onNavigateToFeed: () -> Unit,
+    onNavigateToL2: (String) -> Unit,
     viewModel: OnboardingViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -194,7 +195,15 @@ fun OnboardingScreen(
                 Button(
                     onClick = {
                         viewModel.saveInterests()
-                        onNavigateToFeed()
+                        val subCats = viewModel.getSelectedL1Subcategories()
+                        if (subCats.size > 1) {
+                            onNavigateToL2(uiState.selectedInterest!!)
+                        } else {
+                            // Save all subcategories and go to Main
+                            val names = subCats.map { it.name }.toSet()
+                            viewModel.saveFinalSelection(names)
+                            onNavigateToFeed()
+                        }
                     },
                     enabled = uiState.canProceed,
                     modifier = Modifier
