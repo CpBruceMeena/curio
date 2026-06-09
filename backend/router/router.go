@@ -28,6 +28,7 @@ func Setup() *gin.Engine {
 
 		// Categories
 		api.GET("/categories", handlers.GetCategories)
+		api.GET("/categories/l1", handlers.GetL1Categories)
 
 		// Feedback
 		api.POST("/feedback", handlers.SubmitFeedback)

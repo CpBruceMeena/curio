@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.curio.app.ui.components.FeedbackDialog
 import com.curio.app.ui.screens.discover.DiscoverScreen
+import com.curio.app.ui.screens.home.HomeScreen
 import com.curio.app.ui.theme.OnSecondaryContainer
 import com.curio.app.ui.theme.OnSurfaceVariant
 import com.curio.app.ui.theme.Primary
@@ -88,7 +89,7 @@ fun MainTabScreen(
             modifier = Modifier.weight(1f)
         ) { tab ->
             when (tab) {
-                0 -> FeedScreen(viewModel = feedViewModel)
+                0 -> HomeScreen(viewModel = feedViewModel)
                 1 -> DiscoverScreen(
                     viewModel = feedViewModel,
                     onCardClick = { contentId ->

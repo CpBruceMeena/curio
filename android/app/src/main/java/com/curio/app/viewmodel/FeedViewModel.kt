@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.curio.app.CurioApp
 import com.curio.app.data.model.Category
 import com.curio.app.data.model.Content
+import com.curio.app.data.model.L1Group
 import com.curio.app.data.repository.ContentRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,6 +18,7 @@ data class FeedUiState(
     val content: List<Content> = emptyList(),
     val discoverContent: List<Content> = emptyList(),
     val categories: List<Category> = emptyList(),
+    val l1Groups: List<L1Group> = emptyList(),
     val selectedCategoryIds: Set<Long> = emptySet(),
     val feedStartIndex: Int? = null,
     val currentPage: Int = 1,
@@ -34,6 +36,7 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         loadCategories()
+        loadL1Groups()
         loadFeed()
         loadDiscoverContent()
     }
@@ -226,10 +229,56 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun loadL1Feed(categoryIds: Set<Long>?) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true, content = emptyList())
+
+            val results = if (!categoryIds.isNullOrEmpty()) {
+                val allContent = mutableListOf<Content>()
+                for (catId in categoryIds) {
+                    repository.getFeed(page = 1, pageSize = 100, categoryId = catId, random = true)
+                        .onSuccess { allContent.addAll(it.content) }
+                }
+                if (allContent.isNotEmpty()) {
+                    Result.success<com.curio.app.data.model.FeedResponse>(
+                        com.curio.app.data.model.FeedResponse(
+                            content = allContent.shuffled(), page = 1, pageSize = 100,
+                            total = allContent.size.toLong(), hasMore = false
+                        )
+                    )
+                } else {
+                    repository.getFeed(page = 1, pageSize = 100, random = true)
+                }
+            } else {
+                repository.getFeed(page = 1, pageSize = 100, random = true)
+            }
+
+            results.onSuccess { feedResponse ->
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false, content = feedResponse.content,
+                    hasMore = feedResponse.hasMore, error = null,
+                    feedStartIndex = 0
+                )
+            }.onFailure { error ->
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false, error = error.message ?: "Failed to load"
+                )
+            }
+        }
+    }
+
     private fun loadCategories() {
         viewModelScope.launch {
             repository.getCategories().onSuccess { response ->
                 _uiState.value = _uiState.value.copy(categories = response.categories)
+            }
+        }
+    }
+
+    private fun loadL1Groups() {
+        viewModelScope.launch {
+            repository.getL1Categories().onSuccess { response ->
+                _uiState.value = _uiState.value.copy(l1Groups = response.groups)
             }
         }
     }

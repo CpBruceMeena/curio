@@ -6,6 +6,7 @@ import com.curio.app.data.model.Content
 import com.curio.app.data.model.FeedbackRequest
 import com.curio.app.data.model.FeedbackResponse
 import com.curio.app.data.model.FeedResponse
+import com.curio.app.data.model.L1CategoriesResponse
 
 class ContentRepository {
 
@@ -75,6 +76,19 @@ class ContentRepository {
                 Result.success(response.body()!!)
             } else {
                 Result.failure(Exception("Failed to submit feedback: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getL1Categories(): Result<L1CategoriesResponse> {
+        return try {
+            val response = api.getL1Categories()
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Failed to fetch L1 categories: ${response.code()}"))
             }
         } catch (e: Exception) {
             Result.failure(e)

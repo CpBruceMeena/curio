@@ -56,75 +56,95 @@ fun DiscoverScreen(
     onApplyFilter: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    // Local pending category selection — only applied when "Apply" is tapped
     var pendingCategoryIds by remember { mutableStateOf(uiState.selectedCategoryIds) }
+    // Selected L1 group — shows its subcategories when non-null
+    var selectedL1 by remember { mutableStateOf<String?>(null) }
+
+    // Filtered categories based on selected L1
+    val displayCategories = if (selectedL1 != null) {
+        val group = uiState.l1Groups.find { it.name == selectedL1 }
+        group?.categories ?: emptyList()
+    } else {
+        uiState.categories
+    }
 
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Surface),
+        modifier = Modifier.fillMaxSize().background(Surface),
         contentPadding = PaddingValues(bottom = 8.dp)
     ) {
         // Header
         item {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 16.dp)
-            ) {
-                Text(
-                    text = "Discover",
-                    style = MaterialTheme.typography.headlineLarge,
-                    color = OnSurface,
-                    fontWeight = FontWeight.ExtraBold
-                )
+            Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp)) {
+                Text("Discover", style = MaterialTheme.typography.headlineLarge,
+                    color = OnSurface, fontWeight = FontWeight.ExtraBold)
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Explore curated knowledge across every topic.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = OnSurfaceVariant
-                )
+                Text("Explore curated knowledge across every topic.",
+                    style = MaterialTheme.typography.bodyMedium, color = OnSurfaceVariant)
             }
         }
 
-        // Categories header
+        // L1 Category pills
         item { Spacer(modifier = Modifier.height(8.dp)) }
         item {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text(
-                    text = "Categories",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = OnSurface,
-                    fontWeight = FontWeight.Bold
-                )
-                if (pendingCategoryIds.isNotEmpty()) {
-                    Text(
-                        text = "Clear",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = Primary,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.clickable { pendingCategoryIds = emptySet() }
-                    )
+                val l1Groups = uiState.l1Groups
+                l1Groups.forEach { group ->
+                    val isActive = selectedL1 == group.name
+                    Box(modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(if (isActive) SecondaryContainer else SurfaceContainerHigh.copy(alpha = 0.3f))
+                        .clickable {
+                            selectedL1 = if (isActive) null else group.name
+                            pendingCategoryIds = emptySet()
+                        }
+                        .padding(vertical = 10.dp),
+                        contentAlignment = Alignment.Center) {
+                        Text(
+                            text = group.name,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (isActive) OnSecondaryContainer else OnSurfaceVariant,
+                            fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
+                            textAlign = TextAlign.Center,
+                            maxLines = 1
+                        )
+                    }
                 }
             }
         }
 
-        // Multi-select category chips (local pending state)
-        if (uiState.categories.isNotEmpty()) {
+        // Subcategories header
+        item { Spacer(modifier = Modifier.height(8.dp)) }
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = if (selectedL1 != null) "$selectedL1 Topics" else "All Categories",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = OnSurface, fontWeight = FontWeight.Bold
+                )
+                if (pendingCategoryIds.isNotEmpty()) {
+                    Text("Clear", style = MaterialTheme.typography.labelMedium,
+                        color = Primary, fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.clickable { pendingCategoryIds = emptySet() })
+                }
+            }
+        }
+
+        // Category chips (filtered by L1)
+        if (displayCategories.isNotEmpty()) {
             item {
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    uiState.categories.chunked(4).forEach { row ->
+                    displayCategories.chunked(4).forEach { row ->
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -143,9 +163,7 @@ fun DiscoverScreen(
                                     modifier = Modifier.weight(1f)
                                 )
                             }
-                            repeat(4 - row.size) {
-                                Spacer(modifier = Modifier.weight(1f))
-                            }
+                            repeat(4 - row.size) { Spacer(modifier = Modifier.weight(1f)) }
                         }
                     }
                 }
@@ -160,10 +178,7 @@ fun DiscoverScreen(
                     viewModel.setSelectedCategoryIds(pendingCategoryIds)
                     onApplyFilter()
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .height(48.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).height(48.dp),
                 shape = RoundedCornerShape(24.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = SecondaryContainer,
@@ -185,194 +200,110 @@ fun DiscoverScreen(
         // "For You" header
         item {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 8.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "For You",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = OnSurface,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "${uiState.discoverContent.size} items",
+                Text("For You", style = MaterialTheme.typography.titleLarge,
+                    color = OnSurface, fontWeight = FontWeight.Bold)
+                Text("${uiState.discoverContent.size} items",
                     style = MaterialTheme.typography.labelSmall,
-                    color = OnSurfaceVariant.copy(alpha = 0.6f)
-                )
+                    color = OnSurfaceVariant.copy(alpha = 0.6f))
             }
         }
 
         // Content grid
         if (uiState.discoverContent.isNotEmpty()) {
             val chunked = uiState.discoverContent.chunked(2)
-            items(chunked.size) { rowIndex ->                    val row = chunked[rowIndex]
+            items(chunked.size) { rowIndex ->
+                val row = chunked[rowIndex]
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp)
-                        .height(IntrinsicSize.Min),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp).height(IntrinsicSize.Min),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     row.forEach { content ->
                         ContentCard(
-                            content = content,
-                            onClick = { onCardClick(content.id) },
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight()
+                            content = content, onClick = { onCardClick(content.id) },
+                            modifier = Modifier.weight(1f).fillMaxHeight()
                         )
                     }
-                    if (row.size < 2) {
-                        Spacer(modifier = Modifier.weight(1f))
-                    }
+                    if (row.size < 2) Spacer(modifier = Modifier.weight(1f))
                 }
                 Spacer(modifier = Modifier.height(8.dp))
             }
             item { Spacer(modifier = Modifier.height(16.dp)) }
         }
-
-        // Bottom spacer
         item { Spacer(modifier = Modifier.height(8.dp)) }
     }
 }
 
 @Composable
-private fun CategoryChip(
-    name: String,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
+private fun CategoryChip(name: String, isSelected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
+        modifier = modifier.clip(RoundedCornerShape(12.dp))
             .background(if (isSelected) SecondaryContainer else SurfaceContainerHigh.copy(alpha = 0.3f))
-            .clickable { onClick() }
-            .padding(vertical = 10.dp),
+            .clickable { onClick() }.padding(vertical = 10.dp),
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = name,
-            style = MaterialTheme.typography.labelMedium,
+        Text(name, style = MaterialTheme.typography.labelMedium,
             color = if (isSelected) OnSecondaryContainer else OnSurfaceVariant,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-            textAlign = TextAlign.Center,
-            maxLines = 1
-        )
+            textAlign = TextAlign.Center, maxLines = 1)
     }
 }
 
 @Composable
-private fun ContentCard(
-    content: Content,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
+private fun ContentCard(content: Content, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(SurfaceContainerHigh)
-            .heightIn(min = 180.dp, max = 300.dp)
+        modifier = modifier.clip(RoundedCornerShape(16.dp))
+            .background(SurfaceContainerHigh).heightIn(min = 180.dp, max = 300.dp)
             .clickable { onClick() }
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .fillMaxHeight()
-                .verticalScroll(rememberScrollState())
-                .padding(14.dp)
+            modifier = Modifier.fillMaxWidth().fillMaxHeight()
+                .verticalScroll(rememberScrollState()).padding(14.dp)
         ) {
-            Row(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(SecondaryContainer.copy(alpha = 0.2f))
-                    .padding(horizontal = 8.dp, vertical = 3.dp)
-            ) {
-                Text(
-                    text = content.categoryName.uppercase(),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = SecondaryContainer,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.5.sp
-                )
+            Row(modifier = Modifier.clip(RoundedCornerShape(8.dp))
+                .background(SecondaryContainer.copy(alpha = 0.2f))
+                .padding(horizontal = 8.dp, vertical = 3.dp)) {
+                Text(content.categoryName.uppercase(),
+                    style = MaterialTheme.typography.labelSmall, color = SecondaryContainer,
+                    fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp)
             }
-
             Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = content.title,
-                style = MaterialTheme.typography.labelLarge,
-                color = OnSurface,
-                fontWeight = FontWeight.Bold,
-                maxLines = 3,
-                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-            )
-
-            // Poet name (poems, shayari)
+            Text(content.title, style = MaterialTheme.typography.labelLarge,
+                color = OnSurface, fontWeight = FontWeight.Bold, maxLines = 3,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
             if (content.poet.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = content.poet,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Primary,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1
-                )
+                Text(content.poet, style = MaterialTheme.typography.labelSmall,
+                    color = Primary, fontWeight = FontWeight.SemiBold, maxLines = 1)
             }
-
             Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = content.body,
-                style = MaterialTheme.typography.bodySmall,
-                color = OnSurfaceVariant.copy(alpha = 0.7f),
-                maxLines = 3,
-                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-            )
-
-            // Description (poems, shayari)
+            Text(content.body, style = MaterialTheme.typography.bodySmall,
+                color = OnSurfaceVariant.copy(alpha = 0.7f), maxLines = 3,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
             if (content.description.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(6.dp))
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(SecondaryContainer.copy(alpha = 0.08f))
-                        .padding(horizontal = 8.dp, vertical = 6.dp)
-                ) {
-                    Text(
-                        text = content.description,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = OnSurfaceVariant.copy(alpha = 0.7f),
-                        maxLines = 2,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                    )
+                Box(modifier = Modifier.clip(RoundedCornerShape(8.dp))
+                    .background(SecondaryContainer.copy(alpha = 0.08f))
+                    .padding(horizontal = 8.dp, vertical = 6.dp)) {
+                    Text(content.description, style = MaterialTheme.typography.bodySmall,
+                        color = OnSurfaceVariant.copy(alpha = 0.7f), maxLines = 2,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                 }
             }
-
             Spacer(modifier = Modifier.height(10.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
+            Row(modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "${content.readTimeSecs}s",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Primary,
-                    fontWeight = FontWeight.SemiBold
-                )
+                verticalAlignment = Alignment.CenterVertically) {
+                Text("${content.readTimeSecs}s", style = MaterialTheme.typography.labelSmall,
+                    color = Primary, fontWeight = FontWeight.SemiBold)
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(text = "❤️", fontSize = 11.sp)
-                    Spacer(modifier = Modifier.width(3.dp))
-                    Text(
-                        text = formatCount(content.likes),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = OnSurfaceVariant
-                    )
+                    Text("\u2764\uFE0F", fontSize = 11.sp)
+                    Spacer(Modifier.width(3.dp))
+                    Text(formatCount(content.likes),
+                        style = MaterialTheme.typography.labelSmall, color = OnSurfaceVariant)
                 }
             }
         }

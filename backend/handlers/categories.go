@@ -37,3 +37,55 @@ func GetCategories(c *gin.Context) {
 		"total":      len(categoriesWithCount),
 	})
 }
+
+type L1Group struct {
+	Name        string              `json:"name"`
+	Icon        string              `json:"icon"`
+	ColorHex    string              `json:"color_hex"`
+	Categories  []models.Category   `json:"categories"`
+}
+
+func GetL1Categories(c *gin.Context) {
+	var categories []models.Category
+	if err := database.DB.Order("priority ASC").Find(&categories).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch categories"})
+		return
+	}
+
+	// Group categories by l1_category
+	groupMap := make(map[string][]models.Category)
+	groupOrder := []string{"Facts", "Poems", "Short Stories", "Puzzles"}
+	for _, cat := range categories {
+		l1 := cat.L1Category
+		if l1 == "" {
+			l1 = "Facts"
+		}
+		groupMap[l1] = append(groupMap[l1], cat)
+	}
+
+	// Define icon and color for each L1 group
+	groupMeta := map[string]struct{ icon, color string }{
+		"Facts":         {"menu_book", "#00f4fe"},
+		"Poems":         {"auto_stories", "#f472b6"},
+		"Short Stories": {"article", "#06b6d4"},
+		"Puzzles":       {"extension", "#f97316"},
+	}
+
+	var groups []L1Group
+	for _, name := range groupOrder {
+		if cats, ok := groupMap[name]; ok {
+			meta := groupMeta[name]
+			groups = append(groups, L1Group{
+				Name:       name,
+				Icon:       meta.icon,
+				ColorHex:   meta.color,
+				Categories: cats,
+			})
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"groups": groups,
+		"total":  len(groups),
+	})
+}

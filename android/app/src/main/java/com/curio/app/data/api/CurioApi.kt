@@ -5,6 +5,7 @@ import com.curio.app.data.model.Content
 import com.curio.app.data.model.FeedbackRequest
 import com.curio.app.data.model.FeedbackResponse
 import com.curio.app.data.model.FeedResponse
+import com.curio.app.data.model.L1CategoriesResponse
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -34,6 +35,9 @@ interface CurioApi {
 
     @GET("categories")
     suspend fun getCategories(): Response<CategoriesResponse>
+
+    @GET("categories/l1")
+    suspend fun getL1Categories(): Response<L1CategoriesResponse>
 
     @POST("feedback")
     suspend fun submitFeedback(
