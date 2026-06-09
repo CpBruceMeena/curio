@@ -109,7 +109,7 @@ fun SplashScreen(
             contentDescription = null,
             modifier = Modifier
                 .fillMaxSize()
-                .scale(0.9f)
+                .scale(1.2f)
                 .offset(y = floatOffset.dp),
             contentScale = ContentScale.Fit
         )
