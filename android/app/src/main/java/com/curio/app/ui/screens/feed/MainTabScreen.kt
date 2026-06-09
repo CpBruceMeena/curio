@@ -37,7 +37,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.curio.app.ui.components.FeedbackDialog
 import com.curio.app.ui.screens.discover.DiscoverScreen
-import com.curio.app.ui.theme.OnSurface
 import com.curio.app.ui.theme.OnSurfaceVariant
 import com.curio.app.ui.theme.Surface
 import com.curio.app.ui.theme.SecondaryContainer
@@ -82,7 +81,7 @@ fun MainTabScreen(
                 Text(
                     text = "Discover",
                     style = MaterialTheme.typography.titleMedium,
-                    color = OnSurface,
+                    color = SecondaryContainer,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f),
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -112,7 +111,7 @@ fun MainTabScreen(
                 }
 
                 Text(
-                    text = currentCategory.uppercase(),
+                    text = currentCategory,
                     style = MaterialTheme.typography.titleMedium,
                     color = SecondaryContainer,
                     fontWeight = FontWeight.Bold,
