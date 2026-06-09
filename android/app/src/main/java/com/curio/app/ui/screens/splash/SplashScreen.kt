@@ -9,7 +9,6 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -18,7 +17,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
@@ -34,6 +32,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -67,10 +68,10 @@ fun SplashScreen(
         showButton = true
     }
 
-    // ── Floating animation for the cube ─────────────────────────────
+    // ── Floating animation for the cube background ───────────────
     val infiniteTransition = rememberInfiniteTransition(label = "splash")
     val floatOffset by infiniteTransition.animateFloat(
-        initialValue = 0f, targetValue = -20f,
+        initialValue = 0f, targetValue = -10f,
         animationSpec = infiniteRepeatable(
             tween(3000, easing = FastOutSlowInEasing),
             RepeatMode.Reverse
@@ -102,7 +103,25 @@ fun SplashScreen(
             .fillMaxSize()
             .background(Surface)
     ) {
-        // ── Main layout ─────────────────────────────────────────────
+        // ── Full-screen cube background (zoomed to fill edge-to-edge) ─
+        AsyncImage(
+            model = CubeImageUrl,
+            contentDescription = null,
+            modifier = Modifier
+                .fillMaxSize()
+                .scale(2.2f)
+                .offset(y = floatOffset.dp),
+            contentScale = ContentScale.Fit
+        )
+
+        // ── Dark overlay for text readability ───────────────────────
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.40f))
+        )
+
+        // ── Content overlaid on top ─────────────────────────────────
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -110,53 +129,40 @@ fun SplashScreen(
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // ── Hero area (takes remaining space, content centered) ─
-            Box(
-                modifier = Modifier.weight(1f),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(24.dp)
-                ) {
-                    // ── Full-size floating cube ─────────────────────
-                    AsyncImage(
-                        model = CubeImageUrl,
-                        contentDescription = "Knowledge cube",
-                        modifier = Modifier
-                            .size(300.dp)
-                            .offset(y = floatOffset.dp)
-                    )
+            // ── Spacer to push content slightly below center ───────
+            Spacer(modifier = Modifier.weight(0.15f))
 
-                    // ── Title ───────────────────────────────────────
-                    if (showTitle) {
-                        Text(
-                            text = "Curio",
-                            style = MaterialTheme.typography.displayLarge,
-                            color = Secondary,
-                            fontWeight = FontWeight.ExtraBold,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier
-                                .alpha(titleProgress.value)
-                                .offset(y = titleSlide(titleProgress.value))
-                        )
-                    }
-
-                    // ── Tagline ─────────────────────────────────────
-                    if (showTagline) {
-                        Text(
-                            text = "\"One interesting thing at a time\"",
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontStyle = FontStyle.Italic,
-                            color = OnSurfaceVariant.copy(alpha = 0.8f),
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier
-                                .alpha(taglineProgress.value)
-                                .offset(y = taglineSlide(taglineProgress.value))
-                        )
-                    }
-                }
+            // ── Title ───────────────────────────────────────────────
+            if (showTitle) {
+                Text(
+                    text = "Curio",
+                    style = MaterialTheme.typography.displayLarge,
+                    color = Secondary,
+                    fontWeight = FontWeight.ExtraBold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .alpha(titleProgress.value)
+                        .offset(y = titleSlide(titleProgress.value))
+                )
             }
+
+            // ── Tagline ─────────────────────────────────────────────
+            if (showTagline) {
+                Text(
+                    text = "\"One interesting thing at a time\"",
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontStyle = FontStyle.Italic,
+                    color = OnSurfaceVariant.copy(alpha = 0.8f),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .alpha(taglineProgress.value)
+                        .padding(top = 8.dp)
+                        .offset(y = taglineSlide(taglineProgress.value))
+                )
+            }
+
+            // ── Fill remaining space ────────────────────────────────
+            Spacer(modifier = Modifier.weight(1f))
 
             // ── Glass button at bottom ──────────────────────────────
             if (showButton) {
