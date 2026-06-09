@@ -35,8 +35,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontStyle
@@ -47,7 +45,6 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.curio.app.ui.theme.OnSurfaceVariant
 import com.curio.app.ui.theme.Secondary
-import com.curio.app.ui.theme.SecondaryContainer
 import com.curio.app.ui.theme.SecondaryFixed
 import com.curio.app.ui.theme.Surface
 import com.curio.app.ui.theme.SurfaceContainerLow
@@ -164,25 +161,14 @@ fun SplashScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(24.dp)
                 ) {
-                    // ── Cube with glow aura ────────────────────────
-                    Box(contentAlignment = Alignment.Center) {
-                        // Outer glow aura
-                        Box(
-                            modifier = Modifier
-                                .size(320.dp)
-                                .clip(RoundedCornerShape(160.dp))
-                                .background(SecondaryContainer.copy(alpha = 0.12f))
-                                .scale(1.25f)
-                        )
-                        // Floating cube
-                        AsyncImage(
-                            model = CubeImageUrl,
-                            contentDescription = "Knowledge cube",
-                            modifier = Modifier
-                                .size(260.dp)
-                                .offset(y = floatOffset.dp)
-                        )
-                    }
+                    // ── Full-size floating cube ─────────────────────
+                    AsyncImage(
+                        model = CubeImageUrl,
+                        contentDescription = "Knowledge cube",
+                        modifier = Modifier
+                            .size(300.dp)
+                            .offset(y = floatOffset.dp)
+                    )
 
                     // ── Title "Curio" with glow ────────────────────
                     if (showTitle) {
