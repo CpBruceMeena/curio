@@ -54,8 +54,8 @@ CATEGORIES = [
     {"name": "Sports",      "icon": "sports_soccer",  "color": "#fb923c"},
     {"name": "Food",        "icon": "ramen_dining",   "color": "#f59e0b"},
     {"name": "Shayari",     "icon": "edit_note",      "color": "#d946ef"},
-    {"name": "Puzzles",     "icon": "psychology",      "color": "#f97316"},
-    {"name": "Short Stories","icon": "auto_stories",     "color": "#06b6d4"},
+    {"name": "Puzzles",     "icon": "extension",       "color": "#f97316"},
+    {"name": "Short Stories","icon": "article",          "color": "#06b6d4"},
 ]
 
 

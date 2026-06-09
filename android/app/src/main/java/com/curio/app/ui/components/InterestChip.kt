@@ -118,6 +118,8 @@ private fun getIconEmoji(iconName: String): String {
         "sports_soccer" -> "\u26BD"      // ⚽ Sports
         "ramen_dining" -> "\uD83C\uDF5C" // 🍜 Food
         "edit_note" -> "\u270D\uFE0F"    // ✍️ Shayari
+        "extension" -> "\uD83E\uDDE9"   // 🧩 Puzzles
+        "article" -> "\uD83D\uDCC4"     // 📄 Short Stories
         else -> "\u2728"                 // ✨ fallback
     }
 }

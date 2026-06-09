@@ -79,7 +79,7 @@ ALTER TABLE categories ADD CONSTRAINT uni_categories_name UNIQUE (name);
 -- 3. Drop old contents table FIRST (before creating the VIEW)
 --    This is the legacy flat table, NOT the per-category tables.
 -- -------------------------------------------------------------------
-DROP TABLE IF EXISTS contents CASCADE;
+DROP VIEW IF EXISTS contents CASCADE;
 
 -- -------------------------------------------------------------------
 -- 4. Create global VIEW dynamically
