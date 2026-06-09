@@ -221,7 +221,11 @@ fun OnboardingScreen(
                     )
                 ) {
                     Text(
-                        text = "Start Learning",
+                        text = if (uiState.selectedInterest != null) {
+                            "Explore $uiState.selectedInterest"
+                        } else {
+                            "Start Learning"
+                        },
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold
                     )
@@ -231,7 +235,7 @@ fun OnboardingScreen(
 
                 Text(
                     text = if (uiState.selectedInterest != null) {
-                        "Great! Ready to explore $uiState.selectedInterest"
+                        "Great choice! Ready to explore $uiState.selectedInterest"
                     } else {
                         "Pick a section to get started"
                     },

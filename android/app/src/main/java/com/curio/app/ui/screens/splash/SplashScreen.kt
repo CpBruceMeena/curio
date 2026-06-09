@@ -384,81 +384,85 @@ fun SplashScreen(
         }
 
         // ── Content layer ───────────────────────────────────────────
-        // Center the logo, title, and subtitle in the available space
+        // Use two-tier layout: content area (scrollable) fills available space,
+        // button is pinned to the bottom regardless of content size.
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // Pushes content to center (factors in button space at bottom)
-            Spacer(modifier = Modifier.weight(0.6f))
-
-            // ── Star icon ───────────────────────────────────────────
-            if (phase >= 2) {
-                Box(
-                    modifier = Modifier
-                        .size(100.dp)
-                        .alpha(starAlpha.value)
-                        .rotate(starRotation)
-                        .offset(y = starBob.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    // Glass orb
+            // ── Center content area (takes all remaining space above button) ─
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                // ── Star icon ───────────────────────────────────────────
+                if (phase >= 2) {
                     Box(
                         modifier = Modifier
-                            .size(96.dp)
-                            .clip(RoundedCornerShape(24.dp))
-                            .background(
-                                Brush.linearGradient(
-                                    colors = listOf(Color(0x281A3C38), Color(0x180B221F))
-                                )
-                            ).blur(3.dp)
-                    )
-                    // Star symbol
+                            .size(100.dp)
+                            .alpha(starAlpha.value)
+                            .rotate(starRotation)
+                            .offset(y = starBob.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        // Glass orb
+                        Box(
+                            modifier = Modifier
+                                .size(96.dp)
+                                .clip(RoundedCornerShape(24.dp))
+                                .background(
+                                    Brush.linearGradient(
+                                        colors = listOf(Color(0x281A3C38), Color(0x180B221F))
+                                    )
+                                ).blur(3.dp)
+                        )
+                        // Star symbol
+                        Text(
+                            text = "\u2606",
+                            style = MaterialTheme.typography.displayLarge,
+                            color = SecondaryContainer.copy(alpha = 0.85f),
+                            fontWeight = FontWeight.Light,
+                            modifier = Modifier.scale(1.4f),
+                        )
+                    }
+                }
+
+                if (phase >= 2) Spacer(modifier = Modifier.height(20.dp))
+
+                // ── Title ───────────────────────────────────────────────
+                if (phase >= 3) {
                     Text(
-                        text = "\u2606",
+                        text = "Curio",
                         style = MaterialTheme.typography.displayLarge,
-                        color = SecondaryContainer.copy(alpha = 0.85f),
-                        fontWeight = FontWeight.Light,
-                        modifier = Modifier.scale(1.4f),
+                        color = OnSurface,
+                        fontWeight = FontWeight.ExtraBold,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .alpha(titleAlpha.value)
+                            .offset(y = titleOffset.value.dp),
+                    )
+                }
+
+                if (phase >= 3) Spacer(modifier = Modifier.height(10.dp))
+
+                // ── Tagline ─────────────────────────────────────────────
+                if (phase >= 4) {
+                    Text(
+                        text = "One interesting thing at a time.",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = OnSurfaceVariant.copy(alpha = 0.80f),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .alpha(taglineAlpha.value)
+                            .offset(y = taglineOffset.value.dp),
                     )
                 }
             }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // ── Title ───────────────────────────────────────────────
-            if (phase >= 3) {
-                Text(
-                    text = "Curio",
-                    style = MaterialTheme.typography.displayLarge,
-                    color = OnSurface,
-                    fontWeight = FontWeight.ExtraBold,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .alpha(titleAlpha.value)
-                        .offset(y = titleOffset.value.dp),
-                )
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // ── Tagline ─────────────────────────────────────────────
-            if (phase >= 4) {
-                Text(
-                    text = "One interesting thing at a time.",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = OnSurfaceVariant.copy(alpha = 0.75f),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .alpha(taglineAlpha.value)
-                        .offset(y = taglineOffset.value.dp),
-                )
-            }
-
-            // Fill remaining space above the button
-            Spacer(modifier = Modifier.weight(1f))
 
             // ── Get Started button (fixed at bottom) ────────────────
             if (phase >= 6) {
