@@ -24,6 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -32,37 +33,36 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.layout.ContentScale
-import coil.compose.AsyncImage
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.media3.common.MediaItem
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.ui.AspectRatioFrameLayout
+import androidx.media3.ui.PlayerView
+import com.curio.app.R
 import com.curio.app.ui.theme.OnSurfaceVariant
-import com.curio.app.ui.theme.Primary
 import com.curio.app.ui.theme.PrimaryContainer
 import com.curio.app.ui.theme.Secondary
-import com.curio.app.ui.theme.SecondaryContainer
 import com.curio.app.ui.theme.SecondaryFixed
 import com.curio.app.ui.theme.SecondaryFixedDim
 import com.curio.app.ui.theme.Surface
 import com.curio.app.ui.theme.SurfaceContainerLow
 import kotlinx.coroutines.delay
 
-/** URL for the splash cube background image (Google CDN).
- *  Gradients below serve as a beautiful fallback while this loads. */
-private val CubeImageUrl =
-    "https://lh3.googleusercontent.com/aida/AP1WRLtQJvk8dW0Mf-KwEtM45JierFl5T2sMj6Oo46aSCYpwMk3xdCXKHZ2U-ETGUmVld3ICET-RBpbw17-kyNMmiz6qKMBoHwcSdYWKCW-lxxivD7BqNjv71tjnCZgESVo6x-0OlyRD4KnKoYrCqS6WhBvjNCntej1G2Pm-eWqp_Jwn5jrnmIyiiWCwN4P5m639UkyiZQJbDD0Hlb9iLT1lZ7KyoIbzLYxch1bhf2Jbbu4xiyemAdTv_l1zqF8"
-
 @Composable
 fun SplashScreen(
     onNavigateToOnboarding: () -> Unit
 ) {
+    val context = LocalContext.current
+
     // ── Staggered reveal state ──────────────────────────────────────
     var showTitle by remember { mutableStateOf(false) }
     var showTagline by remember { mutableStateOf(false) }
@@ -77,7 +77,27 @@ fun SplashScreen(
         showButton = true
     }
 
-    // ── Floating animation for the cube background ───────────────
+    // ── ExoPlayer for looping video background ──────────────────
+    val player = remember {
+        ExoPlayer.Builder(context).build().apply {
+            val mediaItem = MediaItem.fromUri(
+                "android.resource://${context.packageName}/${R.raw.splash_bg}"
+            )
+            setMediaItem(mediaItem)
+            repeatMode = ExoPlayer.REPEAT_MODE_ALL
+            volume = 0f  // mute
+            playWhenReady = true
+            prepare()
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            player.release()
+        }
+    }
+
+    // ── Floating animation for subtle motion on the overlay ──────
     val infiniteTransition = rememberInfiniteTransition(label = "splash")
     val floatOffset by infiniteTransition.animateFloat(
         initialValue = 0f, targetValue = -10f,
@@ -112,24 +132,36 @@ fun SplashScreen(
             .fillMaxSize()
             .background(Surface)
     ) {
-    // ── Full-screen gradient background (no network calls needed) ─
-        // Base layer: warm radial glow from top-center
+        // ── Looping video background with center-crop ───────────────
+        AndroidView(
+            factory = { ctx ->
+                val videoPlayer = player
+                PlayerView(ctx).apply {
+                    this.player = videoPlayer
+                    useController = false  // hide controls
+                    setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                    resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+                }
+            },
+            modifier = Modifier.fillMaxSize()
+        )
+
+        // ── Video background with subtle overlays ──────────────────
+        // Dark gradient overlay for text readability
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
-                    Brush.radialGradient(
+                    Brush.verticalGradient(
                         colors = listOf(
-                            SecondaryContainer.copy(alpha = 0.12f),
-                            Primary.copy(alpha = 0.05f),
-                            Surface
-                        ),
-                        center = Offset(0.5f, 0.3f),
-                        radius = 1.8f
+                            Color.Black.copy(alpha = 0.55f),
+                            Color.Black.copy(alpha = 0.25f),
+                            Color.Black.copy(alpha = 0.45f)
+                        )
                     )
                 )
         )
-        // Accent glow: smaller hotspot that floats gently
+        // Subtle accent glow at top-center
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -137,16 +169,16 @@ fun SplashScreen(
                 .background(
                     Brush.radialGradient(
                         colors = listOf(
-                            SecondaryFixedDim.copy(alpha = 0.20f),
-                            Secondary.copy(alpha = 0.06f),
+                            SecondaryFixedDim.copy(alpha = 0.15f),
+                            Color.Transparent,
                             Color.Transparent
                         ),
-                        center = Offset(0.75f, 0.5f),
-                        radius = 1.2f
+                        center = Offset(0.5f, 0.3f),
+                        radius = 1.4f
                     )
                 )
         )
-        // Bottom-right emerald accent
+        // Bottom-right accent glow
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -154,49 +186,14 @@ fun SplashScreen(
                 .background(
                     Brush.radialGradient(
                         colors = listOf(
-                            PrimaryContainer.copy(alpha = 0.25f),
-                            Primary.copy(alpha = 0.05f),
+                            PrimaryContainer.copy(alpha = 0.06f),
+                            Color.Transparent,
                             Color.Transparent
                         ),
-                        center = Offset(0.25f, 0.85f),
-                        radius = 1.3f
+                        center = Offset(0.2f, 0.9f),
+                        radius = 1.5f
                     )
                 )
-        )
-        // Subtle top-left highlight
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.radialGradient(
-                        colors = listOf(
-                            SecondaryFixed.copy(alpha = 0.10f),
-                            Color.Transparent
-                        ),
-                        center = Offset(0.1f, 0.1f),
-                        radius = 1.0f
-                    )
-                )
-        )
-
-        // ── Cube background image ──────────────────────────────────
-        // Loaded from Google CDN — Coil caches it on disk after first load.
-        // The gradients beneath serve as a beautiful fallback while loading.
-        AsyncImage(
-            model = CubeImageUrl,
-            contentDescription = null,
-            modifier = Modifier
-                .fillMaxSize()
-                .scale(1.2f)
-                .offset(y = floatOffset.dp),
-            contentScale = ContentScale.Fit
-        )
-
-        // ── Dark overlay for text readability ───────────────────────
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.35f))
         )
 
         // ── Content overlaid on top ─────────────────────────────────
