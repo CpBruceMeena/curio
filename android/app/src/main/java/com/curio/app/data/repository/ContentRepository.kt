@@ -7,6 +7,9 @@ import com.curio.app.data.model.FeedbackRequest
 import com.curio.app.data.model.FeedbackResponse
 import com.curio.app.data.model.FeedResponse
 import com.curio.app.data.model.L1CategoriesResponse
+import com.curio.app.data.model.PuzzleResponse
+import com.curio.app.data.model.ValidateRequest
+import com.curio.app.data.model.ValidateResponse
 
 class ContentRepository {
 
@@ -89,6 +92,50 @@ class ContentRepository {
                 Result.success(response.body()!!)
             } else {
                 Result.failure(Exception("Failed to fetch L1 categories: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // ── Puzzles ────────────────────────────────────────────────
+    suspend fun getPuzzles(
+        puzzleType: String? = null,
+        categoryId: Long? = null,
+        limit: Int = 20
+    ): Result<PuzzleResponse> {
+        return try {
+            val response = api.getPuzzles(puzzleType, categoryId, limit)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Failed to fetch puzzles: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun validatePuzzle(puzzleId: Long, answer: String): Result<ValidateResponse> {
+        return try {
+            val response = api.validatePuzzle(puzzleId, ValidateRequest(answer))
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Failed to validate: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun likePuzzle(puzzleId: Long): Result<Int> {
+        return try {
+            val response = api.likePuzzle(puzzleId)
+            if (response.isSuccessful) {
+                Result.success(response.body()?.get("likes") ?: 0)
+            } else {
+                Result.failure(Exception("Failed to like: ${response.code()}"))
             }
         } catch (e: Exception) {
             Result.failure(e)

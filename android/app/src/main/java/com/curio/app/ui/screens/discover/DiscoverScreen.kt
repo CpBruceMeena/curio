@@ -49,11 +49,24 @@ import com.curio.app.ui.theme.Surface
 import com.curio.app.ui.theme.SurfaceContainerHigh
 import com.curio.app.viewmodel.FeedViewModel
 
+// Map category names to puzzle types for puzzle navigation
+private val PUZZLE_CATEGORIES = mapOf(
+    "Sudoku" to "sudoku",
+    "Math Puzzles" to "math",
+    "Logic Puzzles" to "logic",
+    "Word Puzzles" to "word",
+    "Mixed Puzzles" to ""
+)
+
+private fun getPuzzleType(categoryName: String): String? = PUZZLE_CATEGORIES[categoryName]
+
 @Composable
 fun DiscoverScreen(
     viewModel: FeedViewModel,
     onApplyFilter: () -> Unit = {},
-    onCategoryClick: (Long) -> Unit = {}
+    onCategoryClick: (Long) -> Unit = {},
+    onPuzzleNavigate: (categoryId: Long, puzzleType: String) -> Unit = { _, _ -> },
+    onContentClick: (Long) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var pendingCategoryIds by remember { mutableStateOf(uiState.selectedCategoryIds) }
@@ -142,18 +155,32 @@ fun DiscoverScreen(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             row.forEach { category ->
-                                CategoryChip(
-                                    name = category.name,
-                                    isSelected = pendingCategoryIds.contains(category.id),
-                                    onClick = {
-                                        pendingCategoryIds = if (pendingCategoryIds.contains(category.id)) {
-                                            pendingCategoryIds - category.id
-                                        } else {
-                                            pendingCategoryIds + category.id
-                                        }
-                                    },
-                                    modifier = Modifier.weight(1f)
-                                )
+                                val puzzleType = getPuzzleType(category.name)
+                                if (puzzleType != null) {
+                                    // Puzzle category - navigate directly to PuzzleScreen
+                                    CategoryChip(
+                                        name = category.name,
+                                        isSelected = false,
+                                        onClick = {
+                                            val catId = if (puzzleType.isEmpty()) 0L else category.id
+                                            onPuzzleNavigate(catId, puzzleType)
+                                        },
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                } else {
+                                    CategoryChip(
+                                        name = category.name,
+                                        isSelected = pendingCategoryIds.contains(category.id),
+                                        onClick = {
+                                            pendingCategoryIds = if (pendingCategoryIds.contains(category.id)) {
+                                                pendingCategoryIds - category.id
+                                            } else {
+                                                pendingCategoryIds + category.id
+                                            }
+                                        },
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
                             }
                             repeat(4 - row.size) { Spacer(modifier = Modifier.weight(1f)) }
                         }
@@ -216,7 +243,7 @@ fun DiscoverScreen(
                     row.forEach { content ->
                         ContentCard(
                             content = content, onClick = {
-                                onCategoryClick(content.categoryId)
+                                onContentClick(content.id)
                             },
                             modifier = Modifier.weight(1f).fillMaxHeight()
                         )

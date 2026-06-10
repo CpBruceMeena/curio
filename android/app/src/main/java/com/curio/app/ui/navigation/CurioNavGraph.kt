@@ -10,6 +10,7 @@ import com.curio.app.ui.screens.content.ContentDetailScreen
 import com.curio.app.ui.screens.feed.MainTabScreen
 import com.curio.app.ui.screens.onboarding.L2SelectionScreen
 import com.curio.app.ui.screens.onboarding.OnboardingScreen
+import com.curio.app.ui.screens.puzzle.PuzzleScreen
 import com.curio.app.ui.screens.splash.SplashScreen
 
 @Composable
@@ -60,7 +61,12 @@ fun CurioNavGraph(navController: NavHostController) {
 
         composable(Screen.Main.route) {
             MainTabScreen(
-                onBack = { navController.popBackStack() }
+                onPuzzleNavigate = { categoryId, puzzleType ->
+                    navController.navigate(Screen.Puzzle.createRoute(categoryId, puzzleType))
+                },
+                onContentClick = { contentId ->
+                    navController.navigate(Screen.ContentDetail.createRoute(contentId))
+                }
             )
         }
 
@@ -69,6 +75,23 @@ fun CurioNavGraph(navController: NavHostController) {
             ContentDetailScreen(
                 contentId = contentId,
                 onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = Screen.Puzzle.route,
+            arguments = listOf(
+                navArgument("categoryId") { type = NavType.LongType },
+                navArgument("puzzleType") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val categoryId = backStackEntry.arguments?.getLong("categoryId") ?: 0L
+            val puzzleType = backStackEntry.arguments?.getString("puzzleType") ?: ""
+            PuzzleScreen(
+                categoryId = categoryId,
+                puzzleType = puzzleType,
+                onBack = { navController.popBackStack() },
+                onAllDone = { navController.popBackStack() }
             )
         }
     }

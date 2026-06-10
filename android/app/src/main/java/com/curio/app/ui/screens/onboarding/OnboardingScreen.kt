@@ -140,47 +140,32 @@ fun OnboardingScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // L1 Cards (2x2 grid)
-            if (uiState.isLoading) {
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Loading interests...",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = OnSurfaceVariant
-                    )
-                }
-            } else {
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    sortedGroups.chunked(2).forEach { row ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            row.forEach { group ->
-                                val isSelected = uiState.selectedInterest == group.name
-                                OnboardingL1Card(
-                                    name = group.name,
-                                    emoji = l1Emoji(group.name),
-                                    gradient = l1Gradient(group.name),
-                                    subCount = group.categories.size,
-                                    isSelected = isSelected,
-                                    onClick = { viewModel.toggleInterest(group.name) },
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
-                            if (row.size < 2) Spacer(modifier = Modifier.weight(1f))
+            // L1 Cards (2x2 grid) — show immediately, no loading blocker
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                sortedGroups.chunked(2).forEach { row ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        row.forEach { group ->
+                            val isSelected = uiState.selectedInterest == group.name
+                            OnboardingL1Card(
+                                name = group.name,
+                                emoji = l1Emoji(group.name),
+                                gradient = l1Gradient(group.name),
+                                subCount = group.categories.size,
+                                isSelected = isSelected,
+                                onClick = { viewModel.toggleInterest(group.name) },
+                                modifier = Modifier.weight(1f)
+                            )
                         }
+                        if (row.size < 2) Spacer(modifier = Modifier.weight(1f))
                     }
                 }
             }

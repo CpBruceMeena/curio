@@ -100,6 +100,18 @@ private fun subCategoryIcon(name: String): String = when (name.lowercase()) {
     "geology" -> "\uD83E\uDEA8"
     "robotics" -> "\uD83E\uDD16"
     "ai" -> "\uD83E\uDD16"
+    "mixed puzzles" -> "\uD83E\uDDE9"
+    "sudoku" -> "9\uFE0F\u20E3"
+    "math puzzles" -> "\u2797"
+    "logic puzzles" -> "\uD83E\uDDE0"
+    "word puzzles" -> "\uD83D\uDD20"
+    "classic fiction" -> "\uD83D\uDCD6"
+    "micro stories" -> "\uD83D\uDCD0"
+    "serialized stories" -> "\uD83D\uDCDA"
+    "hindi poems" -> "\uD83C\uDFB5"
+    "classics" -> "\uD83C\uDFDB"
+    "modern" -> "\uD83C\uDFA8"
+    "english poems" -> "\uD83D\uDCDD"
     else -> "\uD83D\uDCCA"
 }
 

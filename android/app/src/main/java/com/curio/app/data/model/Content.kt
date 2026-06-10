@@ -73,3 +73,34 @@ data class L1CategoriesResponse(
     val groups: List<L1Group> = emptyList(),
     val total: Int = 0
 )
+
+data class Puzzle(
+    val id: Long = 0,
+    @SerializedName("puzzle_type")
+    val puzzleType: String = "",
+    @SerializedName("category_id")
+    val categoryId: Long = 0,
+    val title: String = "",
+    val question: String = "",
+    @SerializedName("answer_type")
+    val answerType: String = "text",
+    val options: String? = null,
+    val hint: String = "",
+    val explanation: String = "",
+    val difficulty: Int = 1,
+    val likes: Int = 0
+)
+
+data class PuzzleResponse(
+    val puzzles: List<Puzzle> = emptyList(),
+    val total: Long = 0
+)
+
+data class ValidateResponse(
+    val correct: Boolean = false,
+    val explanation: String = ""
+)
+
+data class ValidateRequest(
+    val answer: String
+)

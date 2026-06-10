@@ -51,7 +51,8 @@ import com.curio.app.viewmodel.FeedViewModel
 @Composable
 fun FeedScreen(
     viewModel: FeedViewModel,
-    onCategoryChange: (String) -> Unit = {}
+    onCategoryChange: (String) -> Unit = {},
+    onNavigateToDiscover: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val pagerState = rememberPagerState(pageCount = {
@@ -138,23 +139,90 @@ fun FeedScreen(
                 }
             }
             uiState.content.isEmpty() -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 24.dp, vertical = 32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(text = "🔍", fontSize = 64.sp)
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = "No content yet",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = OnSurfaceVariant
-                        )
+                    Text(text = "🌟", fontSize = 64.sp)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "Nothing here yet!",
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = OnSurface,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "This category is still growing. Explore these while we find more gems for you:",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = OnSurfaceVariant.copy(alpha = 0.7f),
+                        textAlign = TextAlign.Center,
+                        lineHeight = 22.sp
+                    )
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Show suggested categories as clickable pills
+                    val categoryPills = uiState.l1Groups.flatMap { it.categories }.take(6)
+                    categoryPills.chunked(3).forEach { row ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            row.forEach { cat ->
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .background(SecondaryContainer.copy(alpha = 0.15f))
+                                        .clickable {
+                                            viewModel.setSelectedCategoryIds(setOf(cat.id))
+                                        }
+                                        .padding(vertical = 12.dp, horizontal = 8.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Text(
+                                            text = cat.name.take(2).uppercase(),
+                                            style = MaterialTheme.typography.labelLarge,
+                                            color = SecondaryContainer,
+                                            fontWeight = FontWeight.ExtraBold
+                                        )
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        Text(
+                                            text = cat.name,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = SecondaryContainer.copy(alpha = 0.8f),
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 1,
+                                            fontSize = 11.sp,
+                                            textAlign = TextAlign.Center
+                                        )
+                                    }
+                                }
+                            }
+                            repeat(3 - row.size) { Spacer(modifier = Modifier.weight(1f)) }
+                        }
                         Spacer(modifier = Modifier.height(8.dp))
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Browse all button
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(SecondaryContainer.copy(alpha = 0.2f))
+                            .clickable { onNavigateToDiscover() }
+                            .padding(horizontal = 28.dp, vertical = 14.dp)
+                    ) {
                         Text(
-                            text = "Check back soon for new discoveries!",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = OnSurfaceVariant.copy(alpha = 0.6f)
+                            text = "Browse All Categories 🎯",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = SecondaryContainer,
+                            fontWeight = FontWeight.Bold
                         )
                     }
                 }

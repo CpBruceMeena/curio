@@ -45,9 +45,9 @@ import com.curio.app.viewmodel.FeedViewModel
 @Composable
 fun MainTabScreen(
     feedViewModel: FeedViewModel = viewModel(),
-    onBack: () -> Unit = {}
+    onPuzzleNavigate: (categoryId: Long, puzzleType: String) -> Unit = { _, _ -> },
+    onContentClick: (Long) -> Unit = {}
 ) {
-    var showDiscover by remember { mutableStateOf(false) }
     var showFeedbackDialog by remember { mutableStateOf(false) }
     var currentCategory by remember { mutableStateOf("") }
 
@@ -65,14 +65,14 @@ fun MainTabScreen(
                 .padding(horizontal = 8.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (showDiscover) {
-                // Discover page: back arrow on left, "Discover" centered, feed icon on right
+            if (feedViewModel.showDiscover) {
+                // Discover page: back arrow returns to feed, "Discover" centered, home icon on right
                 IconButton(
-                    onClick = onBack
+                    onClick = { feedViewModel.showDiscover = false }
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
+                        contentDescription = "Back to feed",
                         tint = OnSurfaceVariant.copy(alpha = 0.7f),
                         modifier = Modifier.size(28.dp)
                     )
@@ -88,7 +88,7 @@ fun MainTabScreen(
                 )
 
                 IconButton(
-                    onClick = { showDiscover = false }
+                    onClick = { feedViewModel.showDiscover = false }
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Home,
@@ -98,13 +98,13 @@ fun MainTabScreen(
                     )
                 }
             } else {
-                // Feed page: back arrow on left, category centered, discover icon on right
+                // Feed page: back arrow opens discover L1 page, category centered, explore icon on right
                 IconButton(
-                    onClick = onBack
+                    onClick = { feedViewModel.showDiscover = true }
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
+                        contentDescription = "Discover L1 categories",
                         tint = OnSurfaceVariant.copy(alpha = 0.7f),
                         modifier = Modifier.size(28.dp)
                     )
@@ -120,7 +120,7 @@ fun MainTabScreen(
                 )
 
                 IconButton(
-                    onClick = { showDiscover = true }
+                    onClick = { feedViewModel.showDiscover = true }
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Explore,
@@ -134,7 +134,7 @@ fun MainTabScreen(
 
         // Main content — feed by default, discover on icon tap
         AnimatedContent(
-            targetState = showDiscover,
+            targetState = feedViewModel.showDiscover,
             transitionSpec = { fadeIn() togetherWith fadeOut() },
             label = "mainContent",
             modifier = Modifier.weight(1f)
@@ -143,17 +143,22 @@ fun MainTabScreen(
                 DiscoverScreen(
                     viewModel = feedViewModel,
                     onApplyFilter = {
-                        showDiscover = false
+                        feedViewModel.showDiscover = false
                     },
                     onCategoryClick = { categoryId ->
                         feedViewModel.setSelectedCategoryIds(setOf(categoryId))
-                        showDiscover = false
-                    }
+                        feedViewModel.showDiscover = false
+                    },
+                    onPuzzleNavigate = { categoryId, puzzleType ->
+                        onPuzzleNavigate(categoryId, puzzleType)
+                    },
+                    onContentClick = onContentClick
                 )
             } else {
                 FeedScreen(
                     viewModel = feedViewModel,
-                    onCategoryChange = { category -> currentCategory = category }
+                    onCategoryChange = { category -> currentCategory = category },
+                    onNavigateToDiscover = { feedViewModel.showDiscover = true }
                 )
             }
         }

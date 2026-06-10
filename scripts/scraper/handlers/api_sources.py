@@ -406,7 +406,7 @@ def fetch_neuroscience(limit: int, filter_category: str = None) -> list:
 
 def fetch_puzzles(limit: int, filter_category: str = None) -> list:
     """Generate math puzzles, riddles, pattern puzzles, and reasoning problems."""
-    if filter_category and filter_category.lower() != "puzzles":
+    if filter_category and filter_category.lower() != "mixed puzzles":
         return []
 
     puzzles = [
@@ -527,7 +527,7 @@ def fetch_puzzles(limit: int, filter_category: str = None) -> list:
             "body": p["body"],
             "description": p["answer"],
             "source": p["source"],
-            "category": "Puzzles",
+            "category": "Mixed Puzzles",
             "readTime": p["readTime"],
             "tags": p["tags"],
             "likes": p["likes"],

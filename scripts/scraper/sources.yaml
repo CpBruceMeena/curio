@@ -139,7 +139,7 @@ sources:
     handler: fetch_puzzles
     enabled: true
     rate_limit: 0
-    categories: [Puzzles]
+    categories: [Mixed Puzzles]
     batch_size: 30
     tags: [puzzles, riddles, math, logic]
     notes: "Generated math puzzles, riddles, pattern puzzles, and reasoning problems"
