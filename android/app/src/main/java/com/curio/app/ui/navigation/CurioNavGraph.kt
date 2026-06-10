@@ -1,5 +1,6 @@
 package com.curio.app.ui.navigation
 
+import android.app.Activity
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -61,7 +62,15 @@ fun CurioNavGraph(navController: NavHostController) {
 
         composable(Screen.Main.route) {
             MainTabScreen(
-                onBack = { navController.popBackStack() }
+                onBack = {
+                    if (!navController.popBackStack()) {
+                        // No back stack - exit the app
+                        (navController.context as? Activity)?.finish()
+                    }
+                },
+                onPuzzleNavigate = { categoryId, puzzleType ->
+                    navController.navigate(Screen.Puzzle.createRoute(categoryId, puzzleType))
+                }
             )
         }
 

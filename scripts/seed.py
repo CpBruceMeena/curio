@@ -41,7 +41,7 @@ CATEGORIES = [
     {"name": "Economics", "icon": "account_balance", "color_hex": "#63f7ff", "priority": 10, "table_id": 10},
     {"name": "Nature", "icon": "forest", "color_hex": "#a8cec8", "priority": 11, "table_id": 11},
     {"name": "Technology", "icon": "computer", "color_hex": "#00dce5", "priority": 12, "table_id": 12},
-    {"name": "Poetry", "icon": "auto_stories", "color_hex": "#f472b6", "priority": 13, "table_id": 25, "l1_category": "Poems"},
+    {"name": "English Poems", "icon": "auto_stories", "color_hex": "#f472b6", "priority": 13, "table_id": 25, "l1_category": "Poems"},
     {"name": "Movies", "icon": "movie", "color_hex": "#fb923c", "priority": 14, "table_id": 26},
     {"name": "Neuroscience", "icon": "microscope", "color_hex": "#a78bfa", "priority": 15, "table_id": 27},
     {"name": "Literature", "icon": "menu_book", "color_hex": "#fbbf24", "priority": 16, "table_id": 28},
@@ -54,7 +54,10 @@ CATEGORIES = [
     {"name": "Short Stories", "icon": "article", "color_hex": "#06b6d4", "priority": 23, "table_id": 35, "l1_category": "Short Stories"},
 
     # Poems subcategories
-    {"name": "Hindi Poetry", "icon": "auto_stories", "color_hex": "#f472b6", "priority": 24, "table_id": 36, "l1_category": "Poems"},
+    {"name": "Hindi Poems", "icon": "auto_stories", "color_hex": "#f472b6", "priority": 24, "table_id": 36, "l1_category": "Poems"},
+
+    {"name": "Classics", "icon": "menu_book", "color_hex": "#fbbf24", "priority": 32, "table_id": 44, "l1_category": "Poems"},
+    {"name": "Modern", "icon": "brush", "color_hex": "#a78bfa", "priority": 33, "table_id": 45, "l1_category": "Poems"},
 
     # Puzzles subcategories
     {"name": "Sudoku", "icon": "grid_on", "color_hex": "#f97316", "priority": 25, "table_id": 37, "l1_category": "Puzzles"},
@@ -101,7 +104,7 @@ CONTENT = [
     {"category_id": 11, "title": "The Amazon rainforest produces 20% of the world's oxygen", "body": "The Amazon spans 5.5 million square kilometers across 9 countries. It's home to 10% of the world's known species and produces approximately 20% of the Earth's oxygen. It also stores 150-200 billion tons of carbon.", "source": "World Wildlife Fund", "read_time_secs": 10, "tags": "amazon,rainforest,oxygen,climate", "likes": 3300, "description": "", "poet": ""},
     {"category_id": 12, "title": "More computing power exists in a smartphone than in the Apollo 11 spacecraft", "body": "The Apollo Guidance Computer had 64KB of memory and operated at 0.043 MHz. Your smartphone has billions of transistors, multi-core processors running at GHz speeds, and more computing power than NASA had when they sent humans to the Moon.", "source": "NASA Computing History", "read_time_secs": 10, "tags": "smartphone,apollo,computing-power", "likes": 5800, "description": "", "poet": ""},
     {"category_id": 12, "title": "The World Wide Web was invented in 1989 by Tim Berners-Lee", "body": "Working at CERN, Tim Berners-Lee proposed a system of interlinked hypertext documents accessible via the internet. The first website\u2014info.cern.ch\u2014went live in 1991. He gave away the technology for free, refusing to patent it.", "source": "CERN Web History", "read_time_secs": 12, "tags": "world-wide-web,internet,invention", "likes": 3100, "description": "", "poet": ""},
-    # Poetry (category_id: 25) - English poetry from renowned poets
+    # English Poems (category_id: 25) - English poetry from renowned poets
     {"category_id": 25, "title": "The Road Not Taken", "body": "Two roads diverged in a yellow wood, / And sorry I could not travel both / And be one traveler, long I stood / And looked down one as far as I could / To where it bent in the undergrowth; / ... / I took the one less traveled by, / And that has made all the difference.", "source": "Robert Frost, Mountain Interval (1916)", "read_time_secs": 15, "tags": "poetry,frost,choices,life", "likes": 9800, "description": "One of Frost's most beloved poems explores the human experience of choice and its lasting impact on our lives. Often misinterpreted as a simple celebration of individualism, the poem's speaker acknowledges with a sigh that both paths were equally worn, and the choice itself\u2014not the path\u2014is what makes all the difference.", "poet": "Robert Frost"},
     {"category_id": 25, "title": "I Wandered Lonely as a Cloud", "body": "I wandered lonely as a cloud / That floats on high o'er vales and hills, / When all at once I saw a crowd, / A host, of golden daffodils; / Beside the lake, beneath the trees, / Fluttering and dancing in the breeze.", "source": "William Wordsworth, Poems in Two Volumes (1807)", "read_time_secs": 12, "tags": "poetry,wordsworth,nature,daffodils", "likes": 8700, "description": "Wordsworth captures the profound joy found in nature's beauty and the power of memory to uplift the human spirit. Written after a walk with his sister Dorothy, the poem reflects the Romantic belief that nature offers emotional and spiritual nourishment that sustains us long after the moment has passed.", "poet": "William Wordsworth"},
     {"category_id": 25, "title": "Hope is the thing with feathers", "body": "Hope is the thing with feathers / That perches in the soul, / And sings the tune without the words, / And never stops at all.", "source": "Emily Dickinson, Complete Poems", "read_time_secs": 10, "tags": "poetry,dickinson,hope,inspiration", "likes": 9200, "description": "Dickinson's delicate and powerful metaphor portrays hope as a resilient bird that lives within the soul, singing tirelessly through storms and darkness. Despite life's harshest trials, hope asks nothing in return\u2014it simply persists, warm and unwavering.", "poet": "Emily Dickinson"},
@@ -110,9 +113,9 @@ CONTENT = [
     {"category_id": 25, "title": "If\u2014", "body": "If you can keep your head when all about you / Are losing theirs and blaming it on you, / If you can trust yourself when all men doubt you, / But make allowance for their doubting too; / ... / Yours is the Earth and everything that's in it, / And\u2014which is more\u2014you'll be a Man, my son!", "source": "Rudyard Kipling, Rewards and Fairies (1910)", "read_time_secs": 20, "tags": "poetry,kipling,stoicism,virtue", "likes": 7600, "description": "Kipling's iconic poem distills Victorian stoic virtue into a father's advice to his son. Written during the British Empire's zenith, it lays out a blueprint for character: patience, integrity, humility, resilience, and the ability to dream without being ruled by dreams.", "poet": "Rudyard Kipling"},
     {"category_id": 25, "title": "Ozymandias", "body": "I met a traveller from an antique land, / Who said: 'Two vast and trunkless legs of stone / Stand in the desert. ... Near them, on the sand, / Half sunk, a shattered visage lies, whose frown, / And wrinkled lip, and sneer of cold command, / Tell that its sculptor well those passions read / ... / My name is Ozymandias, King of Kings; / Look on my Works, ye Mighty, and despair!' / Nothing beside remains. Round the decay / Of that colossal Wreck, boundless and bare / The lone and level sands stretch far away.", "source": "Percy Bysshe Shelley (1818)", "read_time_secs": 18, "tags": "poetry,shelley,power,transience", "likes": 8200, "description": "Shelley's masterful sonnet meditates on the transience of political power and the humbling passage of time. The shattered statue of Ozymandias (the Greek name for Ramesses II) stands as a haunting reminder that even the mightiest empires crumble to dust.", "poet": "Percy Bysshe Shelley"},
     # Shayari (category_id: 33) - Hindi/Urdu poetry
-    {"category_id": 33, "title": "Hazaron Khwahishen Aisi", "body": "Hazaron khwahishen aisi, ke har khwahish pe dam nikle / Bahut nikle mere armaan, lekin phir bhi kam nikle", "source": "Mirza Ghalib, Diwan-e-Ghalib", "read_time_secs": 15, "tags": "shayari,ghalib,urdu,desire", "likes": 12500, "description": "Ghalib, the last great poet of the Mughal era, reflects on the endless nature of human desire. No matter how many wishes are fulfilled, the heart always yearns for more.", "poet": "Mirza Ghalib"},
-    {"category_id": 33, "title": "Khudi Ko Kar Buland Itna", "body": "Khudi ko kar buland itna ke har taqdeer se pehle / Khuda bande se khud poochhe, bataa teri raza kya hai", "source": "Allama Iqbal, Bal-e-Jibreel", "read_time_secs": 12, "tags": "shayari,iqbal,urdu,self-empowerment", "likes": 11200, "description": "Iqbal's most celebrated couplet is an inspiring call to elevate one's selfhood (khudi) to such heights that even destiny consults you before deciding your fate.", "poet": "Allama Iqbal"},
-    {"category_id": 33, "title": "Madhushala", "body": "Madhushala ek mahal hai jiska dwar hai pyasa / Jo bhi andar jaata hai, woh jaata hai udasa", "source": "Harivansh Rai Bachchan, Madhushala (1935)", "read_time_secs": 10, "tags": "shayari,bachchan,hindi,madhushala", "likes": 9500, "description": "Bachchan's iconic poem 'Madhushala' (The Tavern of Wine) is an allegory for life itself, where the intoxicating elixir of existence is offered to all who seek meaning.", "poet": "Harivansh Rai Bachchan"},
+    {"category_id": 33, "title": "Hazaron Khwahishen Aisi", "body": "Hazaron khwahishen aisi, ke har khwahish pe dam nikle / Bahut nikle mere armaan, lekin phir bhi kam nikle / \u0939\u091c\u093e\u0930\u094b\u0902 \u0916\u094d\u0935\u093e\u0939\u093f\u0936\u0947\u0902 \u0910\u0938\u0940 \u0915\u093f \u0939\u0930 \u0916\u094d\u0935\u093e\u0939\u093f\u0936 \u092a\u0947 \u0926\u092e \u0928\u093f\u0915\u0932\u0947 / \u092c\u0939\u0941\u0924 \u0928\u093f\u0915\u0932\u0947 \u092e\u0947\u0930\u0947 \u0905\u0930\u092e\u093e\u0928 \u0932\u0947\u0915\u093f\u0928 \u092b\u093f\u0930 \u092d\u0940 \u0915\u092e \u0928\u093f\u0915\u0932\u0947", "source": "Mirza Ghalib, Diwan-e-Ghalib", "read_time_secs": 15, "tags": "shayari,ghalib,urdu,desire", "likes": 12500, "description": "Ghalib, the last great poet of the Mughal era, reflects on the endless nature of human desire. No matter how many wishes are fulfilled, the heart always yearns for more.", "poet": "Mirza Ghalib"},
+    {"category_id": 33, "title": "Khudi Ko Kar Buland Itna", "body": "Khudi ko kar buland itna ke har taqdeer se pehle / Khuda bande se khud poochhe, bataa teri raza kya hai / \u0916\u0941\u0926\u0940 \u0915\u094b \u0915\u0930 \u0628\u0644\u0646\u062f \u0627\u062a\u0646\u0627 \u06a9\u06c1 \u06c1\u0631 \u062a\u0642\u062f\u06cc\u0631 \u0633\u06d2 \u067e\u06c1\u0644\u06d2 / \u062e\u062f\u0627 \u0628\u0646\u062f\u06d2 \u0633\u06d2 \u062e\u0648\u062f \u067e\u0648\u0686\u06d2\u060c \u0628\u062a\u0627 \u062a\u06cc\u0631\u06cc \u0631\u0636\u0627 \u06a9\u06cc\u0627 \u06c1\u06d2", "source": "Allama Iqbal, Bal-e-Jibreel", "read_time_secs": 12, "tags": "shayari,iqbal,urdu,self-empowerment", "likes": 11200, "description": "Iqbal's most celebrated couplet is an inspiring call to elevate one's selfhood (khudi) to such heights that even destiny consults you before deciding your fate.", "poet": "Allama Iqbal"},
+    {"category_id": 33, "title": "Madhushala", "body": "Madhushala ek mahal hai jiska dwar hai pyasa / Jo bhi andar jaata hai, woh jaata hai udasa / \u092e\u0927\u0941\u0936\u093e\u0932\u093e \u090f\u0915 \u092e\u0939\u0932 \u0939\u0948 \u091c\u093f\u0938\u0915\u093e \u0926\u094d\u0935\u093e\u0930 \u0939\u0948 \u092a\u094d\u092f\u093e\u0938\u093e / \u091c\u094b \u092d\u0940 \u0905\u0902\u0926\u0930 \u091c\u093e\u0924\u093e \u0939\u0948 \u0935\u0939 \u091c\u093e\u0924\u093e \u0939\u0948 \u0909\u0926\u093e\u0938\u093e", "source": "Harivansh Rai Bachchan, Madhushala (1935)", "read_time_secs": 10, "tags": "shayari,bachchan,hindi,madhushala", "likes": 9500, "description": "Bachchan's iconic poem 'Madhushala' (The Tavern of Wine) is an allegory for life itself, where the intoxicating elixir of existence is offered to all who seek meaning.", "poet": "Harivansh Rai Bachchan"},
     {"category_id": 33, "title": "Mujh Se Pehli Si Mohabbat", "body": "Mujh se pehli si mohabbat, mere mehboob, na maang / Maine samjha tha ke tu hai to darakhshan hai hayat", "source": "Faiz Ahmed Faiz, Naqsh-e-Faryadi (1943)", "read_time_secs": 12, "tags": "shayari,faiz,urdu,love,longing", "likes": 10800, "description": "Faiz's heartbreakingly beautiful poem asks his beloved not to demand the same pure love as before\u2014because the poet has now seen the suffering of the world.", "poet": "Faiz Ahmed Faiz"},
     {"category_id": 33, "title": "Kabir Ke Dohe", "body": "Bada hua to kya hua, jaise ped khajoor / Paanthi ko chhaya nahi, phal laage ati door", "source": "Sant Kabir, Kabir Ke Dohe", "read_time_secs": 10, "tags": "shayari,kabir,hindi,dohe,wisdom", "likes": 8500, "description": "Kabir's pointed observation uses the date palm as a metaphor: what good is stature if it offers no shade to the weary traveler?", "poet": "Sant Kabir"},
     {"category_id": 33, "title": "Gulzar Ki Nazm", "body": "Aankhon se utarta hua, dil mein utar jaata hai / Ek rishta aisa bhi hai, jo kuchh bhi nahi rehta", "source": "Gulzar, Raat Pashminey Ki", "read_time_secs": 10, "tags": "shayari,gulzar,hindi,relationships", "likes": 7800, "description": "Gulzar captures the paradox of a relationship that exists in the liminal space between presence and absence.", "poet": "Gulzar"},
@@ -120,7 +123,7 @@ CONTENT = [
     {"category_id": 33, "title": "Main Akela Aksar", "body": "Main akela aksar sochta hoon / Kabhi kabhi toh aisa lagta hai / Jaise koi aur jeeta hai mere andar", "source": "Dushyant Kumar, Saaye Mein Dhoop", "read_time_secs": 12, "tags": "shayari,dushyant,hindi,self-reflection", "likes": 7400, "description": "Dushyant Kumar's deeply introspective verse explores the uncanny feeling that there exists another self living within us.", "poet": "Dushyant Kumar"},
     {"category_id": 33, "title": "Rahim Ke Dohe", "body": "Rahiman dhaga prem ka, mat todo chatkaye / Toote se phir na jude, jude gaanth par jaaye", "source": "Rahim, Rahim Ke Dohe", "read_time_secs": 8, "tags": "shayari,rahim,hindi,love,dohe", "likes": 7100, "description": "Rahim offers timeless relationship wisdom through the metaphor of a thread. Once broken, it can be tied again, but the knot will always remain.", "poet": "Rahim"},
 
-    # Hindi Poetry (table_id: 36) - Hindi poems
+    # Hindi Poems (table_id: 36) - Hindi poems
     {"category_id": 36, "title": "Wo Ladki", "body": "Wo ladki jise maine dekha tha ek baar / Badalon ke us paar / Us ladki ki yaad mein / Maine likh dali ye kavita saari / Ek baar dekha tha use / Aur yaad aa gaya mujhe / Poora ka poora sansar", "source": "Original Composition for Curio", "read_time_secs": 10, "tags": "hindi,kavita,poem", "likes": 1200, "description": "A Hindi poem about a fleeting glimpse that brings back memories of an entire world.", "poet": ""},
     {"category_id": 36, "title": "Aaj Phir Jeene Ki", "body": "Aaj phir jeene ki ichchha hui / Subah ki dhoop mein / Chai ki pyali mein / Tumhari yaad mein / Aur is kavita ki panktiyon mein", "source": "Original Composition for Curio", "read_time_secs": 8, "tags": "hindi,kavita,morning,life", "likes": 980, "description": "A tender Hindi poem celebrating the simple joys of life.", "poet": ""},
     {"category_id": 36, "title": "Sapno Ka Shahar", "body": "Har gali mein ek kahani / Har modh pe ek nishani / Ye shahar sapno ka bunkar hai / Har subah ek nayi umeed / Har shaam ek nayi tasveer / Ye shahar sapno ka bunkar hai", "source": "Original Composition for Curio", "read_time_secs": 10, "tags": "hindi,kavita,city,dreams", "likes": 850, "description": "A poetic tribute to a city of dreams, where every street holds a story.", "poet": ""},
@@ -141,6 +144,16 @@ CONTENT = [
     {"category_id": 43, "title": "The Lighthouse Keeper (Part 1: The Storm)", "body": "PART 1: THE STORM\n\nThe lighthouse had stood for two hundred years, but never had it faced a storm like this. Elias tightened the last bolt on the lantern mechanism and steadied himself against the tower's shudder. Below, waves crashed against the granite foundation with a fury that seemed almost personal. His son, Leo, handed him a fresh cup of coffee. 'Will it hold?' Leo shouted over the wind. Elias looked at the ancient lens\u2014the same one his father had polished, and his grandfather before that. 'It has to,' he said. 'There's a ship out there.'\n\n[Continued in Part 2]", "source": "Original Serial Fiction for Curio", "read_time_secs": 30, "tags": "serial,lighthouse,storm,drama", "likes": 1800, "description": "Part 1 of a gripping serial about a lighthouse keeper fighting to keep the light burning during a historic storm.", "poet": ""},
     {"category_id": 43, "title": "The Lighthouse Keeper (Part 2: The Signal)", "body": "PART 2: THE SIGNAL\n\nThe ship's lights had vanished. Elias pressed his face against the storm-streaked glass, searching the churning darkness. 'I can't see it anymore,' Leo said, his voice tight with fear. Elias began to crank the emergency reflector into position. It was a desperate measure\u2014a signal flare system that hadn't been used since the war. 'But father,' Leo protested, 'that could set the whole tower alight!' Elias smiled grimly. 'Then at least they'll see us burn.'\n\n[Finale in Part 3]", "source": "Original Serial Fiction for Curio", "read_time_secs": 25, "tags": "serial,lighthouse,signal,sacrifice", "likes": 1600, "description": "Part 2 raises the stakes as Elias prepares to risk everything to save the ship.", "poet": ""},
     {"category_id": 43, "title": "The Lighthouse Keeper (Part 3: The Rescue)", "body": "PART 3: THE RESCUE\n\nThe flare ignited the sky. For one brilliant moment, the entire coast was illuminated\u2014the jagged rocks, the churning surf, and the ship, perilously close to the reef. 'They see us!' Leo shouted. Below, a lifeboat was being lowered. As dawn broke and the storm subsided, the ship anchored safely in the harbor. Elias looked at his son. 'We kept the light burning. That's all we've ever done.'\n\nTHE END", "source": "Original Serial Fiction for Curio", "read_time_secs": 35, "tags": "serial,lighthouse,rescue,conclusion", "likes": 2000, "description": "The thrilling conclusion! The desperate flare works, the ship is saved, and Elias passes the legacy to his son.", "poet": ""},
+
+    # Classics (table_id: 44) - Classic English poems
+    {"category_id": 44, "title": "Sonnet 18", "body": "Shall I compare thee to a summer's day? Thou art more lovely and more temperate. Rough winds do shake the darling buds of May, And summer's lease hath all too short a date. But thy eternal summer shall not fade, So long as men can breathe or eyes can see, So long lives this, and this gives life to thee.", "source": "William Shakespeare (1609)", "read_time_secs": 15, "tags": "classic,shakespeare,sonnet,poetry", "likes": 11500, "description": "Shakespeare's most famous sonnet immortalizes the beloved through poetry itself.", "poet": "William Shakespeare"},
+    {"category_id": 44, "title": "Kubla Khan", "body": "In Xanadu did Kubla Khan A stately pleasure-dome decree. Where Alph, the sacred river, ran Through caverns measureless to man Down to a sunless sea.", "source": "Samuel Taylor Coleridge (1816)", "read_time_secs": 18, "tags": "classic,coleridge,romantic,visionary", "likes": 7200, "description": "Coleridge's visionary fragment creates an otherworldly atmosphere.", "poet": "Samuel Taylor Coleridge"},
+    {"category_id": 44, "title": "Dover Beach", "body": "The sea is calm tonight. The tide is full, the moon lies fair Upon the straits. Ah, love, let us be true To one another! for the world hath really neither joy, nor love, nor light, Nor certitude, nor peace, nor help for pain.", "source": "Matthew Arnold (1867)", "read_time_secs": 15, "tags": "classic,arnold,victorian,sea,faith", "likes": 6800, "description": "Arnold's melancholic masterpiece captures the Victorian crisis of faith.", "poet": "Matthew Arnold"},
+
+    # Modern (table_id: 45) - Modern English poems
+    {"category_id": 45, "title": "The Love Song of J. Alfred Prufrock", "body": "Let us go then, you and I, When the evening is spread out against the sky Like a patient etherized upon a table. Do I dare Disturb the universe?", "source": "T.S. Eliot (1915)", "read_time_secs": 25, "tags": "modern,eliot,modernist,anxiety", "likes": 8500, "description": "Eliot's revolutionary poem captures the existential anxiety of the 20th century.", "poet": "T.S. Eliot"},
+    {"category_id": 45, "title": "Do Not Go Gentle Into That Good Night", "body": "Do not go gentle into that good night. Old age should burn and rave at close of day. Rage, rage against the dying of the light.", "source": "Dylan Thomas (1951)", "read_time_secs": 12, "tags": "modern,thomas,death,defiance", "likes": 10500, "description": "Thomas's powerful villanelle transforms grief into life-affirming resistance.", "poet": "Dylan Thomas"},
+    {"category_id": 45, "title": "The Waste Land (Excerpt)", "body": "April is the cruellest month, breeding Lilacs out of the dead land. I will show you fear in a handful of dust. These fragments I have shored against my ruins.", "source": "T.S. Eliot (1922)", "read_time_secs": 20, "tags": "modern,eliot,waste-land,fragmentation", "likes": 7800, "description": "The defining poem of modernist literature.", "poet": "T.S. Eliot"},
 ]
 
 CREATE_CATEGORIES_TABLE = """
@@ -268,7 +281,6 @@ def seed_content(conn):
                 count += 1
     print(f"\u2713 Content: {count} new, {len(CONTENT) - count} existing")
 
-
 # Puzzles seed data
 PUZZLES = [
     # Sudoku (table_id 37)
@@ -389,6 +401,35 @@ def verify_puzzles(conn):
     print(f"  Total puzzles in DB: {cnt}")
 
 
+def rebuild_view(conn):
+    """Rebuild the contents VIEW to include all per-category tables."""
+    with conn.cursor() as cur:
+        cur.execute("DROP VIEW IF EXISTS contents CASCADE;")
+        cur.execute("SELECT id, name, COALESCE(NULLIF(content_table_id, 0), id) as tbl_id FROM categories ORDER BY id;")
+        categories = cur.fetchall()
+        if not categories:
+            print("  \u26a0 No categories found, cannot rebuild VIEW")
+            return
+        parts = []
+        for cat_id, cat_name, tbl_id in categories:
+            safe_name = cat_name.replace("'", "''")
+            parts.append(
+                "    SELECT\n"
+                "        (c" + str(cat_id) + ".id + " + str(cat_id) + "0000000)::integer AS id,\n"
+                "        " + str(cat_id) + " AS category_id,\n"
+                "        '" + safe_name + "'::varchar(255) AS category_name,\n"
+                "        c" + str(cat_id) + ".title, c" + str(cat_id) + ".body, c" + str(cat_id) + ".description, c" + str(cat_id) + ".poet,"
+                " c" + str(cat_id) + ".source, c" + str(cat_id) + ".source_url,\n"
+                "        c" + str(cat_id) + ".read_time_secs, c" + str(cat_id) + ".tags, c" + str(cat_id) + ".likes, c" + str(cat_id) + ".created_at\n"
+                "    FROM contents_" + str(tbl_id) + " c" + str(cat_id)
+            )
+        sql = "CREATE OR REPLACE VIEW contents AS\n" + "\nUNION ALL\n".join(parts) + ";"
+        cur.execute(sql)
+        cur.execute("SELECT COUNT(*) FROM contents;")
+        total = cur.fetchone()[0]
+    print(f"\u2713 VIEW rebuilt: {len(categories)} categories, {total} content items")
+
+
 def reset_tables(conn):
     with conn.cursor() as cur:
         cur.execute("DROP VIEW IF EXISTS contents CASCADE;")
@@ -431,6 +472,10 @@ def main():
     seed_content(conn)
 
     verify(conn)
+
+
+    print("Rebuilding contents VIEW...")
+    rebuild_view(conn)
 
     print("\nSeeding puzzles...")
     seed_puzzles(conn)
