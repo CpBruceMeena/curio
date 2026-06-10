@@ -45,7 +45,6 @@ import com.curio.app.viewmodel.FeedViewModel
 @Composable
 fun MainTabScreen(
     feedViewModel: FeedViewModel = viewModel(),
-    onBack: () -> Unit = {},
     onPuzzleNavigate: (categoryId: Long, puzzleType: String) -> Unit = { _, _ -> }
 ) {
     var showDiscover by remember { mutableStateOf(false) }
@@ -67,13 +66,13 @@ fun MainTabScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (showDiscover) {
-                // Discover page: back arrow on left, "Discover" centered, feed icon on right
+                // Discover page: back arrow returns to feed, "Discover" centered, home icon on right
                 IconButton(
-                    onClick = onBack
+                    onClick = { showDiscover = false }
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
+                        contentDescription = "Back to feed",
                         tint = OnSurfaceVariant.copy(alpha = 0.7f),
                         modifier = Modifier.size(28.dp)
                     )
@@ -99,13 +98,13 @@ fun MainTabScreen(
                     )
                 }
             } else {
-                // Feed page: back arrow on left, category centered, discover icon on right
+                // Feed page: back arrow opens discover L1 page, category centered, explore icon on right
                 IconButton(
-                    onClick = onBack
+                    onClick = { showDiscover = true }
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
+                        contentDescription = "Discover L1 categories",
                         tint = OnSurfaceVariant.copy(alpha = 0.7f),
                         modifier = Modifier.size(28.dp)
                     )
