@@ -6,24 +6,32 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Shuffle
+import androidx.compose.material.icons.outlined.Bookmark
+import androidx.compose.material.icons.outlined.Explore
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,16 +39,30 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.curio.app.CurioApp
 import com.curio.app.ui.components.FeedbackDialog
 import com.curio.app.ui.screens.discover.DiscoverScreen
-import com.curio.app.ui.theme.OnSurfaceVariant
-import com.curio.app.ui.theme.Surface
-import com.curio.app.ui.theme.SecondaryContainer
+import com.curio.app.ui.screens.profile.ProfileScreen
+import com.curio.app.ui.theme.curioColors
 import com.curio.app.viewmodel.FeedViewModel
+
+private enum class BottomTab(
+    val label: String,
+    val selectedIcon: ImageVector,
+    val unselectedIcon: ImageVector
+) {
+    Discover("Discover", Icons.Filled.Explore, Icons.Outlined.Explore),
+    Feed("Feed", Icons.Filled.Home, Icons.Outlined.Home),
+    Bookmarks("Bookmarks", Icons.Filled.Bookmark, Icons.Outlined.Bookmark),
+    Profile("Profile", Icons.Filled.Person, Icons.Outlined.Person)
+}
 
 @Composable
 fun MainTabScreen(
@@ -50,136 +72,190 @@ fun MainTabScreen(
 ) {
     var showFeedbackDialog by remember { mutableStateOf(false) }
     var currentCategory by remember { mutableStateOf("") }
+    var selectedTab by remember { mutableStateOf(BottomTab.Feed) }
+
+    val prefs = remember { CurioApp.instance.prefs }
+
+    val isFeed = selectedTab == BottomTab.Feed
+    val isDiscover = selectedTab == BottomTab.Discover
+    val isBookmarks = selectedTab == BottomTab.Bookmarks
+    val isProfile = selectedTab == BottomTab.Profile
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Surface)
-            .systemBarsPadding()
+            .background(MaterialTheme.colorScheme.surface)
+            .statusBarsPadding()
     ) {
-        // Top bar
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Surface)
-                .padding(horizontal = 8.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (feedViewModel.showDiscover) {
-                // Discover page: back arrow returns to feed, "Discover" centered, home icon on right
-                IconButton(
-                    onClick = { feedViewModel.showDiscover = false }
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back to feed",
-                        tint = OnSurfaceVariant.copy(alpha = 0.7f),
-                        modifier = Modifier.size(28.dp)
-                    )
-                }
-
-                Text(
-                    text = "Discover",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = SecondaryContainer,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
-
-                IconButton(
-                    onClick = { feedViewModel.showDiscover = false }
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Home,
-                        contentDescription = "Feed",
-                        tint = OnSurfaceVariant.copy(alpha = 0.7f),
-                        modifier = Modifier.size(28.dp)
-                    )
-                }
-            } else {
-                // Feed page: back arrow opens discover L1 page, category centered, explore icon on right
-                IconButton(
-                    onClick = { feedViewModel.showDiscover = true }
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Discover L1 categories",
-                        tint = OnSurfaceVariant.copy(alpha = 0.7f),
-                        modifier = Modifier.size(28.dp)
-                    )
-                }
-
-                Text(
-                    text = currentCategory,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = SecondaryContainer,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
-
-                IconButton(
-                    onClick = { feedViewModel.showDiscover = true }
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Explore,
-                        contentDescription = "Discover categories",
-                        tint = OnSurfaceVariant.copy(alpha = 0.7f),
-                        modifier = Modifier.size(28.dp)
-                    )
-                }
-            }
-        }
-
-        // Main content — feed by default, discover on icon tap
-        AnimatedContent(
-            targetState = feedViewModel.showDiscover,
-            transitionSpec = { fadeIn() togetherWith fadeOut() },
-            label = "mainContent",
-            modifier = Modifier.weight(1f)
-        ) { isDiscover ->
-            if (isDiscover) {
-                DiscoverScreen(
-                    viewModel = feedViewModel,
-                    onApplyFilter = {
-                        feedViewModel.showDiscover = false
-                    },
-                    onCategoryClick = { categoryId ->
-                        feedViewModel.setSelectedCategoryIds(setOf(categoryId))
-                        feedViewModel.showDiscover = false
-                    },
-                    onPuzzleNavigate = { categoryId, puzzleType ->
-                        onPuzzleNavigate(categoryId, puzzleType)
-                    },
-                    onContentClick = onContentClick
-                )
-            } else {
-                FeedScreen(
-                    viewModel = feedViewModel,
-                    onCategoryChange = { category -> currentCategory = category },
-                    onNavigateToDiscover = { feedViewModel.showDiscover = true }
-                )
-            }
-        }
-
-        // Bottom feedback bar
+        // ── Compact Top Bar ──
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Surface)
-                .padding(horizontal = 16.dp, vertical = 4.dp),
+                .background(MaterialTheme.colorScheme.surface)
+                .padding(horizontal = 16.dp, vertical = 14.dp)
+        ) {
+            val cc = curioColors()
+            when {
+                isFeed -> {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = currentCategory,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = cc.secondaryContainer,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        // Shuffle button
+                        IconButton(
+                            onClick = { feedViewModel.shuffleFeed() },
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Shuffle,
+                                contentDescription = "Shuffle",
+                                tint = cc.accentGradientStart.copy(alpha = 0.8f),
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
+                }
+                isDiscover -> {
+                    Text(
+                        text = "Discover",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = cc.secondaryContainer,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                isBookmarks -> {
+                    Text(
+                        text = "Bookmarks",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = cc.bookmarkActive,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                isProfile -> {
+                    Text(
+                        text = "Profile",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = cc.onSurface,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+
+        // ── Main Content Area ──
+        Box(modifier = Modifier.weight(1f)) {
+            when (selectedTab) {
+                BottomTab.Feed -> {
+                    FeedScreen(
+                        viewModel = feedViewModel,
+                        onCategoryChange = { category -> currentCategory = category },
+                        onNavigateToDiscover = { selectedTab = BottomTab.Discover }
+                    )
+                }
+                BottomTab.Discover -> {
+                    DiscoverScreen(
+                        viewModel = feedViewModel,
+                        onApplyFilter = { selectedTab = BottomTab.Feed },
+                        onCategoryClick = { categoryId ->
+                            feedViewModel.setSelectedCategoryIds(setOf(categoryId))
+                            selectedTab = BottomTab.Feed
+                        },
+                        onPuzzleNavigate = { categoryId, puzzleType ->
+                            onPuzzleNavigate(categoryId, puzzleType)
+                        },
+                        onContentClick = onContentClick
+                    )
+                }
+                BottomTab.Bookmarks -> {
+                    BookmarksScreen(
+                        viewModel = feedViewModel,
+                        onContentClick = onContentClick
+                    )
+                }
+                BottomTab.Profile -> {
+                    ProfileScreen(prefs = prefs)
+                }
+            }
+        }
+
+        // ── Bottom Navigation Bar ──
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.98f))
+                .padding(horizontal = 8.dp, vertical = 6.dp)
+                .padding(bottom = 4.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            BottomTab.entries.forEach { tab ->
+                val cc = curioColors()
+                val isActive = selectedTab == tab
+                val tabColor = if (isActive) {
+                    when (tab) {
+                        BottomTab.Discover -> cc.secondaryContainer
+                        BottomTab.Feed -> cc.secondaryContainer
+                        BottomTab.Bookmarks -> cc.bookmarkActive
+                        BottomTab.Profile -> cc.onSurface
+                    }
+                } else {
+                    cc.onSurfaceVariant.copy(alpha = 0.5f)
+                }
+
+                Column(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable {
+                            if (tab == BottomTab.Discover) feedViewModel.refreshDiscover()
+                            if (tab == BottomTab.Bookmarks) feedViewModel.loadBookmarkedContent()
+                            selectedTab = tab
+                        }
+                        .padding(horizontal = 12.dp, vertical = 4.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        imageVector = if (isActive) tab.selectedIcon else tab.unselectedIcon,
+                        contentDescription = tab.label,
+                        tint = tabColor,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Text(
+                        text = tab.label,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = tabColor,
+                        fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
+                        fontSize = 10.sp
+                    )
+                }
+            }
+        }
+
+        // ── Feedback FAB (small clickable text above bottom bar) ──
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surface)
+                .padding(horizontal = 16.dp, vertical = 2.dp),
             contentAlignment = Alignment.Center
         ) {
+            val cc = curioColors()
             Text(
-                text = "💬  Send Feedback",
-                fontSize = 13.sp,
-                color = OnSurfaceVariant.copy(alpha = 0.6f),
+                text = "💬 Feedback",
+                fontSize = 11.sp,
+                color = cc.onSurfaceVariant.copy(alpha = 0.4f),
                 fontWeight = FontWeight.Medium,
                 modifier = Modifier
-                    .clip(RoundedCornerShape(16.dp))
+                    .clip(RoundedCornerShape(12.dp))
                     .clickable { showFeedbackDialog = true }
-                    .padding(horizontal = 20.dp, vertical = 8.dp)
+                    .padding(horizontal = 12.dp, vertical = 4.dp)
             )
         }
     }

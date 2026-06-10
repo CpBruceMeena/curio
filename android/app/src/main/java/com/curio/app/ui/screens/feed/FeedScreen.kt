@@ -19,6 +19,8 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -33,18 +35,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.curio.app.ui.theme.Error
-import com.curio.app.ui.theme.OnSurface
-import com.curio.app.ui.theme.OnSurfaceVariant
-import com.curio.app.ui.theme.Primary
-import com.curio.app.ui.theme.SecondaryContainer
-import com.curio.app.ui.theme.Surface
-import com.curio.app.ui.theme.SurfaceContainer
+import com.curio.app.ui.theme.curioColors
 import com.curio.app.viewmodel.FeedViewModel
 
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
@@ -75,10 +73,12 @@ fun FeedScreen(
         }
     }
 
+    // Update category name and save feed position on page change
     LaunchedEffect(pagerState.currentPage) {
         val item = uiState.content.getOrNull(pagerState.currentPage)
         if (item != null) {
             onCategoryChange(item.categoryName)
+            viewModel.saveFeedPosition(pagerState.currentPage)
         }
     }
 
@@ -100,8 +100,9 @@ fun FeedScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Surface)
+            .background(MaterialTheme.colorScheme.surface)
     ) {
+        val cc = curioColors()
         when {
             uiState.isLoading && uiState.content.isEmpty() -> {
                 Box(
@@ -111,7 +112,7 @@ fun FeedScreen(
                     Text(
                         text = "Loading curious content...",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = OnSurfaceVariant
+                        color = cc.onSurfaceVariant
                     )
                 }
             }
@@ -126,13 +127,13 @@ fun FeedScreen(
                         Text(
                             text = "Couldn't load feed",
                             style = MaterialTheme.typography.bodyLarge,
-                            color = Error
+                            color = cc.error
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = uiState.error ?: "Network error",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = OnSurfaceVariant.copy(alpha = 0.6f),
+                            color = cc.onSurfaceVariant.copy(alpha = 0.6f),
                             textAlign = TextAlign.Center
                         )
                     }
@@ -151,14 +152,14 @@ fun FeedScreen(
                     Text(
                         text = "Nothing here yet!",
                         style = MaterialTheme.typography.headlineSmall,
-                        color = OnSurface,
+                        color = cc.onSurface,
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = "This category is still growing. Explore these while we find more gems for you:",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = OnSurfaceVariant.copy(alpha = 0.7f),
+                        color = cc.onSurfaceVariant.copy(alpha = 0.7f),
                         textAlign = TextAlign.Center,
                         lineHeight = 22.sp
                     )
@@ -176,7 +177,7 @@ fun FeedScreen(
                                     modifier = Modifier
                                         .weight(1f)
                                         .clip(RoundedCornerShape(14.dp))
-                                        .background(SecondaryContainer.copy(alpha = 0.15f))
+                                        .background(cc.secondaryContainer.copy(alpha = 0.15f))
                                         .clickable {
                                             viewModel.setSelectedCategoryIds(setOf(cat.id))
                                         }
@@ -187,14 +188,14 @@ fun FeedScreen(
                                         Text(
                                             text = cat.name.take(2).uppercase(),
                                             style = MaterialTheme.typography.labelLarge,
-                                            color = SecondaryContainer,
+                                            color = cc.secondaryContainer,
                                             fontWeight = FontWeight.ExtraBold
                                         )
                                         Spacer(modifier = Modifier.height(2.dp))
                                         Text(
                                             text = cat.name,
                                             style = MaterialTheme.typography.labelSmall,
-                                            color = SecondaryContainer.copy(alpha = 0.8f),
+                                            color = cc.secondaryContainer.copy(alpha = 0.8f),
                                             fontWeight = FontWeight.Bold,
                                             maxLines = 1,
                                             fontSize = 11.sp,
@@ -214,14 +215,14 @@ fun FeedScreen(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(16.dp))
-                            .background(SecondaryContainer.copy(alpha = 0.2f))
+                            .background(cc.secondaryContainer.copy(alpha = 0.2f))
                             .clickable { onNavigateToDiscover() }
                             .padding(horizontal = 28.dp, vertical = 14.dp)
                     ) {
                         Text(
                             text = "Browse All Categories 🎯",
                             style = MaterialTheme.typography.labelLarge,
-                            color = SecondaryContainer,
+                            color = cc.secondaryContainer,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -233,10 +234,26 @@ fun FeedScreen(
                     modifier = Modifier.fillMaxSize()
                 ) { page ->
                     val item = uiState.content[page]
+                    val pageOffset by remember {
+                        derivedStateOf {
+                            (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
+                        }
+                    }
+
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(horizontal = 16.dp, vertical = 12.dp)
+                            .graphicsLayer {
+                                // 3D tilt/parallax effect
+                                rotationY = pageOffset * 12f
+                                translationX = if (pageOffset != 0f) {
+                                    pageOffset * size.width * 0.08f
+                                } else 0f
+                                shadowElevation = (kotlin.math.abs(pageOffset) * 12f).coerceAtMost(12f)
+                                alpha = (1f - kotlin.math.abs(pageOffset) * 0.15f).coerceIn(0.7f, 1f)
+                                cameraDistance = 12f * density
+                            }
                     ) {
                         FullPageCard(
                             title = item.title,
@@ -244,7 +261,9 @@ fun FeedScreen(
                             poet = item.poet,
                             body = item.body,
                             readTime = item.readTimeSecs,
-                            source = item.source
+                            source = item.source,
+                            isBookmarked = viewModel.isBookmarked(item.id),
+                            onToggleBookmark = { viewModel.toggleBookmark(item.id) }
                         )
                     }
                 }
@@ -260,128 +279,197 @@ internal fun FullPageCard(
     poet: String = "",
     body: String,
     readTime: Int,
-    source: String
+    source: String,
+    isBookmarked: Boolean = false,
+    onToggleBookmark: () -> Unit = {}
 ) {
     val context = LocalContext.current
+    val cc = curioColors()
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .clip(RoundedCornerShape(24.dp))
-            .background(SurfaceContainer)
-    ) {            Column(
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(cc.cardGradientStart, cc.cardGradientEnd)
+                )
+            )
+    ) {
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(start = 32.dp, end = 32.dp, top = 32.dp, bottom = 16.dp),
-            horizontalAlignment = Alignment.Start
+                .padding(start = 2.dp, end = 2.dp, top = 2.dp, bottom = 2.dp)
+                .clip(RoundedCornerShape(22.dp))
+                .background(cc.surfaceContainer)
         ) {
-            // Poet name (poems, shayari)
-            if (poet.isNotEmpty()) {
+            // Scrollable content area — takes remaining space
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(start = 32.dp, end = 32.dp, top = 32.dp),
+                horizontalAlignment = Alignment.Start
+            ) {
+                // Poet name (poems, shayari)
+                if (poet.isNotEmpty()) {
+                    Text(
+                        text = poet,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = cc.accentGradientStart.copy(alpha = 0.8f),
+                        fontWeight = FontWeight.SemiBold,
+                        textAlign = TextAlign.Start
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
+                // Title — full, no truncation
                 Text(
-                    text = poet,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Primary.copy(alpha = 0.8f),
-                    fontWeight = FontWeight.SemiBold,
+                    text = title,
+                    style = MaterialTheme.typography.headlineLarge,
+                    color = cc.onSurface,
+                    fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Start
                 )
-                Spacer(modifier = Modifier.height(8.dp))
-            }
 
-            // Title — full, no truncation
-            Text(
-                text = title,
-                style = MaterialTheme.typography.headlineLarge,
-                color = OnSurface,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Start
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Body — left-aligned for readability across all content types
-            Text(
-                text = body,
-                style = MaterialTheme.typography.bodyLarge,
-                color = OnSurfaceVariant.copy(alpha = 0.9f),
-                textAlign = TextAlign.Start,
-                lineHeight = 26.sp
-            )
-
-            // Description — contextual explanation below the poem
-            if (description.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(12.dp))
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(SecondaryContainer.copy(alpha = 0.08f))
-                        .padding(horizontal = 16.dp, vertical = 12.dp)
-                ) {
-                    Text(
-                        text = description,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = OnSurfaceVariant.copy(alpha = 0.85f),
-                        textAlign = TextAlign.Start,
-                        lineHeight = 20.sp
-                    )
+
+                // Body — left-aligned for readability across all content types
+                Text(
+                    text = body,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = cc.onSurfaceVariant.copy(alpha = 0.9f),
+                    textAlign = TextAlign.Start,
+                    lineHeight = 26.sp
+                )
+
+                // Description — contextual explanation below the poem
+                if (description.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(
+                                Brush.horizontalGradient(
+                                    colors = listOf(
+                                        cc.accentGradientStart.copy(alpha = 0.08f),
+                                        cc.accentGradientMid.copy(alpha = 0.04f)
+                                    )
+                                )
+                            )
+                            .padding(horizontal = 16.dp, vertical = 12.dp)
+                    ) {
+                        Text(
+                            text = description,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = cc.onSurfaceVariant.copy(alpha = 0.85f),
+                            textAlign = TextAlign.Start,
+                            lineHeight = 20.sp
+                        )
+                    }
                 }
+
+                // Extra spacing so content doesn't hide behind the bottom bar
+                Spacer(modifier = Modifier.height(16.dp))
             }
 
-            // Bottom metadata + share (left-aligned to match body)
+            // Bottom action bar — always at the bottom
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 12.dp),
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                cc.surfaceVariant.copy(alpha = 0.0f),
+                                cc.surfaceVariant.copy(alpha = 0.3f)
+                            )
+                        )
+                    )
+                    .padding(start = 24.dp, end = 8.dp, top = 8.dp, bottom = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                // Left: read time + source
                 Column(
                     horizontalAlignment = Alignment.Start
                 ) {
                     Text(
                         text = "${readTime}s read",
                         style = MaterialTheme.typography.labelMedium,
-                        color = Primary,
+                        color = cc.accentGradientStart,
                         fontWeight = FontWeight.SemiBold
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = source,
                         style = MaterialTheme.typography.labelSmall,
-                        color = OnSurfaceVariant.copy(alpha = 0.4f),
+                        color = cc.onSurfaceVariant.copy(alpha = 0.4f),
                         textAlign = TextAlign.Start
                     )
                 }
 
-                // Share button
-                IconButton(
-                    onClick = {
-                        val shareText = buildString {
-                            appendLine("📖 $title")
-                            appendLine()
-                            appendLine(body)
-                            appendLine()
-                            append("— Curio: One interesting thing at a time.")
-                        }
-                        val sendIntent = Intent().apply {
-                            action = Intent.ACTION_SEND
-                            putExtra(Intent.EXTRA_TEXT, shareText)
-                            type = "text/plain"
-                        }
-                        context.startActivity(
-                            Intent.createChooser(sendIntent, "Share via Curio")
+                // Right: bookmark + share
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Bookmark button
+                    IconButton(
+                        onClick = { onToggleBookmark() },
+                        modifier = Modifier.size(44.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (isBookmarked) Icons.Filled.Bookmark
+                                else Icons.Filled.BookmarkBorder,
+                            contentDescription = if (isBookmarked) "Remove bookmark" else "Bookmark",
+                            tint = if (isBookmarked) cc.bookmarkActive
+                                else cc.onSurfaceVariant.copy(alpha = 0.6f)
                         )
-                    },
-                    modifier = Modifier.size(44.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Share,
-                        contentDescription = "Share",
-                        tint = OnSurfaceVariant.copy(alpha = 0.6f)
-                    )
+                    }
+
+                    // Share button
+                    IconButton(
+                        onClick = {
+                            val shareText = buildString {
+                                appendLine("📖 $title")
+                                appendLine()
+                                appendLine(body)
+                                appendLine()
+                                append("— Curio: One interesting thing at a time.")
+                            }
+                            val sendIntent = Intent().apply {
+                                action = Intent.ACTION_SEND
+                                putExtra(Intent.EXTRA_TEXT, shareText)
+                                type = "text/plain"
+                            }
+                            context.startActivity(
+                                Intent.createChooser(sendIntent, "Share via Curio")
+                            )
+                        },
+                        modifier = Modifier.size(44.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Share,
+                            contentDescription = "Share",
+                            tint = cc.onSurfaceVariant.copy(alpha = 0.6f)
+                        )
+                    }
                 }
             }
         }
+
+        // Subtle gradient border overlay
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .clip(RoundedCornerShape(24.dp))
+                .background(
+                    Brush.horizontalGradient(
+                        colors = listOf(
+                            cc.accentGradientStart.copy(alpha = 0.08f),
+                            cc.accentGradientMid.copy(alpha = 0.04f),
+                            cc.accentGradientStart.copy(alpha = 0.0f)
+                        )
+                    )
+                )
+        )
     }
 }

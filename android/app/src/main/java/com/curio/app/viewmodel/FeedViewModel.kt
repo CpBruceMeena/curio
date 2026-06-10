@@ -8,6 +8,7 @@ import com.curio.app.data.model.Category
 import com.curio.app.data.model.Content
 import com.curio.app.data.model.L1Group
 import com.curio.app.data.repository.ContentRepository
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,10 +21,13 @@ data class FeedUiState(
     val isLoading: Boolean = false,
     val content: List<Content> = emptyList(),
     val discoverContent: List<Content> = emptyList(),
+    val bookmarkedContent: List<Content> = emptyList(),
     val categories: List<Category> = emptyList(),
     val l1Groups: List<L1Group> = emptyList(),
     val selectedCategoryIds: Set<Long> = emptySet(),
+    val bookmarkedIds: Set<Long> = emptySet(),
     val feedStartIndex: Int? = null,
+    val lastFeedPosition: Int = 0,
     val currentPage: Int = 1,
     val hasMore: Boolean = true,
     val error: String? = null
@@ -39,12 +43,14 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
 
     // Survives navigation - keeps Discover/Feed tab state
     var showDiscover by mutableStateOf(false)
+    var showBookmarks by mutableStateOf(false)
 
     init {
         loadCategories()
         loadL1Groups()
         loadFeed()
         loadDiscoverContent()
+        loadBookmarkedIds()
     }
 
     fun selectCategory(categoryId: Long?) {
@@ -227,17 +233,155 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             repository.getFeed(
                 page = 1,
-                pageSize = 8,
+                pageSize = 4,
                 random = true
             ).onSuccess { response ->
-                _uiState.value = _uiState.value.copy(discoverContent = response.content.take(8))
+                _uiState.value = _uiState.value.copy(discoverContent = response.content.take(4))
+            }
+        }
+    }
+
+    /**
+     * Refresh discover content and categories — called every time user opens Discover.
+     */
+    fun refreshDiscover() {
+        loadDiscoverContent()
+        loadCategories()
+        loadL1Groups()
+    }
+
+    // ── Feed Position Caching ──────────────────────────────
+
+    /**
+     * Save the current feed pager position so it can be restored when
+     * switching back from discover/bookmarks.
+     */
+    fun saveFeedPosition(page: Int) {
+        if (_uiState.value.content.isNotEmpty()) {
+            _uiState.value = _uiState.value.copy(lastFeedPosition = page.coerceIn(0, _uiState.value.content.size - 1))
+        }
+    }
+
+    /**
+     * Restore the last feed position when returning to the feed.
+     */
+    fun restoreFeedPosition() {
+        val state = _uiState.value
+        if (state.lastFeedPosition > 0 && state.lastFeedPosition < state.content.size) {
+            _uiState.value = state.copy(feedStartIndex = state.lastFeedPosition)
+        }
+    }
+
+    // ── Bookmarks ─────────────────────────────────────────────
+
+    /**
+     * Toggle bookmark for a content item. Returns true if bookmarked, false if removed.
+     */
+    fun toggleBookmark(contentId: Long): Boolean {
+        val isNowBookmarked = prefs.toggleBookmark(contentId)
+        // Update the live bookmarkedIds set in state to trigger recomposition
+        val updatedIds = prefs.bookmarkedContentIds
+        _uiState.value = _uiState.value.copy(bookmarkedIds = updatedIds)
+        return isNowBookmarked
+    }
+
+    fun isBookmarked(contentId: Long): Boolean {
+        // Prefer the live state set over SharedPreferences for reactive UI
+        return _uiState.value.bookmarkedIds.contains(contentId)
+    }
+
+    fun loadBookmarkedIds() {
+        _uiState.value = _uiState.value.copy(bookmarkedIds = prefs.bookmarkedContentIds)
+    }
+
+    fun getBookmarkedIds(): Set<Long> {
+        return prefs.bookmarkedContentIds
+    }
+
+    /**
+     * Load all bookmarked content from the API.
+     */
+    fun loadBookmarkedContent() {
+        val bookmarkedIds = prefs.bookmarkedContentIds
+        if (bookmarkedIds.isEmpty()) {
+            _uiState.value = _uiState.value.copy(bookmarkedContent = emptyList())
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true)
+
+            val deferredResults = bookmarkedIds.map { id ->
+                async { repository.getContent(id) }
+            }
+
+            val loadedContent = deferredResults.mapNotNull { deferred ->
+                deferred.await().getOrNull()
+            }
+
+            _uiState.value = _uiState.value.copy(
+                isLoading = false,
+                bookmarkedContent = loadedContent
+            )
+        }
+    }
+
+    /**
+     * Reload bookmarked content (used after toggle to refresh the bookmarks view).
+     */
+    fun refreshBookmarks() {
+        loadBookmarkedContent()
+    }
+
+    // ── Shuffle ────────────────────────────────────────────────
+
+    /**
+     * Shuffle: fetch fresh random content for the currently selected category.
+     */
+    fun shuffleFeed() {
+        val selectedIds = _uiState.value.selectedCategoryIds
+        val currentCategoryName = _uiState.value.content.firstOrNull()?.categoryName
+
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true, content = emptyList(), feedStartIndex = 0, lastFeedPosition = 0)
+
+            // Find the category ID for the current category name
+            val targetCategoryId = if (selectedIds.isNotEmpty()) {
+                selectedIds.first()
+            } else if (currentCategoryName != null) {
+                val cat = _uiState.value.categories.find {
+                    it.name.equals(currentCategoryName, ignoreCase = true)
+                }
+                cat?.id
+            } else {
+                null
+            }
+
+            repository.getFeed(
+                page = 1,
+                pageSize = 100,
+                categoryId = targetCategoryId,
+                random = true
+            ).onSuccess { feedResponse ->
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    content = feedResponse.content,
+                    currentPage = feedResponse.page,
+                    hasMore = feedResponse.hasMore,
+                    error = null
+                )
+            }.onFailure { error ->
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    error = error.message ?: "Failed to shuffle"
+                )
             }
         }
     }
 
     fun loadL1Feed(categoryIds: Set<Long>?) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, content = emptyList())
+            _uiState.value = _uiState.value.copy(isLoading = true, content = emptyList(), lastFeedPosition = 0)
 
             val results = if (!categoryIds.isNullOrEmpty()) {
                 val allContent = mutableListOf<Content>()

@@ -95,6 +95,45 @@ fun InterestChip(
     }
 }
 
+/**
+ * Get emoji for a category name (used in discover and onboarding).
+ */
+fun getCategoryEmoji(categoryName: String): String {
+    val iconMap = mapOf(
+        "Science" to "\uD83E\uDDEC",
+        "Space" to "\uD83D\uDE80",
+        "History" to "\uD83D\uDCDC",
+        "Biology" to "\uD83C\uDF3F",
+        "Psychology" to "\uD83E\uDDE0",
+        "Philosophy" to "\u2696\uFE0F",
+        "Physics" to "\u269B\uFE0F",
+        "Startups" to "\uD83D\uDCA1",
+        "AI" to "\uD83E\uDD16",
+        "Economics" to "\uD83C\uDFDB\uFE0F",
+        "Nature" to "\uD83C\uDF32",
+        "Technology" to "\uD83D\uDCBB",
+        "Poetry" to "\uD83D\uDCD6",
+        "Movies" to "\uD83C\uDFAC",
+        "Neuroscience" to "\uD83D\uDD2C",
+        "Literature" to "\uD83D\uDCDA",
+        "Geography" to "\uD83C\uDF0D",
+        "Music" to "\uD83C\uDFB5",
+        "Sports" to "\u26BD",
+        "Food" to "\uD83C\uDF5C",
+        "Shayari" to "\u270D\uFE0F",
+        "Puzzles" to "\uD83E\uDDE9",
+        "Short Stories" to "\uD83D\uDCC4",
+        "Facts" to "\uD83D\uDCA1",
+        "Poems" to "\uD83C\uDF3B",
+        "Sudoku" to "\uD83D\uDD22",
+        "Math Puzzles" to "\u2797",
+        "Logic Puzzles" to "\uD83E\uDDE0",
+        "Word Puzzles" to "\uD83D\uDCDD",
+        "Mixed Puzzles" to "\uD83E\uDDE9"
+    )
+    return iconMap[categoryName] ?: getIconEmoji(categoryName.lowercase().replace(" ", "_")) ?: ""
+}
+
 private fun getIconEmoji(iconName: String): String {
     return when (iconName) {
         "biotech" -> "\uD83E\uDDEC"       // 🧬 Science

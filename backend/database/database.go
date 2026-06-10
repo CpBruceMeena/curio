@@ -32,6 +32,7 @@ func Migrate() {
 		&models.Category{},
 		&models.Feedback{},
 		&models.Puzzle{},
+		&models.Profile{},
 	)
 	if err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)

@@ -31,4 +31,5 @@ object RetrofitClient {
         .build()
 
     val api: CurioApi = retrofit.create(CurioApi::class.java)
+    val profileApi: ProfileApi = retrofit.create(ProfileApi::class.java)
 }
