@@ -45,7 +45,8 @@ import com.curio.app.viewmodel.FeedViewModel
 @Composable
 fun MainTabScreen(
     feedViewModel: FeedViewModel = viewModel(),
-    onBack: () -> Unit = {}
+    onBack: () -> Unit = {},
+    onPuzzleNavigate: (categoryId: Long, puzzleType: String) -> Unit = { _, _ -> }
 ) {
     var showDiscover by remember { mutableStateOf(false) }
     var showFeedbackDialog by remember { mutableStateOf(false) }
@@ -148,6 +149,9 @@ fun MainTabScreen(
                     onCategoryClick = { categoryId ->
                         feedViewModel.setSelectedCategoryIds(setOf(categoryId))
                         showDiscover = false
+                    },
+                    onPuzzleNavigate = { categoryId, puzzleType ->
+                        onPuzzleNavigate(categoryId, puzzleType)
                     }
                 )
             } else {

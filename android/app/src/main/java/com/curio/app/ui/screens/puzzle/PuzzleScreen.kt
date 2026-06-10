@@ -32,6 +32,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -61,7 +62,113 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun PuzzleScreen(
+    categoryId: Long,
+    puzzleType: String,
+    onBack: () -> Unit,
+    onAllDone: () -> Unit
+) {
+    val repository = remember { ContentRepository() }
+    val scope = rememberCoroutineScope()
+    var puzzles by remember { mutableStateOf<List<Puzzle>>(emptyList()) }
+    var currentIndex by remember { mutableIntStateOf(0) }
+    var isLoading by remember { mutableStateOf(true) }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    // Fetch puzzles on launch
+    LaunchedEffect(categoryId, puzzleType) {
+        isLoading = true
+        val typeParam = if (puzzleType.isNotEmpty()) puzzleType else null
+        val catParam = if (categoryId > 0) categoryId else null
+        repository.getPuzzles(
+            puzzleType = typeParam,
+            categoryId = catParam,
+            limit = 30
+        ).onSuccess { response ->
+            puzzles = response.puzzles
+            isLoading = false
+        }.onFailure { e ->
+            error = e.message ?: "Failed to load puzzles"
+            isLoading = false
+        }
+    }
+
+    if (isLoading) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Surface)
+                .statusBarsPadding(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(text = "Loading puzzles...", style = MaterialTheme.typography.bodyLarge, color = OnSurfaceVariant)
+        }
+        return
+    }
+
+    if (error != null) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Surface)
+                .statusBarsPadding(),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(text = "\u26A0\uFE0F", fontSize = 48.sp)
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(text = "Couldn't load puzzles", style = MaterialTheme.typography.bodyLarge, color = Error)
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedButton(onClick = { onBack() }) {
+                    Text("Go Back")
+                }
+            }
+        }
+        return
+    }
+
+    if (puzzles.isEmpty()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Surface)
+                .statusBarsPadding(),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(text = "\uD83E\uDDE9", fontSize = 48.sp)
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(text = "No puzzles yet", style = MaterialTheme.typography.bodyLarge, color = OnSurfaceVariant)
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedButton(onClick = { onBack() }) {
+                    Text("Go Back")
+                }
+            }
+        }
+        return
+    }
+
+    // Show current puzzle
+    val puzzle = puzzles.getOrNull(currentIndex) ?: puzzles.last()
+    InteractivePuzzleView(
+        puzzle = puzzle,
+        puzzleNumber = currentIndex + 1,
+        totalPuzzles = puzzles.size,
+        onBack = onBack,
+        onNext = {
+            if (currentIndex + 1 < puzzles.size) {
+                currentIndex++
+            } else {
+                onAllDone()
+            }
+        }
+    )
+}
+
+@Composable
+private fun InteractivePuzzleView(
     puzzle: Puzzle,
+    puzzleNumber: Int,
+    totalPuzzles: Int,
     onBack: () -> Unit,
     onNext: () -> Unit
 ) {
@@ -77,6 +184,17 @@ fun PuzzleScreen(
     val sudokuGrid = remember { parseSudokuGrid(puzzle.question) }
     var sudokuState by remember { mutableStateOf(sudokuGrid.toMutableList()) }
     var selectedCell by remember { mutableIntStateOf(-1) }
+
+    // Reset state when puzzle changes
+    LaunchedEffect(puzzle.id) {
+        userAnswer = ""
+        result = null
+        explanation = ""
+        isChecking = false
+        showHint = false
+        sudokuState = parseSudokuGrid(puzzle.question).toMutableList()
+        selectedCell = -1
+    }
 
     Column(
         modifier = Modifier
@@ -96,18 +214,39 @@ fun PuzzleScreen(
                     tint = OnSurfaceVariant.copy(alpha = 0.7f))
             }
 
-            Text(
-                text = puzzle.title,
-                style = MaterialTheme.typography.titleMedium,
-                color = OnSurface,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.weight(1f),
-                textAlign = TextAlign.Start
-            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = puzzle.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = OnSurface,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Start
+                )
+                Text(
+                    text = "Puzzle $puzzleNumber of $totalPuzzles",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = OnSurfaceVariant.copy(alpha = 0.6f)
+                )
+            }
 
             IconButton(onClick = { showHint = !showHint }) {
-                Text("💡", fontSize = 20.sp)
+                Text("\uD83D\uDCA1", fontSize = 20.sp)
             }
+        }
+
+        // Progress bar
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(4.dp)
+                .background(SurfaceContainerHigh.copy(alpha = 0.3f))
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(fraction = puzzleNumber.toFloat() / totalPuzzles)
+                    .height(4.dp)
+                    .background(SecondaryContainer.copy(alpha = 0.6f))
+            )
         }
 
         Column(
@@ -117,6 +256,8 @@ fun PuzzleScreen(
                 .padding(horizontal = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Spacer(modifier = Modifier.height(16.dp))
+
             // Puzzle type badge
             Box(
                 modifier = Modifier
@@ -154,13 +295,11 @@ fun PuzzleScreen(
                     onCellClick = { index -> selectedCell = index },
                     enabled = result == null
                 )
-
                 "math" -> MathInput(
                     value = userAnswer,
                     onValueChange = { userAnswer = it },
                     enabled = result == null
                 )
-
                 else -> TextInput(
                     value = userAnswer,
                     onValueChange = { userAnswer = it },
@@ -193,7 +332,7 @@ fun PuzzleScreen(
                         .padding(16.dp)
                 ) {
                     Text(
-                        text = "💡 ${puzzle.hint}",
+                        text = "\uD83D\uDCA1 ${puzzle.hint}",
                         style = MaterialTheme.typography.bodyMedium,
                         color = OnSurfaceVariant.copy(alpha = 0.8f)
                     )
@@ -216,7 +355,7 @@ fun PuzzleScreen(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         val isCorrect = result == true
                         Text(
-                            text = if (isCorrect) "✅ Correct!" else "❌ Not quite right",
+                            text = if (isCorrect) "\u2705 Correct!" else "\u274C Not quite right",
                             style = MaterialTheme.typography.titleLarge,
                             color = if (isCorrect) Color(0xFF00C853) else Error,
                             fontWeight = FontWeight.Bold
@@ -250,7 +389,10 @@ fun PuzzleScreen(
                     modifier = Modifier.weight(1f).height(52.dp),
                     shape = RoundedCornerShape(16.dp)
                 ) {
-                    Text("Next →", fontWeight = FontWeight.SemiBold)
+                    Text(
+                        text = if (puzzleNumber < totalPuzzles) "Next \u2192" else "Done \u2192",
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
 
                 Button(
@@ -258,7 +400,7 @@ fun PuzzleScreen(
                         result = null
                         explanation = ""
                         userAnswer = ""
-                        sudokuState = sudokuGrid.toMutableList()
+                        sudokuState = parseSudokuGrid(puzzle.question).toMutableList()
                         selectedCell = -1
                     },
                     modifier = Modifier.weight(1f).height(52.dp),
@@ -347,16 +489,21 @@ private fun SudokuGrid(
                     val value = grid.getOrElse(index) { 0 }
                     val isInitial = initialGrid.getOrElse(index) { 0 } != 0
                     val isSelected = selectedCell == index
-                    val rightBorder = if ((col + 1) % 3 == 0 && col < 8) 2.dp else 0.5.dp
-                    val bottomBorder = if ((row + 1) % 3 == 0 && row < 8) 2.dp else 0.5.dp
                     val bgColor = if (isSelected) SecondaryContainer.copy(alpha = 0.15f) else Color.Transparent
 
                     Box(
                         modifier = Modifier
                             .size(36.dp)
                             .border(0.5.dp, OnSurfaceVariant.copy(alpha = 0.2f))
-                            .border(rightBorder, OnSurfaceVariant.copy(alpha = 0.5f), RoundedCornerShape(0.dp))
-                            .border(bottomBorder, OnSurfaceVariant.copy(alpha = 0.5f), RoundedCornerShape(0.dp))
+                            .then(
+                                if ((col + 1) % 3 == 0 && col < 8) Modifier.border(
+                                    0.dp, Color.Transparent,
+                                    RoundedCornerShape(0.dp)
+                                ).border(
+                                    2.dp, OnSurfaceVariant.copy(alpha = 0.5f),
+                                    RoundedCornerShape(0.dp)
+                                ) else Modifier
+                            )
                             .background(bgColor)
                             .clickable(enabled = enabled) { onCellClick(index) },
                         contentAlignment = Alignment.Center
@@ -413,11 +560,7 @@ private fun NumberPad(onNumber: (Int) -> Unit) {
 }
 
 @Composable
-private fun MathInput(
-    value: String,
-    onValueChange: (String) -> Unit,
-    enabled: Boolean
-) {
+private fun MathInput(value: String, onValueChange: (String) -> Unit, enabled: Boolean) {
     OutlinedTextField(
         value = value,
         onValueChange = { if (it.all { c -> c.isDigit() || c == '-' || c == '.' }) onValueChange(it) },
@@ -437,11 +580,7 @@ private fun MathInput(
 }
 
 @Composable
-private fun TextInput(
-    value: String,
-    onValueChange: (String) -> Unit,
-    enabled: Boolean
-) {
+private fun TextInput(value: String, onValueChange: (String) -> Unit, enabled: Boolean) {
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
