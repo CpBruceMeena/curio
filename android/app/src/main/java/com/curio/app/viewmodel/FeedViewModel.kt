@@ -12,9 +12,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 
 data class FeedUiState(
-    val isLoading: Boolean = true,
+    val isLoading: Boolean = false,
     val content: List<Content> = emptyList(),
     val discoverContent: List<Content> = emptyList(),
     val categories: List<Category> = emptyList(),
@@ -33,6 +36,9 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(FeedUiState())
     val uiState: StateFlow<FeedUiState> = _uiState.asStateFlow()
+
+    // Survives navigation - keeps Discover/Feed tab state
+    var showDiscover by mutableStateOf(false)
 
     init {
         loadCategories()
@@ -129,7 +135,7 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
         val selectedIds = _uiState.value.selectedCategoryIds
 
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = page == 1)
+            _uiState.value = _uiState.value.copy(isLoading = page == 1 && _uiState.value.content.isEmpty())
 
             // If multiple categories selected, load from each
             val results = if (selectedIds.isNotEmpty()) {

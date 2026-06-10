@@ -41,6 +41,17 @@ android/.idea/
 *.hprof
 .cxx/
 
+# --- Media / Archives ---
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.zip
+*.tar.gz
+
+# --- Logs ---
+*.log
+
 # --- macOS ---
 .DS_Store
 *.swp

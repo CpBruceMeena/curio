@@ -55,7 +55,7 @@ private val PUZZLE_CATEGORIES = mapOf(
     "Math Puzzles" to "math",
     "Logic Puzzles" to "logic",
     "Word Puzzles" to "word",
-    "Puzzles" to ""
+    "Mixed Puzzles" to ""
 )
 
 private fun getPuzzleType(categoryName: String): String? = PUZZLE_CATEGORIES[categoryName]
@@ -65,7 +65,8 @@ fun DiscoverScreen(
     viewModel: FeedViewModel,
     onApplyFilter: () -> Unit = {},
     onCategoryClick: (Long) -> Unit = {},
-    onPuzzleNavigate: (categoryId: Long, puzzleType: String) -> Unit = { _, _ -> }
+    onPuzzleNavigate: (categoryId: Long, puzzleType: String) -> Unit = { _, _ -> },
+    onContentClick: (Long) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var pendingCategoryIds by remember { mutableStateOf(uiState.selectedCategoryIds) }
@@ -160,7 +161,10 @@ fun DiscoverScreen(
                                     CategoryChip(
                                         name = category.name,
                                         isSelected = false,
-                                        onClick = { onPuzzleNavigate(category.id, puzzleType) },
+                                        onClick = {
+                                            val catId = if (puzzleType.isEmpty()) 0L else category.id
+                                            onPuzzleNavigate(catId, puzzleType)
+                                        },
                                         modifier = Modifier.weight(1f)
                                     )
                                 } else {
@@ -239,7 +243,7 @@ fun DiscoverScreen(
                     row.forEach { content ->
                         ContentCard(
                             content = content, onClick = {
-                                onCategoryClick(content.categoryId)
+                                onContentClick(content.id)
                             },
                             modifier = Modifier.weight(1f).fillMaxHeight()
                         )

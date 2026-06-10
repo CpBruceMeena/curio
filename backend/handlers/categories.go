@@ -12,7 +12,7 @@ func GetCategories(c *gin.Context) {
 	var categories []models.Category
 	result := database.DB.Order("priority ASC").Find(&categories)
 	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch categories"})
+		jsonResponse(c, http.StatusInternalServerError, gin.H{"error": "Failed to fetch categories"})
 		return
 	}
 
@@ -32,7 +32,7 @@ func GetCategories(c *gin.Context) {
 		})
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	jsonResponse(c, http.StatusOK, gin.H{
 		"categories": categoriesWithCount,
 		"total":      len(categoriesWithCount),
 	})
@@ -48,7 +48,7 @@ type L1Group struct {
 func GetL1Categories(c *gin.Context) {
 	var categories []models.Category
 	if err := database.DB.Order("priority ASC").Find(&categories).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch categories"})
+		jsonResponse(c, http.StatusInternalServerError, gin.H{"error": "Failed to fetch categories"})
 		return
 	}
 
@@ -84,7 +84,7 @@ func GetL1Categories(c *gin.Context) {
 		}
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	jsonResponse(c, http.StatusOK, gin.H{
 		"groups": groups,
 		"total":  len(groups),
 	})

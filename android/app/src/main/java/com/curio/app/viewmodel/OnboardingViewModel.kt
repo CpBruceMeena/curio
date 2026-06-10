@@ -14,7 +14,6 @@ import kotlinx.coroutines.launch
 
 data class OnboardingUiState(
     val l1Groups: List<L1Group> = emptyList(),
-    val isLoading: Boolean = true,
     val selectedInterest: String? = null,
     val canProceed: Boolean = false
 )
@@ -28,18 +27,14 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
     val uiState: StateFlow<OnboardingUiState> = _uiState.asStateFlow()
 
     init {
+        // Don't block the UI - show immediately, populate when data arrives
         loadL1Groups()
     }
 
     private fun loadL1Groups() {
         viewModelScope.launch {
             repository.getL1Categories().onSuccess { response ->
-                _uiState.value = _uiState.value.copy(
-                    l1Groups = response.groups,
-                    isLoading = false
-                )
-            }.onFailure {
-                _uiState.value = _uiState.value.copy(isLoading = false)
+                _uiState.value = _uiState.value.copy(l1Groups = response.groups)
             }
         }
     }

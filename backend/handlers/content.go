@@ -21,7 +21,7 @@ func decodeContentID(globalID int) (categoryID uint, localID uint) {
 func GetContent(c *gin.Context) {
 	globalID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid content ID"})
+		jsonResponse(c, http.StatusBadRequest, gin.H{"error": "Invalid content ID"})
 		return
 	}
 
@@ -29,7 +29,7 @@ func GetContent(c *gin.Context) {
 	var content models.Content
 	result := database.DB.First(&content, globalID)
 	if result.Error != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Content not found"})
+		jsonResponse(c, http.StatusNotFound, gin.H{"error": "Content not found"})
 		return
 	}
 
@@ -60,19 +60,19 @@ func GetContent(c *gin.Context) {
 		RelatedContent: related,
 	}
 
-	c.JSON(http.StatusOK, detail)
+	jsonResponse(c, http.StatusOK, detail)
 }
 
 func LikeContent(c *gin.Context) {
 	globalID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid content ID"})
+		jsonResponse(c, http.StatusBadRequest, gin.H{"error": "Invalid content ID"})
 		return
 	}
 
 	catID, localID := decodeContentID(globalID)
 	if catID == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid content ID"})
+		jsonResponse(c, http.StatusBadRequest, gin.H{"error": "Invalid content ID"})
 		return
 	}
 
@@ -80,7 +80,7 @@ func LikeContent(c *gin.Context) {
 	// Look up the content_table_id to find the correct per-category table
 	var category models.Category
 	if err := database.DB.First(&category, catID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Category not found"})
+		jsonResponse(c, http.StatusNotFound, gin.H{"error": "Category not found"})
 		return
 	}
 	tableName := database.ContentTableName(uint(category.ContentTableID), catID)
@@ -89,11 +89,11 @@ func LikeContent(c *gin.Context) {
 		UpdateColumn("likes", gorm.Expr("likes + 1"))
 
 	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to like content"})
+		jsonResponse(c, http.StatusInternalServerError, gin.H{"error": "Failed to like content"})
 		return
 	}
 	if result.RowsAffected == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Content not found"})
+		jsonResponse(c, http.StatusNotFound, gin.H{"error": "Content not found"})
 		return
 	}
 
@@ -104,5 +104,5 @@ func LikeContent(c *gin.Context) {
 	var likesRes LikesResult
 	database.DB.Table(tableName).Select("likes").Where("id = ?", localID).Scan(&likesRes)
 
-	c.JSON(http.StatusOK, gin.H{"likes": likesRes.Likes})
+	jsonResponse(c, http.StatusOK, gin.H{"likes": likesRes.Likes})
 }

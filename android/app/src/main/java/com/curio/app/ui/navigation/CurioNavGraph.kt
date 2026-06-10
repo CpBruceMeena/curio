@@ -63,6 +63,9 @@ fun CurioNavGraph(navController: NavHostController) {
             MainTabScreen(
                 onPuzzleNavigate = { categoryId, puzzleType ->
                     navController.navigate(Screen.Puzzle.createRoute(categoryId, puzzleType))
+                },
+                onContentClick = { contentId ->
+                    navController.navigate(Screen.ContentDetail.createRoute(contentId))
                 }
             )
         }

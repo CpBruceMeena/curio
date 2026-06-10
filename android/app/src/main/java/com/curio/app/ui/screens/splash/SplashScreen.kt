@@ -33,22 +33,31 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
 import com.curio.app.ui.theme.OnSurfaceVariant
+import com.curio.app.ui.theme.Primary
+import com.curio.app.ui.theme.PrimaryContainer
 import com.curio.app.ui.theme.Secondary
+import com.curio.app.ui.theme.SecondaryContainer
 import com.curio.app.ui.theme.SecondaryFixed
+import com.curio.app.ui.theme.SecondaryFixedDim
 import com.curio.app.ui.theme.Surface
 import com.curio.app.ui.theme.SurfaceContainerLow
 import kotlinx.coroutines.delay
 
-private val CubeImageUrl = "https://lh3.googleusercontent.com/aida/AP1WRLtQJvk8dW0Mf-KwEtM45JierFl5T2sMj6Oo46aSCYpwMk3xdCXKHZ2U-ETGUmVld3ICET-RBpbw17-kyNMmiz6qKMBoHwcSdYWKCW-lxxivD7BqNjv71tjnCZgESVo6x-0OlyRD4KnKoYrCqS6WhBvjNCntej1G2Pm-eWqp_Jwn5jrnmIyiiWCwN4P5m639UkyiZQJbDD0Hlb9iLT1lZ7KyoIbzLYxch1bhf2Jbbu4xiyemAdTv_l1zqF8"
+/** URL for the splash cube background image (Google CDN).
+ *  Gradients below serve as a beautiful fallback while this loads. */
+private val CubeImageUrl =
+    "https://lh3.googleusercontent.com/aida/AP1WRLtQJvk8dW0Mf-KwEtM45JierFl5T2sMj6Oo46aSCYpwMk3xdCXKHZ2U-ETGUmVld3ICET-RBpbw17-kyNMmiz6qKMBoHwcSdYWKCW-lxxivD7BqNjv71tjnCZgESVo6x-0OlyRD4KnKoYrCqS6WhBvjNCntej1G2Pm-eWqp_Jwn5jrnmIyiiWCwN4P5m639UkyiZQJbDD0Hlb9iLT1lZ7KyoIbzLYxch1bhf2Jbbu4xiyemAdTv_l1zqF8"
 
 @Composable
 fun SplashScreen(
@@ -103,7 +112,76 @@ fun SplashScreen(
             .fillMaxSize()
             .background(Surface)
     ) {
-        // ── Full-screen cube background (zoomed to fill edge-to-edge) ─
+    // ── Full-screen gradient background (no network calls needed) ─
+        // Base layer: warm radial glow from top-center
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(
+                            SecondaryContainer.copy(alpha = 0.12f),
+                            Primary.copy(alpha = 0.05f),
+                            Surface
+                        ),
+                        center = Offset(0.5f, 0.3f),
+                        radius = 1.8f
+                    )
+                )
+        )
+        // Accent glow: smaller hotspot that floats gently
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .offset(y = floatOffset.dp)
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(
+                            SecondaryFixedDim.copy(alpha = 0.20f),
+                            Secondary.copy(alpha = 0.06f),
+                            Color.Transparent
+                        ),
+                        center = Offset(0.75f, 0.5f),
+                        radius = 1.2f
+                    )
+                )
+        )
+        // Bottom-right emerald accent
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .offset(y = -floatOffset.dp)
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(
+                            PrimaryContainer.copy(alpha = 0.25f),
+                            Primary.copy(alpha = 0.05f),
+                            Color.Transparent
+                        ),
+                        center = Offset(0.25f, 0.85f),
+                        radius = 1.3f
+                    )
+                )
+        )
+        // Subtle top-left highlight
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(
+                            SecondaryFixed.copy(alpha = 0.10f),
+                            Color.Transparent
+                        ),
+                        center = Offset(0.1f, 0.1f),
+                        radius = 1.0f
+                    )
+                )
+        )
+
+        // ── Cube background image ──────────────────────────────────
+        // Loaded from Google CDN — Coil caches it on disk after first load.
+        // The gradients beneath serve as a beautiful fallback while loading.
         AsyncImage(
             model = CubeImageUrl,
             contentDescription = null,
@@ -118,7 +196,7 @@ fun SplashScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.40f))
+                .background(Color.Black.copy(alpha = 0.35f))
         )
 
         // ── Content overlaid on top ─────────────────────────────────

@@ -23,7 +23,7 @@ func stripHTML(s string) string {
 func SubmitFeedback(c *gin.Context) {
 	var req SubmitFeedbackRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		jsonResponse(c, http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 
@@ -34,7 +34,7 @@ func SubmitFeedback(c *gin.Context) {
 
 	// Validate: non-empty
 	if clean == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Feedback message cannot be empty"})
+		jsonResponse(c, http.StatusBadRequest, gin.H{"error": "Feedback message cannot be empty"})
 		return
 	}
 
@@ -47,11 +47,11 @@ func SubmitFeedback(c *gin.Context) {
 	feedback := models.Feedback{Message: clean}
 	result := database.DB.Create(&feedback)
 	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save feedback"})
+		jsonResponse(c, http.StatusInternalServerError, gin.H{"error": "Failed to save feedback"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	jsonResponse(c, http.StatusOK, gin.H{
 		"success": true,
 		"message": "Feedback submitted. Thank you!",
 		"id":      feedback.ID,

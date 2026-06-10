@@ -42,6 +42,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -180,10 +182,12 @@ private fun InteractivePuzzleView(
     var isChecking by remember { mutableStateOf(false) }
     var showHint by remember { mutableStateOf(false) }
 
-    // For Sudoku: track grid state
+    // For Sudoku: track grid state and which cell is selected
     val sudokuGrid = remember { parseSudokuGrid(puzzle.question) }
     var sudokuState by remember { mutableStateOf(sudokuGrid.toMutableList()) }
     var selectedCell by remember { mutableIntStateOf(-1) }
+    var keyboardBuffer by remember { mutableStateOf("") }
+    val focusRequester = remember { FocusRequester() }
 
     // Reset state when puzzle changes
     LaunchedEffect(puzzle.id) {
@@ -194,6 +198,7 @@ private fun InteractivePuzzleView(
         showHint = false
         sudokuState = parseSudokuGrid(puzzle.question).toMutableList()
         selectedCell = -1
+        keyboardBuffer = ""
     }
 
     Column(
@@ -275,26 +280,62 @@ private fun InteractivePuzzleView(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Question
-            Text(
-                text = puzzle.question,
-                style = MaterialTheme.typography.bodyLarge,
-                color = OnSurfaceVariant.copy(alpha = 0.9f),
-                textAlign = TextAlign.Start,
-                lineHeight = 26.sp
-            )
+            // Question - hide raw string for Sudoku (grid renders it), show for others
+            if (puzzle.puzzleType != "sudoku") {
+                Text(
+                    text = puzzle.question,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = OnSurfaceVariant.copy(alpha = 0.9f),
+                    textAlign = TextAlign.Start,
+                    lineHeight = 26.sp
+                )
+            }
 
             Spacer(modifier = Modifier.height(20.dp))
 
             // Interactive area based on puzzle type
             when (puzzle.puzzleType) {
-                "sudoku" -> SudokuGrid(
-                    grid = sudokuState,
-                    selectedCell = selectedCell,
-                    initialGrid = sudokuGrid,
-                    onCellClick = { index -> selectedCell = index },
-                    enabled = result == null
-                )
+                "sudoku" -> {
+                    SudokuGrid(
+                        grid = sudokuState,
+                        initialGrid = sudokuGrid,
+                        selectedCell = selectedCell,
+                        enabled = result == null,
+                        onCellClick = { index ->
+                            if (sudokuGrid[index] == 0) {
+                                selectedCell = index
+                                focusRequester.requestFocus()
+                            }
+                        }
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    // Hidden text field captures keyboard input for Sudoku
+                    androidx.compose.foundation.text.BasicTextField(
+                        value = keyboardBuffer,
+                        onValueChange = { newValue ->
+                            if (newValue.isNotEmpty() && selectedCell >= 0) {
+                                val digit = newValue.filter { it.isDigit() }.takeLast(1)
+                                if (digit.isNotEmpty()) {
+                                    val num = digit.toInt()
+                                    if (num in 1..9) {
+                                        val list = sudokuState.toMutableList()
+                                        list[selectedCell] = num
+                                        sudokuState = list
+                                    }
+                                }
+                                keyboardBuffer = ""
+                            }
+                        },
+                        modifier = Modifier
+                            .focusRequester(focusRequester)
+                            .size(1.dp),
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.NumberPassword,
+                            imeAction = ImeAction.Done
+                        ),
+                        singleLine = true
+                    )
+                }
                 "math" -> MathInput(
                     value = userAnswer,
                     onValueChange = { userAnswer = it },
@@ -304,20 +345,6 @@ private fun InteractivePuzzleView(
                     value = userAnswer,
                     onValueChange = { userAnswer = it },
                     enabled = result == null
-                )
-            }
-
-            // Number pad for Sudoku
-            if (puzzle.puzzleType == "sudoku" && selectedCell >= 0 && result == null) {
-                Spacer(modifier = Modifier.height(12.dp))
-                NumberPad(
-                    onNumber = { num ->
-                        if (selectedCell in 0..80 && sudokuGrid[selectedCell] == 0) {
-                            val list = sudokuState.toMutableList()
-                            list[selectedCell] = num
-                            sudokuState = list
-                        }
-                    }
                 )
             }
 
@@ -400,8 +427,9 @@ private fun InteractivePuzzleView(
                         result = null
                         explanation = ""
                         userAnswer = ""
-                        sudokuState = parseSudokuGrid(puzzle.question).toMutableList()
                         selectedCell = -1
+                        keyboardBuffer = ""
+                        sudokuState = parseSudokuGrid(puzzle.question).toMutableList()
                     },
                     modifier = Modifier.weight(1f).height(52.dp),
                     shape = RoundedCornerShape(16.dp),
@@ -468,8 +496,8 @@ private fun InteractivePuzzleView(
 @Composable
 private fun SudokuGrid(
     grid: List<Int>,
-    selectedCell: Int,
     initialGrid: List<Int>,
+    selectedCell: Int = -1,
     onCellClick: (Int) -> Unit,
     enabled: Boolean
 ) {
@@ -488,32 +516,47 @@ private fun SudokuGrid(
                     val index = row * 9 + col
                     val value = grid.getOrElse(index) { 0 }
                     val isInitial = initialGrid.getOrElse(index) { 0 } != 0
-                    val isSelected = selectedCell == index
-                    val bgColor = if (isSelected) SecondaryContainer.copy(alpha = 0.15f) else Color.Transparent
+                    val isSelected = index == selectedCell
+                    val isRightBorder = (col + 1) % 3 == 0 && col < 8
+                    val isBottomBorder = (row + 1) % 3 == 0 && row < 8
+
+                    val cellBg = when {
+                        isSelected -> Primary.copy(alpha = 0.12f)
+                        isInitial -> SurfaceContainerHigh.copy(alpha = 0.15f)
+                        else -> Color.Transparent
+                    }
 
                     Box(
                         modifier = Modifier
-                            .size(36.dp)
+                            .size(38.dp)
+                            .background(cellBg)
                             .border(0.5.dp, OnSurfaceVariant.copy(alpha = 0.2f))
                             .then(
-                                if ((col + 1) % 3 == 0 && col < 8) Modifier.border(
-                                    0.dp, Color.Transparent,
-                                    RoundedCornerShape(0.dp)
-                                ).border(
-                                    2.dp, OnSurfaceVariant.copy(alpha = 0.5f),
-                                    RoundedCornerShape(0.dp)
+                                if (isRightBorder) Modifier.border(
+                                    2.dp, OnSurfaceVariant.copy(alpha = 0.5f)
                                 ) else Modifier
                             )
-                            .background(bgColor)
+                            .then(
+                                if (isBottomBorder) Modifier.border(
+                                    2.dp, OnSurfaceVariant.copy(alpha = 0.5f)
+                                ) else Modifier
+                            )
                             .clickable(enabled = enabled) { onCellClick(index) },
                         contentAlignment = Alignment.Center
                     ) {
                         if (value > 0) {
                             Text(
                                 text = value.toString(),
-                                style = MaterialTheme.typography.bodyLarge,
+                                style = MaterialTheme.typography.titleMedium,
                                 color = if (isInitial) OnSurface else Primary,
                                 fontWeight = if (isInitial) FontWeight.Bold else FontWeight.Medium,
+                                textAlign = TextAlign.Center
+                            )
+                        } else if (isSelected) {
+                            Text(
+                                text = "\u00B7",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = Primary.copy(alpha = 0.4f),
                                 textAlign = TextAlign.Center
                             )
                         }
@@ -521,41 +564,13 @@ private fun SudokuGrid(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun NumberPad(onNumber: (Int) -> Unit) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        for (row in 0 until 3) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center
-            ) {
-                for (col in 1..3) {
-                    val num = row * 3 + col
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .padding(2.dp)
-                            .clip(CircleShape)
-                            .background(SecondaryContainer.copy(alpha = 0.2f))
-                            .clickable { onNumber(num) },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = num.toString(),
-                            style = MaterialTheme.typography.titleMedium,
-                            color = SecondaryContainer,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-            }
-        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "Tap a cell and type a number on your keyboard",
+            style = MaterialTheme.typography.labelSmall,
+            color = OnSurfaceVariant.copy(alpha = 0.5f),
+            textAlign = TextAlign.Center
+        )
     }
 }
 

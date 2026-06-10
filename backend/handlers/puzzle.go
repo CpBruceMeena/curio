@@ -35,7 +35,7 @@ func GetPuzzles(c *gin.Context) {
 	var puzzles []models.Puzzle
 	result := query.Order("RANDOM()").Limit(limit).Find(&puzzles)
 	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch puzzles"})
+		jsonResponse(c, http.StatusInternalServerError, gin.H{"error": "Failed to fetch puzzles"})
 		return
 	}
 
@@ -71,7 +71,7 @@ func GetPuzzles(c *gin.Context) {
 		}
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	jsonResponse(c, http.StatusOK, gin.H{
 		"puzzles": publicList,
 		"total":   total,
 	})
@@ -85,19 +85,19 @@ func ValidatePuzzle(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid puzzle ID"})
+		jsonResponse(c, http.StatusBadRequest, gin.H{"error": "Invalid puzzle ID"})
 		return
 	}
 
 	var req ValidateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Answer is required"})
+		jsonResponse(c, http.StatusBadRequest, gin.H{"error": "Answer is required"})
 		return
 	}
 
 	var puzzle models.Puzzle
 	if err := database.DB.First(&puzzle, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Puzzle not found"})
+		jsonResponse(c, http.StatusNotFound, gin.H{"error": "Puzzle not found"})
 		return
 	}
 
@@ -119,7 +119,7 @@ func ValidatePuzzle(c *gin.Context) {
 		}
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	jsonResponse(c, http.StatusOK, gin.H{
 		"correct":     isCorrect,
 		"explanation": puzzle.Explanation,
 	})
@@ -129,7 +129,7 @@ func LikePuzzle(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid puzzle ID"})
+		jsonResponse(c, http.StatusBadRequest, gin.H{"error": "Invalid puzzle ID"})
 		return
 	}
 
@@ -137,16 +137,16 @@ func LikePuzzle(c *gin.Context) {
 		UpdateColumn("likes", gorm.Expr("likes + 1"))
 
 	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to like puzzle"})
+		jsonResponse(c, http.StatusInternalServerError, gin.H{"error": "Failed to like puzzle"})
 		return
 	}
 	if result.RowsAffected == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Puzzle not found"})
+		jsonResponse(c, http.StatusNotFound, gin.H{"error": "Puzzle not found"})
 		return
 	}
 
 	var likes int
 	database.DB.Model(&models.Puzzle{}).Select("likes").Where("id = ?", id).Scan(&likes)
 
-	c.JSON(http.StatusOK, gin.H{"likes": likes})
+	jsonResponse(c, http.StatusOK, gin.H{"likes": likes})
 }

@@ -48,7 +48,7 @@ func GetFeed(c *gin.Context) {
 	}
 	result := dataQuery.Find(&content)
 	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch feed"})
+		jsonResponse(c, http.StatusInternalServerError, gin.H{"error": "Failed to fetch feed"})
 		return
 	}
 
@@ -86,5 +86,5 @@ func GetFeed(c *gin.Context) {
 		HasMore:  page < totalPages,
 	}
 
-	c.JSON(http.StatusOK, response)
+	jsonResponse(c, http.StatusOK, response)
 }
