@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 	"regexp"
 	"strings"
@@ -11,7 +12,9 @@ import (
 )
 
 type SubmitFeedbackRequest struct {
-	Message string `json:"message"`
+	Message  string          `json:"message"`
+	DeviceID string          `json:"device_id"`
+	Meta     json.RawMessage `json:"meta,omitempty"`
 }
 
 // stripHTML removes all HTML tags from a string to prevent XSS.
@@ -38,13 +41,20 @@ func SubmitFeedback(c *gin.Context) {
 		return
 	}
 
-	// Validate: max 500 characters (use rune for proper Unicode handling)
+	// Validate: max 500 characters
 	if len([]rune(clean)) > 500 {
 		clean = string([]rune(clean)[:500])
 	}
 
-	// Store in database (GORM uses parameterized queries, safe from SQL injection)
-	feedback := models.Feedback{Message: clean}
+	// Build feedback record
+	feedback := models.Feedback{
+		Message:  clean,
+		DeviceID: req.DeviceID,
+	}
+	if len(req.Meta) > 0 {
+		feedback.Meta = req.Meta
+	}
+
 	result := database.DB.Create(&feedback)
 	if result.Error != nil {
 		jsonResponse(c, http.StatusInternalServerError, gin.H{"error": "Failed to save feedback"})

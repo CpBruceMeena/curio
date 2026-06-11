@@ -38,9 +38,13 @@ func Setup() *gin.Engine {
 		api.POST("/puzzles/:id/validate", handlers.ValidatePuzzle)
 		api.POST("/puzzles/:id/like", handlers.LikePuzzle)
 
-		// Profile
+		// Profile (device-based, no auth — UUID identifies the device)
 		api.GET("/profile", handlers.GetProfile)
 		api.POST("/profile", handlers.CreateOrUpdateProfile)
+
+		// Device Info (device-specific metadata, separate from user profile)
+		api.GET("/device-info", handlers.GetDeviceInfo)
+		api.POST("/device-info", handlers.SubmitDeviceInfo)
 	}
 
 	return r

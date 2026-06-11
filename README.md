@@ -24,13 +24,13 @@ Swipe through an endless stream of knowledge cards with a stunning 3D parallax e
 - **Share & Bookmark** — share insights with friends or save your favorites for later
 
 ### 🔍 Discover
-Explore the full universe of categories. Browse by L1 sections (Facts, Poems, Short Stories, Puzzles), pick subcategories, apply filters, and find your next obsession in a clean 3-column grid. Content refreshes every time you open Discover.
+Explore the full universe of categories. Browse by L1 sections (Facts, Poems, Short Stories, Puzzles), pick subcategories, apply filters, and find your next obsession in a clean 2-column grid with emoji icons. Content refreshes every time you open Discover.
 
 ### 📑 Bookmarks
-Save your favorite insights with a single tap. Your bookmarks are stored locally on your device and persist across sessions. Access all your saved content from a dedicated bookmarks view.
+Save your favorite insights with a single tap. Your bookmarks are stored locally on your device and persist across sessions. Access all your saved content from a dedicated bookmarks tab.
 
 ### 🃏 Shuffle
-Hit the shuffle button on the feed page to get a fresh batch of content within your current category — the same category, new discoveries.
+Hit the shuffle button to get a fresh batch of content from across **all categories** — the perfect way to discover something unexpected.
 
 ### 🧩 Puzzles
 Test your mind with interactive puzzles:
@@ -41,8 +41,14 @@ Test your mind with interactive puzzles:
 
 Each puzzle supports validation, hints, and explanations.
 
+### 👤 Profile & Personalization
+Create a profile to help Curio personalize your experience. Share your name, age, gender, likes, and dislikes — all stored securely on the backend and linked to your device via a unique UUID. A dedicated profile tab lets you manage your information and preferences.
+
+### 📱 Device-Based Identification
+Curio generates a persistent UUID on first launch, stored securely in the app's local storage. All profile, feedback, and device-info API calls are attributed to this UUID — enabling personalized experiences without requiring an account or login.
+
 ### 💬 Feedback
-Share your thoughts directly from the app via the feedback dialog at the bottom of the screen.
+Share your thoughts directly from the app via the feedback dialog — now linked to your device UUID so we can better understand and improve the experience.
 
 ---
 
@@ -82,7 +88,7 @@ The app is designed for the commute, the coffee break, or the moment you just wa
 ## Tech Stack
 
 - **Frontend:** Android (Jetpack Compose + Kotlin)
-- **Backend:** Go
+- **Backend:** Go (Gin + GORM)
 - **Database:** PostgreSQL
 - **Data Scraping:** Python
 
@@ -95,7 +101,8 @@ The app is designed for the commute, the coffee break, or the moment you just wa
 | **Splash** | Cinematic video background with animated cube logo |
 | **Onboarding** | L1/L2 interest selection from 4 sections (Facts, Poems, Stories, Puzzles) |
 | **Feed** | Swipeable full-page knowledge cards with 3D parallax, share, bookmark & shuffle |
-| **Discover** | 3-column category grid with filters, always-fresh content |
+| **Discover** | 2-column category grid with emoji icons, L1 pills, and filters |
 | **Bookmarks** | Locally-saved collection of your favorite content |
 | **Puzzles** | Interactive Sudoku, Math, Logic, and Word puzzles |
 | **Content Detail** | Full-screen view of any content item |
+| **Profile** | Personal info form, device UUID, privacy notice & terms, dark mode toggle |

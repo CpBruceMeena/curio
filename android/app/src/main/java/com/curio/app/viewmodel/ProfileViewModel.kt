@@ -1,11 +1,15 @@
 package com.curio.app.viewmodel
 
 import android.app.Application
-import android.provider.Settings
+import android.os.Build
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.curio.app.BuildConfig
+import com.curio.app.CurioApp
+import com.curio.app.data.model.DeviceInfoRequest
 import com.curio.app.data.model.Profile
 import com.curio.app.data.model.ProfileRequest
+import com.curio.app.data.repository.DeviceInfoRepository
 import com.curio.app.data.repository.ProfileRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,22 +30,27 @@ data class ProfileUiState(
 
 class ProfileViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val repository = ProfileRepository()
-    private val deviceId: String = Settings.Secure.getString(
-        application.contentResolver, Settings.Secure.ANDROID_ID
-    ) ?: "unknown"
+    private val profileRepository = ProfileRepository()
+    private val deviceInfoRepository = DeviceInfoRepository()
+
+    /**
+     * Persistent device UUID generated once and stored in SharedPreferences.
+     * Used as the [device_id] for all API calls.
+     */
+    private val deviceId: String = CurioApp.instance.prefs.deviceUuid
 
     private val _uiState = MutableStateFlow(ProfileUiState())
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
 
     init {
         loadProfile()
+        submitDeviceInfo()
     }
 
     fun loadProfile() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
-            repository.getProfile(deviceId).onSuccess { profile ->
+            profileRepository.getProfile(deviceId).onSuccess { profile ->
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     profile = profile,
@@ -57,6 +66,32 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    /**
+     * Collect device metadata (OS version, app version, model, etc.) and
+     * submit it to the backend. Runs once per device — subsequent launches
+     * are no-ops (tracked via [PreferencesHelper.deviceInfoSubmitted]).
+     */
+    private fun submitDeviceInfo() {
+        val prefs = CurioApp.instance.prefs
+        if (prefs.deviceInfoSubmitted) return
+
+        viewModelScope.launch {
+            val infoRequest = DeviceInfoRequest(
+                osVersion = "Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})",
+                appVersion = "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+                deviceModel = "${Build.MANUFACTURER} ${Build.MODEL}",
+                manufacturer = Build.MANUFACTURER,
+                screenSize = "${getApplication<Application>().resources.configuration.screenWidthDp}x${getApplication<Application>().resources.configuration.screenHeightDp}dp",
+                language = java.util.Locale.getDefault().toLanguageTag(),
+                timezone = java.util.TimeZone.getDefault().id
+            )
+
+            deviceInfoRepository.submitDeviceInfo(deviceId, infoRequest)
+                .onSuccess { prefs.deviceInfoSubmitted = true }
+                // Silently ignore failures — retry on next ProfileScreen launch
+        }
+    }
+
     fun updateName(value: String) { _uiState.value = _uiState.value.copy(name = value) }
     fun updateAge(value: String) { _uiState.value = _uiState.value.copy(age = value.filter { it.isDigit() }.take(3)) }
     fun updateGender(value: String) { _uiState.value = _uiState.value.copy(gender = value) }
@@ -69,7 +104,7 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
 
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, isSaved = false, error = null)
-            repository.saveProfile(
+            profileRepository.saveProfile(
                 deviceId = deviceId,
                 request = ProfileRequest(
                     name = state.name,
@@ -91,5 +126,13 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
                 )
             }
         }
+    }
+
+    /**
+     * Exposed for testing / manual retry: resets the flag so device info
+     * will be submitted again on next [ProfileScreen] visit.
+     */
+    fun resetDeviceInfoFlag() {
+        CurioApp.instance.prefs.deviceInfoSubmitted = false
     }
 }

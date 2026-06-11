@@ -3,6 +3,9 @@ package database
 import (
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
+	"runtime"
 
 	"github.com/curio/backend/config"
 	"github.com/curio/backend/models"
@@ -12,6 +15,11 @@ import (
 )
 
 var DB *gorm.DB
+
+var (
+	// __file__ is the source file path; used to locate migration scripts.
+	_, __file__, _, _ = runtime.Caller(0)
+)
 
 func Connect(cfg *config.Config) {
 	var err error
@@ -25,19 +33,43 @@ func Connect(cfg *config.Config) {
 }
 
 func Migrate() {
-	// Only migrate the categories table.
-	// The contents table is now a VIEW over per-category tables.
-	// Run scripts/migrate_per_category.sql to set up the new structure.
+	// Run the v2 schema migration SQL (adds meta JSONB, device_id, device_infos)
+	if err := runSQLFile("scripts/migrate_schema_v2.sql"); err != nil {
+		log.Printf("Warning: schema v2 migration error (may already be applied): %v", err)
+	}
+
+	// Auto-migrate models
 	err := DB.AutoMigrate(
 		&models.Category{},
 		&models.Feedback{},
 		&models.Puzzle{},
 		&models.Profile{},
+		&models.DeviceInfo{},
 	)
 	if err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)
 	}
 	fmt.Println("Database migrated successfully")
+}
+
+// runSQLFile reads a SQL file relative to the project root and executes it.
+func runSQLFile(relPath string) error {
+	// Walk up from the database package directory to find the project root.
+	// __file__ is backend/database/database.go, so three levels up is the project root.
+	root := filepath.Dir(filepath.Dir(filepath.Dir(__file__)))
+	fullPath := filepath.Join(root, relPath)
+
+	data, err := os.ReadFile(fullPath)
+	if err != nil {
+		return fmt.Errorf("read %s: %w", relPath, err)
+	}
+
+	if len(data) == 0 {
+		return nil
+	}
+
+	tx := DB.Exec(string(data))
+	return tx.Error
 }
 
 // ContentTableName returns the per-category content table name using the stable
