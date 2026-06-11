@@ -20,7 +20,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.PauseCircle
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.outlined.Bookmark
 import androidx.compose.material.icons.outlined.Explore
@@ -103,12 +105,28 @@ fun MainTabScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = currentCategory,
-                            style = MaterialTheme.typography.titleMedium,
-                            color = cc.secondaryContainer,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = currentCategory,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = cc.secondaryContainer,
+                                fontWeight = FontWeight.Bold
+                            )
+                            // Auto-play toggle button
+                            IconButton(
+                                onClick = { feedViewModel.toggleAutoPlay() },
+                                modifier = Modifier.size(36.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (feedViewModel.autoPlayEnabled) Icons.Filled.PauseCircle
+                                        else Icons.Filled.PlayCircle,
+                                    contentDescription = if (feedViewModel.autoPlayEnabled) "Stop auto-play" else "Auto-play all",
+                                    tint = if (feedViewModel.autoPlayEnabled) cc.accentGradientStart
+                                        else cc.onSurfaceVariant.copy(alpha = 0.6f),
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                        }
 
                         // Shuffle button
                         IconButton(

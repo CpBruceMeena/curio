@@ -44,6 +44,11 @@ Each puzzle supports validation, hints, and explanations.
 ### 👤 Profile & Personalization
 Create a profile to help Curio personalize your experience. Share your name, age, gender, likes, and dislikes — all stored securely on the backend and linked to your device via a unique UUID. A dedicated profile tab lets you manage your information and preferences.
 
+### 🔊 Text-to-Speech
+Every card in your feed can be read aloud with a single tap. Curio picks the perfect voice for each type of content — warm and clear for facts, expressive for poetry and shayari, British English for classic literature, and calm and precise for puzzles.
+
+**Auto-play mode** lets you sit back and listen to an entire feed session — audio plays through each card, pauses briefly between cards, and auto-swipes to the next. Tap the ▶️ button in the top bar to start, or use the per-card ▶️ button to play individual cards.
+
 ### 📱 Device-Based Identification
 Curio generates a persistent UUID on first launch, stored securely in the app's local storage. All profile, feedback, and device-info API calls are attributed to this UUID — enabling personalized experiences without requiring an account or login.
 

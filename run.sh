@@ -1,6 +1,13 @@
 #!/bin/bash
-# run.sh — Curio backend lifecycle manager
+# run.sh — Curio backend lifecycle manager + TTS Docker
 # Usage: ./run.sh {start|stop|restart|status}
+#
+# Manages two services:
+#   1. Go backend  (port 8080)
+#   2. TTS Docker  (port 5050) — Microsoft Edge TTS via travisvn/openai-edge-tts
+#
+# The Go backend's TTS handler connects to the Docker container internally.
+# ngrok is managed separately by the user.
 
 set -euo pipefail
 
@@ -9,20 +16,29 @@ BACKEND_DIR="$ROOT_DIR/backend"
 PID_FILE="$ROOT_DIR/.backend.pid"
 BINARY="$BACKEND_DIR/curio-server"
 PORT="${PORT:-8080}"
+TTS_DOCKER_IMAGE="${TTS_DOCKER_IMAGE:-travisvn/openai-edge-tts:latest}"
+TTS_DOCKER_NAME="${TTS_DOCKER_NAME:-edge-tts}"
+TTS_PORT="${TTS_PORT:-5050}"
 
 # ── helpers ──────────────────────────────────────────────────────────
 
 print_usage() {
     echo "Usage: $0 {start|stop|restart|status}"
     echo ""
-    echo "  start    Build and start the backend server (daemon)"
-    echo "  stop     Stop the running backend server"
-    echo "  restart  Stop then start the backend server"
-    echo "  status   Show whether the server is running"
+    echo "  start    Start TTS Docker + Go backend"
+    echo "  stop     Stop TTS Docker + Go backend"
+    echo "  restart  Stop then start all services"
+    echo "  status   Show status of all services"
+    echo ""
+    echo "Environment variables (optional):"
+    echo "  PORT=8080          Backend port"
+    echo "  TTS_PORT=5050      TTS container port"
 }
 
 log()  { echo "[$(date '+%H:%M:%S')] $*"; }
 err()  { log "ERROR: $*" >&2; }
+
+# ── PID helpers ──────────────────────────────────────────────────────
 
 get_pid() {
     if [ -f "$PID_FILE" ]; then
@@ -32,58 +48,125 @@ get_pid() {
 
 is_pid_running() {
     local pid
-    pid="$(get_pid)"
+    pid="${1:-$(get_pid)}"
     if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
         return 0
     fi
     return 1
 }
 
-# Check if anything is listening on the port
-is_port_in_use() {
-    lsof -ti:"$PORT" &>/dev/null
-}
-
-# Get the PID of whatever is listening on the port
-get_port_pid() {
-    lsof -ti:"$PORT" 2>/dev/null
-}
-
 clean_pid() {
     rm -f "$PID_FILE"
 }
 
+# ── Port helpers ─────────────────────────────────────────────────────
+
+is_port_in_use() {
+    local port="${1:-$PORT}"
+    lsof -ti:"$port" &>/dev/null
+}
+
+get_port_pid() {
+    local port="${1:-$PORT}"
+    lsof -ti:"$port" 2>/dev/null
+}
+
 free_port() {
+    local port="${1:-$PORT}"
     local port_pid
-    port_pid="$(get_port_pid)"
+    port_pid="$(get_port_pid "$port")"
     if [ -n "$port_pid" ]; then
-        log "Port $PORT is in use by PID $port_pid — freeing..."
+        log "Port $port is in use by PID $port_pid — freeing..."
         kill "$port_pid" 2>/dev/null || true
         sleep 1
-        if is_port_in_use; then
+        if is_port_in_use "$port"; then
             kill -9 "$port_pid" 2>/dev/null || true
             sleep 1
         fi
     fi
 }
 
-health_check() {
-    local url="http://localhost:$PORT/health"
-    if curl -sf "$url" >/dev/null 2>&1; then
+# ── Health checks ────────────────────────────────────────────────────
+
+backend_health() {
+    if curl -sf "http://localhost:$PORT/health" >/dev/null 2>&1; then
         return 0
     fi
     return 1
 }
 
-# ── commands ─────────────────────────────────────────────────────────
+tts_docker_health() {
+    if docker ps --filter "name=$TTS_DOCKER_NAME" --format '{{.Status}}' | grep -q 'Up'; then
+        return 0
+    fi
+    return 1
+}
 
-cmd_start() {
+# ══════════════════════════════════════════════════════════════════════
+# TTS Docker commands
+# ══════════════════════════════════════════════════════════════════════
+
+cmd_tts_docker_start() {
+    if tts_docker_health; then
+        log "TTS Docker container '$TTS_DOCKER_NAME' is already running."
+        return 0
+    fi
+
+    # Remove old container if it exists (stopped or running)
+    local exists
+    exists="$(docker ps -a --filter "name=$TTS_DOCKER_NAME" --format '{{.Names}}' 2>/dev/null || true)"
+    if [ -n "$exists" ]; then
+        log "Removing old container '$TTS_DOCKER_NAME'..."
+        docker rm -f "$TTS_DOCKER_NAME" >/dev/null 2>&1
+    fi
+
+    log "Starting TTS Docker container '$TTS_DOCKER_NAME' on port $TTS_PORT..."
+    docker run -d \
+        --name "$TTS_DOCKER_NAME" \
+        -p "$TTS_PORT:$TTS_PORT" \
+        -e REQUIRE_API_KEY=False \
+        --restart unless-stopped \
+        "$TTS_DOCKER_IMAGE" >/dev/null 2>&1
+
+    # Wait for container to be healthy (up to 30s for image pull)
+    local waited=0
+    while [ "$waited" -lt 30 ]; do
+        sleep 1
+        waited=$((waited + 1))
+        if tts_docker_health; then
+            log "TTS Docker container started (port $TTS_PORT)"
+            return 0
+        fi
+        # Print a progress dot every 5s
+        if [ $((waited % 5)) -eq 0 ]; then
+            docker logs "$TTS_DOCKER_NAME" 2>&1 | tail -1 || true
+        fi
+    done
+
+    err "TTS Docker container failed to start. Check 'docker logs $TTS_DOCKER_NAME'"
+    return 1
+}
+
+cmd_tts_docker_stop() {
+    if ! tts_docker_health; then
+        log "TTS Docker container is not running."
+        return 0
+    fi
+    log "Stopping TTS Docker container '$TTS_DOCKER_NAME'..."
+    docker stop "$TTS_DOCKER_NAME" >/dev/null 2>&1
+    log "TTS Docker container stopped."
+}
+
+# ══════════════════════════════════════════════════════════════════════
+# Backend commands
+# ══════════════════════════════════════════════════════════════════════
+
+cmd_backend_start() {
     if is_pid_running; then
         log "Backend is already running (PID $(get_pid))"
         return 0
     fi
 
-    # If something else is on the port (stale process), free it
     if is_port_in_use; then
         log "Port $PORT is occupied by a different process."
         free_port
@@ -99,14 +182,12 @@ cmd_start() {
     local pid=$!
     echo "$pid" > "$PID_FILE"
 
-    # Wait for the process to start and become healthy
     local waited=0
     while [ "$waited" -lt 8 ]; do
         sleep 1
         waited=$((waited + 1))
 
         if ! kill -0 "$pid" 2>/dev/null; then
-            # Process died — report error with log tail
             err "Backend failed to start. Check backend/server.log for details."
             err "Last 10 lines of log:"
             tail -10 "$ROOT_DIR/backend/server.log" >&2
@@ -114,13 +195,12 @@ cmd_start() {
             return 1
         fi
 
-        if health_check; then
+        if backend_health; then
             log "Backend started (PID $pid) — listening on :$PORT"
             return 0
         fi
     done
 
-    # Timed out waiting for health check
     err "Backend started but not responding on :$PORT after ${waited}s."
     err "Last 10 lines of log:"
     tail -10 "$ROOT_DIR/backend/server.log" >&2
@@ -128,7 +208,7 @@ cmd_start() {
     return 1
 }
 
-cmd_stop() {
+cmd_backend_stop() {
     local pid
     pid="$(get_pid)"
 
@@ -146,7 +226,6 @@ cmd_stop() {
     log "Stopping backend (PID $pid)..."
     kill "$pid" 2>/dev/null || true
 
-    # Wait up to 10 seconds for graceful shutdown
     for i in $(seq 1 10); do
         if ! kill -0 "$pid" 2>/dev/null; then
             break
@@ -154,7 +233,6 @@ cmd_stop() {
         sleep 1
     done
 
-    # Force kill if still alive
     if kill -0 "$pid" 2>/dev/null; then
         log "Process did not exit gracefully — force killing..."
         kill -9 "$pid" 2>/dev/null || true
@@ -164,32 +242,59 @@ cmd_stop() {
     log "Backend stopped."
 }
 
+# ══════════════════════════════════════════════════════════════════════
+# Composite commands
+# ══════════════════════════════════════════════════════════════════════
+
+cmd_start() {
+    log "═══ Starting Curio services ═══"
+    cmd_tts_docker_start
+    cmd_backend_start
+    log "═══ All services started ═══"
+    echo ""
+    echo "  Backend API:   http://localhost:$PORT"
+    echo "  TTS Docker:    http://localhost:$TTS_PORT"
+    echo ""
+}
+
+cmd_stop() {
+    log "═══ Stopping Curio services ═══"
+    cmd_backend_stop
+    cmd_tts_docker_stop
+    log "═══ All services stopped ═══"
+}
+
 cmd_restart() {
     cmd_stop
     cmd_start
 }
 
 cmd_status() {
+    echo ""
+    echo "═══ Curio Service Status ═══"
+    echo ""
+
     local pid
     pid="$(get_pid)"
-    local port_pid
-    port_pid="$(get_port_pid || true)"
-
-    if is_pid_running; then
-        echo "● Curio backend is running (PID $pid, port :$PORT)"
-    elif [ -n "$port_pid" ]; then
-        if [ -n "$pid" ]; then
-            echo "○ Mismatch — PID file says $pid but port $PORT is held by PID $port_pid"
-        else
-            echo "○ Port $PORT is in use by PID $port_pid (not tracked by PID file)"
-        fi
-        echo "  Run './run.sh restart' to reclaim."
+    if is_pid_running "$pid"; then
+        echo "  ● Backend     running  (PID $pid, port :$PORT)"
     else
-        if [ -n "$pid" ]; then
-            echo "○ Stale PID file found (PID $pid not running)"
-        fi
-        echo "○ Curio backend is not running"
+        echo "  ○ Backend     not running"
     fi
+
+    if tts_docker_health; then
+        local tts_uptime
+        tts_uptime="$(docker ps --filter "name=$TTS_DOCKER_NAME" --format '{{.Status}}')"
+        echo "  ● TTS Docker  running  (port $TTS_PORT — $tts_uptime)"
+    else
+        echo "  ○ TTS Docker  not running"
+    fi
+
+    echo ""
+    echo "═══ Endpoints ═══"
+    echo "  Backend API    http://localhost:$PORT"
+    echo "  TTS Docker     http://localhost:$TTS_PORT"
+    echo ""
 }
 
 # ── dispatch ─────────────────────────────────────────────────────────

@@ -10,14 +10,17 @@ import com.curio.app.data.model.FeedbackResponse
 import com.curio.app.data.model.FeedResponse
 import com.curio.app.data.model.L1CategoriesResponse
 import com.curio.app.data.model.PuzzleResponse
+import com.curio.app.data.model.TtsRequest
 import com.curio.app.data.model.ValidateRequest
 import com.curio.app.data.model.ValidateResponse
+import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
+import retrofit2.http.Streaming
 
 interface CurioApi {
 
@@ -82,4 +85,11 @@ interface CurioApi {
     suspend fun likePuzzle(
         @Path("id") puzzleId: Long
     ): Response<Map<String, Int>>
+
+    // ── TTS (Text-to-Speech) ────────────────────────────────────
+    @Streaming
+    @POST("tts")
+    suspend fun generateSpeech(
+        @Body request: TtsRequest
+    ): ResponseBody
 }

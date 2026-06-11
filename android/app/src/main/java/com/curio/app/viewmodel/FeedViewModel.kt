@@ -496,6 +496,48 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
         return _uiState.value.likedIds.contains(contentId)
     }
 
+    // ── Audio / TTS ────────────────────────────────────────────
+    var playingContentId by mutableStateOf<Long?>(null)
+    var audioFilePath by mutableStateOf<String?>(null)
+    var isAudioLoading by mutableStateOf(false)
+    var autoPlayEnabled by mutableStateOf(false)
+
+    fun toggleAutoPlay() {
+        autoPlayEnabled = !autoPlayEnabled
+        if (!autoPlayEnabled) {
+            // Stop any playing audio when disabling auto-play
+            playingContentId = null
+            audioFilePath = null
+        }
+    }
+
+    /**
+     * Generate and cache audio for a content item.
+     * Sets audioFilePath on success so the UI can play it.
+     */
+    fun playAudio(contentId: Long) {
+        // If already playing this content, stop
+        if (playingContentId == contentId) {
+            playingContentId = null
+            audioFilePath = null
+            return
+        }
+
+        isAudioLoading = true
+        playingContentId = contentId
+
+        viewModelScope.launch {
+            repository.generateSpeech(contentId).onSuccess { file ->
+                audioFilePath = file.absolutePath
+                isAudioLoading = false
+            }.onFailure {
+                audioFilePath = null
+                playingContentId = null
+                isAudioLoading = false
+            }
+        }
+    }
+
     // ── Comments ───────────────────────────────────────────────
 
     /**

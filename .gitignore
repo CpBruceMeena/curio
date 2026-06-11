@@ -1,72 +1,75 @@
-# --- Environment ---
-.env
-.env.local
-.env.production
-.env.development
-scripts/venv/
+# ── Android ─────────────────────────────────────────────
+android/.gradle/
+android/.idea/
+android/app/build/
+android/app/curio-keystore.jks
+android/build/
+android/local.properties
+*.iml
 
-# --- Code Review Graph ---
-.code-review-graph/
-.code_review_graph/
-code-review-graph-cache/
-crg-cache/
-.cache/code-review-graph/
-.cache/crg/
-*.crg
-
-# --- Go ---
-backend/server
-backend/curio-server
+# ── Go / Backend ─────────────────────────────────────────
 backend/backend
+backend/curio-server
+backend/server
 backend/tmp/
-
-# --- Backend runtime ---
-.backend.pid
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
-*.test
-*.out
 vendor/
 
-# --- Android ---
-android/.gradle/
-android/build/
-android/app/build/
-android/local.properties
-android/app/curio-keystore.jks
-android/.idea/
-*.iml
-*.hprof
-.cxx/
-
-# --- Media / Archives ---
-*.mp4
-*.mov
-*.avi
-*.mkv
-*.zip
-*.tar.gz
-
-# --- Logs ---
-*.log
-
-# --- macOS ---
-.DS_Store
-*.swp
-*.swo
-*~
-
-# --- Python ---
+# ── Python / Scraper ─────────────────────────────────────
 __pycache__/
-scripts/venv/
 scripts/scraper/node_modules/
 scripts/scraper/storage/
+scripts/venv/
 
-# --- IDE ---
+# ── IDE / Editors ────────────────────────────────────────
 .idea/
 .vscode/
 *.swp
 *.swo
+
+# ── macOS ────────────────────────────────────────────────
+.DS_Store
+
+# ── Environment ──────────────────────────────────────────
+.env
+.env.local
+.env.development
+.env.production
+
+# ── Logs ─────────────────────────────────────────────────
+*.log
+
+# ── Media / Archives ─────────────────────────────────────
+*.avi
+*.dll
+*.dylib
+*.exe
+*.exe~
+*.hprof
+*.mkv
+*.mov
+*.mp4
+*.mp3
+*.out
+*.so
+*.tar.gz
+*.zip
+
+# ── Runtime / PID files ─────────────────────────────────
+.backend.pid
+.ngrok.pid
+
+# ── Testing ─────────────────────────────────────────────
+*.test
+
+# ── Code Review Graph ───────────────────────────────────
+.cache/code-review-graph/
+.cache/crg/
+.code_review_graph/
+.code-review-graph/
+code-review-graph-cache/
+crg-cache/
+*.crg
+
+# ── Misc ────────────────────────────────────────────────
+.cxx/
+*~
