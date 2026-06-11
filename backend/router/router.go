@@ -42,6 +42,9 @@ func Setup() *gin.Engine {
 		api.POST("/puzzles/:id/validate", handlers.ValidatePuzzle)
 		api.POST("/puzzles/:id/like", handlers.LikePuzzle)
 
+		// TTS — Text-to-Speech via LocalTTS Docker container
+		api.POST("/tts", handlers.GenerateTTS)
+
 		// Profile (device-based, no auth — UUID identifies the device)
 		api.GET("/profile", handlers.GetProfile)
 		api.POST("/profile", handlers.CreateOrUpdateProfile)

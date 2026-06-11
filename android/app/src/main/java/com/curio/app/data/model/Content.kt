@@ -172,3 +172,11 @@ data class AddCommentResponse(
     val success: Boolean = false,
     val comment: CommentEntry? = null
 )
+
+// ── TTS (Text-to-Speech) ───────────────────────────────────────────
+data class TtsRequest(
+    @SerializedName("content_id")
+    val contentId: Long? = null,
+    val text: String? = null,
+    val voice: String = "en-US-JennyNeural"
+)

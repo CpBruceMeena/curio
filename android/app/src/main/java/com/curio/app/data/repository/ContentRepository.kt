@@ -11,6 +11,7 @@ import com.curio.app.data.model.FeedbackResponse
 import com.curio.app.data.model.FeedResponse
 import com.curio.app.data.model.L1CategoriesResponse
 import com.curio.app.data.model.PuzzleResponse
+import com.curio.app.data.model.TtsRequest
 import com.curio.app.data.model.ValidateRequest
 import com.curio.app.data.model.ValidateResponse
 
@@ -167,6 +168,26 @@ class ContentRepository {
             } else {
                 Result.failure(Exception("Failed to like: ${response.code()}"))
             }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // ── TTS (Text-to-Speech) ────────────────────────────────────
+    /**
+     * Generate audio for a content item and save to a temp file.
+     * Returns the temp file path for playback.
+     */
+    suspend fun generateSpeech(contentId: Long): Result<java.io.File> {
+        return try {
+            val responseBody = api.generateSpeech(TtsRequest(contentId = contentId))
+            val file = java.io.File.createTempFile("tts_", ".mp3")
+            file.outputStream().use { output ->
+                responseBody.byteStream().use { input ->
+                    input.copyTo(output)
+                }
+            }
+            Result.success(file)
         } catch (e: Exception) {
             Result.failure(e)
         }

@@ -27,18 +27,22 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.ModeComment
+import androidx.compose.material.icons.filled.PauseCircle
+import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,6 +56,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
+import androidx.media3.exoplayer.ExoPlayer
 import com.curio.app.ui.components.CommentSheet
 import com.curio.app.ui.theme.curioColors
 import com.curio.app.viewmodel.FeedViewModel
@@ -63,6 +72,7 @@ fun FeedScreen(
     onCategoryChange: (String) -> Unit = {},
     onNavigateToDiscover: () -> Unit = {}
 ) {
+    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     val pagerState = rememberPagerState(pageCount = {
         uiState.content.size
@@ -72,6 +82,90 @@ fun FeedScreen(
     var showCommentSheet by remember { mutableStateOf(false) }
     var commentContentId by remember { mutableStateOf<Long?>(null) }
     var commentContentTitle by remember { mutableStateOf("") }
+
+    // Audio player
+    val coroutineScope = rememberCoroutineScope()
+    val exoPlayer = remember {
+        ExoPlayer.Builder(context).build()
+    }
+
+    // Listen for audio completion to trigger auto-swipe in auto-play mode
+    DisposableEffect(Unit) {
+        val listener = object : Player.Listener {
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                if (playbackState == Player.STATE_ENDED && viewModel.autoPlayEnabled) {
+                    coroutineScope.launch {
+                        delay(2500) // 2.5s pause before next card
+                        val currentPage = pagerState.currentPage
+                        val currentPlayingId = viewModel.playingContentId
+                        val item = uiState.content.getOrNull(currentPage)
+                        // Only auto-swipe if we're still on the same card and it's still playing
+                        if (item != null && currentPlayingId == item.id) {
+                            val nextPage = currentPage + 1
+                            if (nextPage < uiState.content.size) {
+                                pagerState.animateScrollToPage(nextPage)
+                            } else {
+                                // End of feed — stop auto-play
+                                viewModel.autoPlayEnabled = false
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        exoPlayer.addListener(listener)
+        onDispose {
+            exoPlayer.removeListener(listener)
+            exoPlayer.release()
+        }
+    }
+
+    // Play/stop audio when ViewModel state changes
+    LaunchedEffect(viewModel.audioFilePath, viewModel.playingContentId) {
+        when {
+            viewModel.audioFilePath != null && viewModel.playingContentId == null -> {
+                exoPlayer.stop()
+            }
+            viewModel.audioFilePath != null && exoPlayer.playbackState != Player.STATE_READY -> {
+                val mediaItem = MediaItem.fromUri(viewModel.audioFilePath!!)
+                exoPlayer.setMediaItem(mediaItem)
+                exoPlayer.prepare()
+                exoPlayer.play()
+            }
+            viewModel.audioFilePath == null -> {
+                exoPlayer.stop()
+            }
+        }
+    }
+
+    // When auto-play is enabled, immediately start playing the current card
+    LaunchedEffect(viewModel.autoPlayEnabled) {
+        if (viewModel.autoPlayEnabled) {
+            val currentItem = uiState.content.getOrNull(pagerState.currentPage)
+            if (currentItem != null) {
+                viewModel.playAudio(currentItem.id)
+            }
+        }
+    }
+
+    // Page-change effects: stop audio on swipe, auto-play in auto-play mode, update category/position
+    LaunchedEffect(pagerState.currentPage) {
+        val currentItem = uiState.content.getOrNull(pagerState.currentPage)
+        if (currentItem != null) {
+            // Stop audio if swiped away from the playing item
+            if (viewModel.playingContentId != null && viewModel.playingContentId != currentItem.id) {
+                viewModel.playingContentId = null
+                viewModel.audioFilePath = null
+            }
+            // In auto-play mode, start playing the new card's audio
+            if (viewModel.autoPlayEnabled) {
+                viewModel.playAudio(currentItem.id)
+            }
+            // Update category & save position
+            onCategoryChange(currentItem.categoryName)
+            viewModel.saveFeedPosition(pagerState.currentPage)
+        }
+    }
 
     // Jump to a specific content item when feedStartIndex is set
     LaunchedEffect(uiState.feedStartIndex) {
@@ -86,15 +180,6 @@ fun FeedScreen(
     LaunchedEffect(uiState.content) {
         if (uiState.content.isNotEmpty()) {
             onCategoryChange(uiState.content[0].categoryName)
-        }
-    }
-
-    // Update category name and save feed position on page change
-    LaunchedEffect(pagerState.currentPage) {
-        val item = uiState.content.getOrNull(pagerState.currentPage)
-        if (item != null) {
-            onCategoryChange(item.categoryName)
-            viewModel.saveFeedPosition(pagerState.currentPage)
         }
     }
 
@@ -279,8 +364,11 @@ fun FeedScreen(
                             likes = item.likes,
                             isLiked = viewModel.isLiked(item.id),
                             isBookmarked = viewModel.isBookmarked(item.id),
+                            isAudioPlaying = viewModel.playingContentId == item.id,
+                            isAudioLoading = viewModel.isAudioLoading,
                             onToggleBookmark = { viewModel.toggleBookmark(item.id) },
                             onToggleLike = { viewModel.toggleLike(item.id) },
+                            onToggleAudio = { viewModel.playAudio(item.id) },
                             onComment = {
                                 commentContentId = item.id
                                 commentContentTitle = item.title
@@ -347,8 +435,11 @@ internal fun FullPageCard(
     likes: Int = 0,
     isLiked: Boolean = false,
     isBookmarked: Boolean = false,
+    isAudioPlaying: Boolean = false,
+    isAudioLoading: Boolean = false,
     onToggleBookmark: () -> Unit = {},
     onToggleLike: () -> Unit = {},
+    onToggleAudio: () -> Unit = {},
     onComment: () -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -443,8 +534,8 @@ internal fun FullPageCard(
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
-            // Bottom action bar — always at the bottom
-            Row(
+            // Bottom action area — always at the bottom, split into two rows
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(
@@ -455,50 +546,86 @@ internal fun FullPageCard(
                             )
                         )
                     )
-                    .padding(start = 24.dp, end = 8.dp, top = 8.dp, bottom = 12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(start = 20.dp, end = 8.dp, top = 8.dp, bottom = 8.dp)
             ) {
-                // Left: read time + source
-                Column(
-                    horizontalAlignment = Alignment.Start
+                // Row 1: Card details — read time + source
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "${readTime}s read",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = cc.accentGradientStart,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = source,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = cc.onSurfaceVariant.copy(alpha = 0.4f),
-                        textAlign = TextAlign.Start
-                    )
+                    Column(horizontalAlignment = Alignment.Start) {
+                        Text(
+                            text = "${readTime}s read",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = cc.accentGradientStart,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        if (source.isNotEmpty()) {
+                            Text(
+                                text = source,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = cc.onSurfaceVariant.copy(alpha = 0.4f),
+                                textAlign = TextAlign.Start
+                            )
+                        }
+                    }
                 }
 
-                // Right: action buttons
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // Divider line
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(0.5.dp)
+                        .background(cc.onSurfaceVariant.copy(alpha = 0.1f))
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // Row 2: All action buttons, evenly spaced
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     // Copy button
                     IconButton(
                         onClick = {
                             clipboardManager.setText(AnnotatedString(body))
                         },
-                        modifier = Modifier.size(40.dp)
+                        modifier = Modifier.size(36.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Filled.ContentCopy,
                             contentDescription = "Copy content",
                             tint = cc.onSurfaceVariant.copy(alpha = 0.6f),
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
+                    // Play / Pause button
+                    IconButton(
+                        onClick = { onToggleAudio() },
+                        enabled = !isAudioLoading,
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (isAudioPlaying) Icons.Filled.PauseCircle
+                                else Icons.Filled.PlayCircle,
+                            contentDescription = if (isAudioLoading) "Loading audio..."
+                                else if (isAudioPlaying) "Pause" else "Play",
+                            tint = if (isAudioPlaying) cc.accentGradientStart
+                                else cc.onSurfaceVariant.copy(alpha = 0.6f),
+                            modifier = Modifier.size(22.dp)
                         )
                     }
 
                     // Like button
                     IconButton(
                         onClick = { onToggleLike() },
-                        modifier = Modifier.size(40.dp)
+                        modifier = Modifier.size(36.dp)
                     ) {
                         Icon(
                             imageVector = if (isLiked) Icons.Filled.Favorite
@@ -506,34 +633,35 @@ internal fun FullPageCard(
                             contentDescription = if (isLiked) "Unlike" else "Like",
                             tint = if (isLiked) cc.bookmarkActive
                                 else cc.onSurfaceVariant.copy(alpha = 0.6f),
-                            modifier = Modifier.size(22.dp)
+                            modifier = Modifier.size(20.dp)
                         )
                     }
 
                     // Comment button
                     IconButton(
                         onClick = onComment,
-                        modifier = Modifier.size(40.dp)
+                        modifier = Modifier.size(36.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Filled.ModeComment,
                             contentDescription = "Comments",
                             tint = cc.onSurfaceVariant.copy(alpha = 0.6f),
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(18.dp)
                         )
                     }
 
                     // Bookmark button
                     IconButton(
                         onClick = { onToggleBookmark() },
-                        modifier = Modifier.size(40.dp)
+                        modifier = Modifier.size(36.dp)
                     ) {
                         Icon(
                             imageVector = if (isBookmarked) Icons.Filled.Bookmark
                                 else Icons.Filled.BookmarkBorder,
                             contentDescription = if (isBookmarked) "Remove bookmark" else "Bookmark",
                             tint = if (isBookmarked) cc.bookmarkActive
-                                else cc.onSurfaceVariant.copy(alpha = 0.6f)
+                                else cc.onSurfaceVariant.copy(alpha = 0.6f),
+                            modifier = Modifier.size(18.dp)
                         )
                     }
 
@@ -556,12 +684,13 @@ internal fun FullPageCard(
                                 Intent.createChooser(sendIntent, "Share via Curio")
                             )
                         },
-                        modifier = Modifier.size(40.dp)
+                        modifier = Modifier.size(36.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Filled.Share,
                             contentDescription = "Share",
-                            tint = cc.onSurfaceVariant.copy(alpha = 0.6f)
+                            tint = cc.onSurfaceVariant.copy(alpha = 0.6f),
+                            modifier = Modifier.size(18.dp)
                         )
                     }
                 }

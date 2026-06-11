@@ -1,72 +1,62 @@
-# --- Environment ---
-.env
-.env.local
-.env.production
-.env.development
-scripts/venv/
 
-# --- Code Review Graph ---
-.code-review-graph/
-.code_review_graph/
-code-review-graph-cache/
-crg-cache/
+__pycache__/
+.backend.pid
 .cache/code-review-graph/
 .cache/crg/
+.code_review_graph/
+.code-review-graph/
+.cxx/
+.DS_Store
+.env
+.env.development
+.env.local
+.env.production
+.idea/
+.ngrok.pid
+.vscode/
+*.avi
 *.crg
-
-# --- Go ---
-backend/server
-backend/curio-server
-backend/backend
-backend/tmp/
-
-# --- Backend runtime ---
-.backend.pid
+*.dll
+*.dylib
 *.exe
 *.exe~
-*.dll
-*.so
-*.dylib
-*.test
-*.out
-vendor/
-
-# --- Android ---
-android/.gradle/
-android/build/
-android/app/build/
-android/local.properties
-android/app/curio-keystore.jks
-android/.idea/
-*.iml
 *.hprof
-.cxx/
-
-# --- Media / Archives ---
-*.mp4
-*.mov
-*.avi
-*.mkv
-*.zip
-*.tar.gz
-
-# --- Logs ---
+*.iml
 *.log
-
-# --- macOS ---
-.DS_Store
-*.swp
+*.mkv
+*.mov
+*.mp4
+*.out
+*.so
 *.swo
+*.swp
+*.tar.gz
+*.test
+*.zip
 *~
-
+# --- Android ---
+# --- Backend runtime ---
+# --- Code Review Graph ---
+# --- Environment ---
+# --- Go ---
+# --- IDE ---
+# --- Logs ---
+# --- macOS ---
+# --- Media / Archives ---
 # --- Python ---
-__pycache__/
-scripts/venv/
+android/.gradle/
+android/.idea/
+android/app/build/
+android/app/curio-keystore.jks
+android/build/
+android/local.properties
+backend/backend
+backend/curio-server
+backend/server
+backend/tmp/
+code-review-graph-cache/
+crg-cache/
 scripts/scraper/node_modules/
 scripts/scraper/storage/
-
-# --- IDE ---
-.idea/
-.vscode/
-*.swp
-*.swo
+scripts/venv/
+vendor/
