@@ -14,7 +14,8 @@ class CurioApp : Application() {
         super.onCreate()
         instance = this
         prefs = PreferencesHelper.getInstance(this)
-        darkThemeEnabled = prefs.isDarkTheme
+        // Always dark — light theme will be polished later
+        darkThemeEnabled = true
     }
 
     companion object {
