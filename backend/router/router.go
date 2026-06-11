@@ -37,6 +37,10 @@ func Setup() *gin.Engine {
 		api.GET("/puzzles", handlers.GetPuzzles)
 		api.POST("/puzzles/:id/validate", handlers.ValidatePuzzle)
 		api.POST("/puzzles/:id/like", handlers.LikePuzzle)
+
+		// Profile
+		api.GET("/profile", handlers.GetProfile)
+		api.POST("/profile", handlers.CreateOrUpdateProfile)
 	}
 
 	return r

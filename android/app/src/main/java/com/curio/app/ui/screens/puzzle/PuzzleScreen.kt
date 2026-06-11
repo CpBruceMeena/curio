@@ -589,7 +589,10 @@ private fun MathInput(value: String, onValueChange: (String) -> Unit, enabled: B
             focusedBorderColor = SecondaryContainer,
             unfocusedBorderColor = SurfaceContainerHigh,
             focusedContainerColor = SurfaceContainerHigh.copy(alpha = 0.2f),
-            unfocusedContainerColor = SurfaceContainerHigh.copy(alpha = 0.1f)
+            unfocusedContainerColor = SurfaceContainerHigh.copy(alpha = 0.1f),
+            focusedTextColor = OnSurface,
+            unfocusedTextColor = OnSurface,
+            cursorColor = SecondaryContainer
         )
     )
 }
@@ -609,7 +612,10 @@ private fun TextInput(value: String, onValueChange: (String) -> Unit, enabled: B
             focusedBorderColor = SecondaryContainer,
             unfocusedBorderColor = SurfaceContainerHigh,
             focusedContainerColor = SurfaceContainerHigh.copy(alpha = 0.2f),
-            unfocusedContainerColor = SurfaceContainerHigh.copy(alpha = 0.1f)
+            unfocusedContainerColor = SurfaceContainerHigh.copy(alpha = 0.1f),
+            focusedTextColor = OnSurface,
+            unfocusedTextColor = OnSurface,
+            cursorColor = SecondaryContainer
         )
     )
 }

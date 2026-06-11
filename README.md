@@ -9,33 +9,54 @@ Curio is a knowledge discovery app for the endlessly curious. Swipe through bite
 ## Features
 
 ### ✨ Splash
-A charismatic, mysterious opening animation with floating particles, a pulsing glow, and a slowly rotating diamond — setting the tone for discovery the moment you open the app.
+A cinematic video background with an animated cube logo and elegant text overlay — setting the tone for discovery the moment you open the app.
 
 ### 🧠 Onboarding
-Tell Curio what excites you. Pick your interests from 21 categories — from quantum physics to Urdu poetry — and your feed learns what fascinates you from day one.
+Tell Curio what excites you. Pick your interests from 21+ categories across 4 L1 sections (Facts, Poems, Short Stories, Puzzles) — from quantum physics to Urdu poetry — and your feed learns what fascinates you from day one.
 
 ### ♾️ Infinite Feed
-Swipe through an endless stream of knowledge cards. Each card is a single, beautifully presented insight with:
+Swipe through an endless stream of knowledge cards with a stunning 3D parallax effect. Each card is a beautifully presented insight with:
 - **Bite-sized facts** — quick reads you can digest in seconds
-- **Poetry & Shayari** — full poems with rich contextual descriptions and poet credits
-- **Swipe navigation** — effortlessly glide from one discovery to the next
+- **Poetry & Shayari** — full poems with rich contextual descriptions and poet credits (including Devanagari Urdu script support)
+- **Short stories** — micro-narratives you can finish in minutes
+- **Interactive Puzzles** — Sudoku, Math, Logic, and Word puzzles with built-in validation
+- **3D swipe navigation** — tilt and parallax effects as you glide from one discovery to the next
+- **Share & Bookmark** — share insights with friends or save your favorites for later
 
 ### 🔍 Discover
-Explore the full universe of categories. Browse by topic, apply filters, and find your next obsession in a clean two-column grid where every card is perfectly sized and aligned.
+Explore the full universe of categories. Browse by L1 sections (Facts, Poems, Short Stories, Puzzles), pick subcategories, apply filters, and find your next obsession in a clean 3-column grid. Content refreshes every time you open Discover.
 
-### 🗂️ Vault
-Save and organize your favorite insights into personal collections. Build your own knowledge library over time.
+### 📑 Bookmarks
+Save your favorite insights with a single tap. Your bookmarks are stored locally on your device and persist across sessions. Access all your saved content from a dedicated bookmarks view.
 
-### 👤 Profile
-Track your curiosity journey. See your stats, unlock achievement badges, level up, and customize your experience.
+### 🃏 Shuffle
+Hit the shuffle button on the feed page to get a fresh batch of content within your current category — the same category, new discoveries.
+
+### 🧩 Puzzles
+Test your mind with interactive puzzles:
+- **Sudoku** — classic number puzzles
+- **Math Puzzles** — number-based challenges
+- **Logic Puzzles** — reasoning problems
+- **Word Puzzles** — vocabulary and wordplay
+
+Each puzzle supports validation, hints, and explanations.
+
+### 💬 Feedback
+Share your thoughts directly from the app via the feedback dialog at the bottom of the screen.
 
 ---
 
 ## Categories
 
-Curio covers **21 categories** — each with its own distinct icon:
+Curio covers **21+ categories** — each with its own distinct icon:
 
 `🧬 Science` `🚀 Space` `📜 History` `🌿 Biology` `🧠 Psychology` `⚖️ Philosophy` `⚛️ Physics` `💡 Startups` `🤖 AI` `🏛️ Economics` `🌲 Nature` `💻 Technology` `📖 Poetry` `🎬 Movies` `🔬 Neuroscience` `📚 Literature` `🌍 Geography` `🎵 Music` `⚽ Sports` `🍜 Food` `✍️ Shayari`
+
+Organized into 4 L1 sections:
+- **Facts** — Science, Space, History, Biology, Psychology, Philosophy, Physics, Startups, AI, Economics, Nature, Technology, Movies, Neuroscience, Geography, Music, Sports, Food
+- **Poems** — Poetry, Shayari
+- **Short Stories** — Literature
+- **Puzzles** — Sudoku, Math Puzzles, Logic Puzzles, Word Puzzles, Mixed Puzzles
 
 ---
 
@@ -52,8 +73,18 @@ The app is designed for the commute, the coffee break, or the moment you just wa
 ## Design
 
 - **Dark Mode** — A thoughtfully designed dark interface with a refined emerald/cyan/gold palette. Easy on the eyes, beautiful at any hour.
+- **Vibrant Gradients** — Dynamic gradient overlays on cards create depth and visual richness.
+- **3D Parallax Cards** — Feed cards respond to swipe with subtle tilt and depth effects for an immersive reading experience.
 - **Glassmorphism** — Subtle glass-like surfaces, soft borders, and layered depth.
-- **Particles & Motion** — Subtle animations throughout create a sense of wonder and exploration.
+
+---
+
+## Tech Stack
+
+- **Frontend:** Android (Jetpack Compose + Kotlin)
+- **Backend:** Go
+- **Database:** PostgreSQL
+- **Data Scraping:** Python
 
 ---
 
@@ -61,9 +92,10 @@ The app is designed for the commute, the coffee break, or the moment you just wa
 
 | Screen | Purpose |
 |--------|---------|
-| **Splash** | Mysterious animated entry with particles and a rotating diamond |
-| **Onboarding** | Interest selection from 21 categories |
-| **Feed** | Swipeable full-page knowledge cards |
-| **Discover** | Categorized content grid with filters |
-| **Vault** | Personal collections and saved content |
-| **Profile** | Stats, achievements, leveling, and settings |
+| **Splash** | Cinematic video background with animated cube logo |
+| **Onboarding** | L1/L2 interest selection from 4 sections (Facts, Poems, Stories, Puzzles) |
+| **Feed** | Swipeable full-page knowledge cards with 3D parallax, share, bookmark & shuffle |
+| **Discover** | 3-column category grid with filters, always-fresh content |
+| **Bookmarks** | Locally-saved collection of your favorite content |
+| **Puzzles** | Interactive Sudoku, Math, Logic, and Word puzzles |
+| **Content Detail** | Full-screen view of any content item |

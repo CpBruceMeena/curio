@@ -62,6 +62,28 @@ val OutlineVariant = Color(0xFF414847)
 // Surface Variant
 val SurfaceVariant = Color(0xFF2C3736)
 
+// ── Vibrant Gradients ────────────────────────────────────────
+
+// Card gradient overlay — subtle emerald → teal
+val CardGradientStart = Color(0xFF0D2B28)
+val CardGradientEnd = Color(0xFF1A3D3A)
+
+// Feed card body gradient — deep dark with cyan undertone
+val FeedCardGradientStart = Color(0xFF0F1F1E)
+val FeedCardGradientEnd = Color(0xFF1A2E2C)
+
+// Vibrant accent gradients for card borders / highlights
+val AccentGradientStart = Color(0xFF00F4FE)   // cyan
+val AccentGradientMid = Color(0xFFA8CEC8)     // emerald
+val AccentGradientEnd = Color(0xFFE9C400)     // gold
+
+// Button / shuffle gradient
+val ShuffleGradientStart = Color(0xFF00F4FE)
+val ShuffleGradientEnd = Color(0xFFE9C400)
+
+// Bookmark active color
+val BookmarkActive = Color(0xFFE9C400)
+
 // Additional Utility Colors
 val GlassWhite = Color(0x1AFFFFFF)
 val GlassBorder = Color(0x1AA8CEC8)

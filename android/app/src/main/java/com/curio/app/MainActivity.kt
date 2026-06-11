@@ -11,19 +11,22 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.compose.rememberNavController
 import com.curio.app.ui.navigation.CurioNavGraph
 import com.curio.app.ui.theme.CurioTheme
+import com.curio.app.ui.theme.LightSurface
 import com.curio.app.ui.theme.Surface
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-        val splashScreen = installSplashScreen()
+        installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
         setContent {
-            CurioTheme {
+            val isDarkTheme = CurioApp.darkThemeEnabled
+
+            CurioTheme(darkTheme = isDarkTheme) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = Surface
+                    color = if (isDarkTheme) Surface else LightSurface
                 ) {
                     val navController = rememberNavController()
                     CurioNavGraph(navController = navController)
