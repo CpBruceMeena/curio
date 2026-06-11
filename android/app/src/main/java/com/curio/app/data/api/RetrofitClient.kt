@@ -32,4 +32,5 @@ object RetrofitClient {
 
     val api: CurioApi = retrofit.create(CurioApi::class.java)
     val profileApi: ProfileApi = retrofit.create(ProfileApi::class.java)
+    val deviceInfoApi: DeviceInfoApi = retrofit.create(DeviceInfoApi::class.java)
 }

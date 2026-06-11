@@ -52,7 +52,9 @@ data class CategoriesResponse(
 )
 
 data class FeedbackRequest(
-    val message: String
+    val message: String,
+    @SerializedName("device_id")
+    val deviceId: String = ""
 )
 
 data class FeedbackResponse(
@@ -103,4 +105,41 @@ data class ValidateResponse(
 
 data class ValidateRequest(
     val answer: String
+)
+
+// ── Device Info ────────────────────────────────────────────────
+
+data class DeviceInfo(
+    val id: Long = 0,
+    @SerializedName("device_id")
+    val deviceId: String = "",
+    @SerializedName("os_version")
+    val osVersion: String = "",
+    @SerializedName("app_version")
+    val appVersion: String = "",
+    @SerializedName("device_model")
+    val deviceModel: String = "",
+    val manufacturer: String = "",
+    @SerializedName("screen_size")
+    val screenSize: String = "",
+    val language: String = "",
+    val timezone: String = "",
+    @SerializedName("created_at")
+    val createdAt: String = "",
+    @SerializedName("updated_at")
+    val updatedAt: String = ""
+)
+
+data class DeviceInfoRequest(
+    @SerializedName("os_version")
+    val osVersion: String,
+    @SerializedName("app_version")
+    val appVersion: String,
+    @SerializedName("device_model")
+    val deviceModel: String,
+    val manufacturer: String,
+    @SerializedName("screen_size")
+    val screenSize: String,
+    val language: String,
+    val timezone: String
 )

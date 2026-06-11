@@ -17,6 +17,7 @@ crg-cache/
 # --- Go ---
 backend/server
 backend/curio-server
+backend/backend
 backend/tmp/
 
 # --- Backend runtime ---

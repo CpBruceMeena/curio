@@ -50,6 +50,7 @@ fun FeedbackDialog(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     val repository = remember { ContentRepository() }
+    val deviceId = com.curio.app.CurioApp.instance.prefs.deviceUuid
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     ModalBottomSheet(
@@ -176,7 +177,7 @@ fun FeedbackDialog(
                         }
                         isSubmitting = true
                         scope.launch {
-                            repository.submitFeedback(trimmed)
+                            repository.submitFeedback(trimmed, deviceId)
                                 .onSuccess {
                                     submitted = true
                                     isSubmitting = false

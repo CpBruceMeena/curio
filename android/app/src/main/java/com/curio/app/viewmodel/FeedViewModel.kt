@@ -336,31 +336,23 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
     // ── Shuffle ────────────────────────────────────────────────
 
     /**
-     * Shuffle: fetch fresh random content for the currently selected category.
+     * Shuffle: fetch fresh random content from ALL categories.
+     * Clears any category filter so the user sees variety across topics.
      */
     fun shuffleFeed() {
-        val selectedIds = _uiState.value.selectedCategoryIds
-        val currentCategoryName = _uiState.value.content.firstOrNull()?.categoryName
-
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, content = emptyList(), feedStartIndex = 0, lastFeedPosition = 0)
-
-            // Find the category ID for the current category name
-            val targetCategoryId = if (selectedIds.isNotEmpty()) {
-                selectedIds.first()
-            } else if (currentCategoryName != null) {
-                val cat = _uiState.value.categories.find {
-                    it.name.equals(currentCategoryName, ignoreCase = true)
-                }
-                cat?.id
-            } else {
-                null
-            }
+            _uiState.value = _uiState.value.copy(
+                isLoading = true,
+                content = emptyList(),
+                selectedCategoryIds = emptySet(),
+                feedStartIndex = 0,
+                lastFeedPosition = 0
+            )
 
             repository.getFeed(
                 page = 1,
                 pageSize = 100,
-                categoryId = targetCategoryId,
+                categoryId = null,
                 random = true
             ).onSuccess { feedResponse ->
                 _uiState.value = _uiState.value.copy(
@@ -368,6 +360,7 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
                     content = feedResponse.content,
                     currentPage = feedResponse.page,
                     hasMore = feedResponse.hasMore,
+                    feedStartIndex = 0,
                     error = null
                 )
             }.onFailure { error ->

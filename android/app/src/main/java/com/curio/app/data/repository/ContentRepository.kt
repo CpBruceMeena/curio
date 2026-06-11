@@ -72,9 +72,9 @@ class ContentRepository {
         }
     }
 
-    suspend fun submitFeedback(message: String): Result<FeedbackResponse> {
+    suspend fun submitFeedback(message: String, deviceId: String = ""): Result<FeedbackResponse> {
         return try {
-            val response = api.submitFeedback(FeedbackRequest(message = message))
+            val response = api.submitFeedback(FeedbackRequest(message = message, deviceId = deviceId))
             if (response.isSuccessful && response.body() != null) {
                 Result.success(response.body()!!)
             } else {
