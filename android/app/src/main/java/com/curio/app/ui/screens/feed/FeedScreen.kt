@@ -1,6 +1,11 @@
 package com.curio.app.ui.screens.feed
 
 import android.content.Intent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -26,7 +31,9 @@ import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.ModeComment
+import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.PauseCircle
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Share
@@ -445,6 +452,7 @@ internal fun FullPageCard(
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
     val cc = curioColors()
+    var showActions by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
@@ -548,7 +556,7 @@ internal fun FullPageCard(
                     )
                     .padding(start = 20.dp, end = 8.dp, top = 8.dp, bottom = 8.dp)
             ) {
-                // Row 1: Card details — read time + source
+                // Row 1: Card details — read time + source + toggle button
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -570,128 +578,151 @@ internal fun FullPageCard(
                             )
                         }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(6.dp))
-
-                // Divider line
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(0.5.dp)
-                        .background(cc.onSurfaceVariant.copy(alpha = 0.1f))
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                // Row 2: All action buttons, evenly spaced
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Copy button
+                    // Toggle button for action actions
                     IconButton(
-                        onClick = {
-                            clipboardManager.setText(AnnotatedString(body))
-                        },
+                        onClick = { showActions = !showActions },
                         modifier = Modifier.size(36.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Filled.ContentCopy,
-                            contentDescription = "Copy content",
-                            tint = cc.onSurfaceVariant.copy(alpha = 0.6f),
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-
-                    // Play / Pause button
-                    IconButton(
-                        onClick = { onToggleAudio() },
-                        enabled = !isAudioLoading,
-                        modifier = Modifier.size(36.dp)
-                    ) {
-                        Icon(
-                            imageVector = if (isAudioPlaying) Icons.Filled.PauseCircle
-                                else Icons.Filled.PlayCircle,
-                            contentDescription = if (isAudioLoading) "Loading audio..."
-                                else if (isAudioPlaying) "Pause" else "Play",
-                            tint = if (isAudioPlaying) cc.accentGradientStart
-                                else cc.onSurfaceVariant.copy(alpha = 0.6f),
+                            imageVector = if (showActions) Icons.Filled.KeyboardArrowUp
+                                else Icons.Filled.MoreHoriz,
+                            contentDescription = if (showActions) "Hide actions" else "Show actions",
+                            tint = if (showActions) cc.accentGradientStart
+                                else cc.onSurfaceVariant.copy(alpha = 0.5f),
                             modifier = Modifier.size(22.dp)
                         )
                     }
+                }
 
-                    // Like button
-                    IconButton(
-                        onClick = { onToggleLike() },
-                        modifier = Modifier.size(36.dp)
-                    ) {
-                        Icon(
-                            imageVector = if (isLiked) Icons.Filled.Favorite
-                                else Icons.Filled.FavoriteBorder,
-                            contentDescription = if (isLiked) "Unlike" else "Like",
-                            tint = if (isLiked) cc.bookmarkActive
-                                else cc.onSurfaceVariant.copy(alpha = 0.6f),
-                            modifier = Modifier.size(20.dp)
+                AnimatedVisibility(
+                    visible = showActions,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut()
+                ) {
+                    Column {
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        // Divider line
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(0.5.dp)
+                                .background(cc.onSurfaceVariant.copy(alpha = 0.1f))
                         )
-                    }
 
-                    // Comment button
-                    IconButton(
-                        onClick = onComment,
-                        modifier = Modifier.size(36.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.ModeComment,
-                            contentDescription = "Comments",
-                            tint = cc.onSurfaceVariant.copy(alpha = 0.6f),
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
+                        Spacer(modifier = Modifier.height(4.dp))
 
-                    // Bookmark button
-                    IconButton(
-                        onClick = { onToggleBookmark() },
-                        modifier = Modifier.size(36.dp)
-                    ) {
-                        Icon(
-                            imageVector = if (isBookmarked) Icons.Filled.Bookmark
-                                else Icons.Filled.BookmarkBorder,
-                            contentDescription = if (isBookmarked) "Remove bookmark" else "Bookmark",
-                            tint = if (isBookmarked) cc.bookmarkActive
-                                else cc.onSurfaceVariant.copy(alpha = 0.6f),
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-
-                    // Share button
-                    IconButton(
-                        onClick = {
-                            val shareText = buildString {
-                                appendLine("📖 $title")
-                                appendLine()
-                                appendLine(body)
-                                appendLine()
-                                append("— Curio: One interesting thing at a time.")
+                        // Row 2: All action buttons, evenly spaced
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // Copy button
+                            IconButton(
+                                onClick = {
+                                    clipboardManager.setText(AnnotatedString(body))
+                                },
+                                modifier = Modifier.size(36.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.ContentCopy,
+                                    contentDescription = "Copy content",
+                                    tint = cc.onSurfaceVariant.copy(alpha = 0.6f),
+                                    modifier = Modifier.size(18.dp)
+                                )
                             }
-                            val sendIntent = Intent().apply {
-                                action = Intent.ACTION_SEND
-                                putExtra(Intent.EXTRA_TEXT, shareText)
-                                type = "text/plain"
+
+                            // Play / Pause button
+                            IconButton(
+                                onClick = { onToggleAudio() },
+                                enabled = !isAudioLoading,
+                                modifier = Modifier.size(36.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (isAudioPlaying) Icons.Filled.PauseCircle
+                                        else Icons.Filled.PlayCircle,
+                                    contentDescription = if (isAudioLoading) "Loading audio..."
+                                        else if (isAudioPlaying) "Pause" else "Play",
+                                    tint = if (isAudioPlaying) cc.accentGradientStart
+                                        else cc.onSurfaceVariant.copy(alpha = 0.6f),
+                                    modifier = Modifier.size(22.dp)
+                                )
                             }
-                            context.startActivity(
-                                Intent.createChooser(sendIntent, "Share via Curio")
-                            )
-                        },
-                        modifier = Modifier.size(36.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Share,
-                            contentDescription = "Share",
-                            tint = cc.onSurfaceVariant.copy(alpha = 0.6f),
-                            modifier = Modifier.size(18.dp)
-                        )
+
+                            // Like button
+                            IconButton(
+                                onClick = { onToggleLike() },
+                                modifier = Modifier.size(36.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (isLiked) Icons.Filled.Favorite
+                                        else Icons.Filled.FavoriteBorder,
+                                    contentDescription = if (isLiked) "Unlike" else "Like",
+                                    tint = if (isLiked) cc.bookmarkActive
+                                        else cc.onSurfaceVariant.copy(alpha = 0.6f),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+
+                            // Comment button
+                            IconButton(
+                                onClick = onComment,
+                                modifier = Modifier.size(36.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.ModeComment,
+                                    contentDescription = "Comments",
+                                    tint = cc.onSurfaceVariant.copy(alpha = 0.6f),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+
+                            // Bookmark button
+                            IconButton(
+                                onClick = { onToggleBookmark() },
+                                modifier = Modifier.size(36.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (isBookmarked) Icons.Filled.Bookmark
+                                        else Icons.Filled.BookmarkBorder,
+                                    contentDescription = if (isBookmarked) "Remove bookmark" else "Bookmark",
+                                    tint = if (isBookmarked) cc.bookmarkActive
+                                        else cc.onSurfaceVariant.copy(alpha = 0.6f),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+
+                            // Share button
+                            IconButton(
+                                onClick = {
+                                    val shareText = buildString {
+                                        appendLine("📖 $title")
+                                        appendLine()
+                                        appendLine(body)
+                                        appendLine()
+                                        append("— Curio: One interesting thing at a time.")
+                                    }
+                                    val sendIntent = Intent().apply {
+                                        action = Intent.ACTION_SEND
+                                        putExtra(Intent.EXTRA_TEXT, shareText)
+                                        type = "text/plain"
+                                    }
+                                    context.startActivity(
+                                        Intent.createChooser(sendIntent, "Share via Curio")
+                                    )
+                                },
+                                modifier = Modifier.size(36.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Share,
+                                    contentDescription = "Share",
+                                    tint = cc.onSurfaceVariant.copy(alpha = 0.6f),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
                     }
                 }
             }

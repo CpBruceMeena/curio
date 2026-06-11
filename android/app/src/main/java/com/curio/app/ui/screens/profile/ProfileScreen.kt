@@ -1,6 +1,12 @@
 package com.curio.app.ui.screens.profile
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,12 +16,18 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Divider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -193,41 +205,133 @@ fun ProfileScreen(
         )
         Spacer(modifier = Modifier.height(12.dp))
 
-        val privacyText = buildString {
-            appendLine("Privacy Notice")
-            appendLine()
-            appendLine("Curio respects your privacy. The personal information you provide (name, age, gender, interests) is used solely to personalize your content recommendations. We do not share your data with third parties.")
-            appendLine()
-            appendLine("Your data is stored securely on our servers and can be deleted at any time by contacting us. You can choose not to provide any personal information and still use the app's core features.")
+        // ── Privacy Notice toggle ──
+        var showPrivacy by remember { mutableStateOf(false) }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(14.dp))
+                .background(cc.surfaceContainerHigh.copy(alpha = 0.15f))
+                .clickable { showPrivacy = !showPrivacy }
+                .padding(horizontal = 16.dp, vertical = 14.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = "📜", fontSize = 18.sp)
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = "Privacy Notice",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = cc.onSurface,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+                Icon(
+                    imageVector = if (showPrivacy) Icons.Filled.KeyboardArrowUp
+                        else Icons.Filled.KeyboardArrowDown,
+                    contentDescription = if (showPrivacy) "Collapse" else "Expand",
+                    tint = cc.onSurfaceVariant.copy(alpha = 0.6f),
+                    modifier = Modifier.size(20.dp)
+                )
+            }
         }
 
-        Text(
-            text = privacyText,
-            style = MaterialTheme.typography.bodySmall,
-            color = cc.onSurfaceVariant.copy(alpha = 0.7f),
-            lineHeight = 20.sp
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        val termsText = buildString {
-            appendLine("Terms & Conditions")
-            appendLine()
-            appendLine("By using Curio, you agree to the following terms:")
-            appendLine()
-            appendLine("1. Content is provided for educational and entertainment purposes only.")
-            appendLine("2. You may not redistribute or republish app content without permission.")
-            appendLine("3. We reserve the right to modify or discontinue services at any time.")
-            appendLine("4. Your use of the app is at your own risk.")
-            appendLine("5. These terms may be updated. Continued use constitutes acceptance.")
+        AnimatedVisibility(
+            visible = showPrivacy,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut()
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(cc.surfaceContainer.copy(alpha = 0.4f))
+                    .padding(16.dp)
+            ) {
+                Text(
+                    text = buildString {
+                        appendLine("Curio respects your privacy. The personal information you provide (name, age, gender, interests) is used solely to personalize your content recommendations. We do not share your data with third parties.")
+                        appendLine()
+                        appendLine("Your data is stored securely on our servers and can be deleted at any time by contacting us. You can choose not to provide any personal information and still use the app's core features.")
+                        appendLine()
+                        append("Journal entries, reflections, task lists, and personal notes are stored exclusively on your device in a private local database. No journal data is transmitted to our servers, shared with third parties, or used for analytics.")
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = cc.onSurfaceVariant.copy(alpha = 0.7f),
+                    lineHeight = 20.sp
+                )
+            }
         }
 
-        Text(
-            text = termsText,
-            style = MaterialTheme.typography.bodySmall,
-            color = cc.onSurfaceVariant.copy(alpha = 0.7f),
-            lineHeight = 20.sp
-        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // ── Terms & Conditions toggle ──
+        var showTerms by remember { mutableStateOf(false) }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(14.dp))
+                .background(cc.surfaceContainerHigh.copy(alpha = 0.15f))
+                .clickable { showTerms = !showTerms }
+                .padding(horizontal = 16.dp, vertical = 14.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = "📋", fontSize = 18.sp)
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = "Terms & Conditions",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = cc.onSurface,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+                Icon(
+                    imageVector = if (showTerms) Icons.Filled.KeyboardArrowUp
+                        else Icons.Filled.KeyboardArrowDown,
+                    contentDescription = if (showTerms) "Collapse" else "Expand",
+                    tint = cc.onSurfaceVariant.copy(alpha = 0.6f),
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+
+        AnimatedVisibility(
+            visible = showTerms,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut()
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(cc.surfaceContainer.copy(alpha = 0.4f))
+                    .padding(16.dp)
+            ) {
+                Text(
+                    text = buildString {
+                        appendLine("By using Curio, you agree to the following terms:")
+                        appendLine()
+                        appendLine("1. Content is provided for educational and entertainment purposes only.")
+                        appendLine("2. You may not redistribute or republish app content without permission.")
+                        appendLine("3. We reserve the right to modify or discontinue services at any time.")
+                        appendLine("4. Your use of the app is at your own risk.")
+                        append("5. These terms may be updated. Continued use constitutes acceptance.")
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = cc.onSurfaceVariant.copy(alpha = 0.7f),
+                    lineHeight = 20.sp
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.height(32.dp))
     }
