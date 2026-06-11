@@ -40,4 +40,15 @@ interface JournalDao {
 
     @Query("SELECT * FROM journal_entries WHERE isDraft = 0 AND (title LIKE '%' || :query || '%' OR content LIKE '%' || :query || '%') ORDER BY dateCreated DESC")
     fun searchEntries(query: String): Flow<List<JournalEntry>>
+
+    // ── Stats ──
+
+    @Query("SELECT COUNT(*) FROM journal_entries WHERE isDraft = 0")
+    fun getTotalEntryCount(): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM journal_entries WHERE isDraft = 0 AND dateCreated >= :monthStart AND dateCreated < :monthEnd")
+    fun getEntryCountForMonth(monthStart: Long, monthEnd: Long): Flow<Int>
+
+    @Query("SELECT DISTINCT dateCreated / 86400000 AS day FROM journal_entries WHERE isDraft = 0 ORDER BY day DESC")
+    fun getEntryDays(): Flow<List<Long>>
 }

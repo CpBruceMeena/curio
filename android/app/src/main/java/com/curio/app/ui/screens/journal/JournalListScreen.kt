@@ -78,20 +78,65 @@ fun JournalListScreen(
             .fillMaxSize()
             .background(cc.surface)
     ) {
-        // ── Header ──
-        Text(
-            text = "Journal",
-            style = MaterialTheme.typography.headlineMedium,
-            color = cc.onSurface,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(start = 20.dp, top = 8.dp, end = 20.dp)
-        )
-        Text(
-            text = "Write what's on your mind",
-            style = MaterialTheme.typography.bodyMedium,
-            color = cc.onSurfaceVariant.copy(alpha = 0.7f),
-            modifier = Modifier.padding(start = 20.dp, bottom = 12.dp, end = 20.dp)
-        )
+        // ── Header + Stats ──
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 20.dp, top = 8.dp, end = 20.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    text = "Journal",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = cc.onSurface,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "Write what's on your mind",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = cc.onSurfaceVariant.copy(alpha = 0.7f)
+                )
+            }
+        }
+
+        // ── Stats bar ──
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Streak
+            val streak = state.writingStreak
+            StatCard(
+                icon = "🔥",
+                value = "${streak}",
+                label = if (streak == 1) "day streak" else "day streak",
+                color = cc.accentGradientStart,
+                modifier = Modifier.weight(1f),
+                cc = cc
+            )
+            // Total entries
+            StatCard(
+                icon = "📝",
+                value = "${state.totalEntries}",
+                label = if (state.totalEntries == 1) "total entry" else "total entries",
+                color = cc.secondaryContainer,
+                modifier = Modifier.weight(1f),
+                cc = cc
+            )
+            // Month entries
+            StatCard(
+                icon = "📅",
+                value = "${state.thisMonthEntries}",
+                label = if (state.thisMonthEntries == 1) "this month" else "this month",
+                color = cc.bookmarkActive,
+                modifier = Modifier.weight(1f),
+                cc = cc
+            )
+        }
 
         // ── Calendar ──
         CalendarCard(
@@ -312,6 +357,45 @@ private fun CalendarCard(
                 }
             }
             Spacer(modifier = Modifier.height(4.dp))
+        }
+    }
+}
+
+@Composable
+private fun StatCard(
+    icon: String,
+    value: String,
+    label: String,
+    color: Color,
+    modifier: Modifier = Modifier,
+    cc: com.curio.app.ui.theme.CurioColors
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(14.dp))
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(cc.surfaceContainer, cc.surface.copy(alpha = 0.8f))
+                )
+            )
+            .padding(12.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(text = icon, fontSize = 20.sp)
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleLarge,
+                color = cc.onSurface,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = cc.onSurfaceVariant.copy(alpha = 0.6f),
+                fontSize = 10.sp
+            )
         }
     }
 }

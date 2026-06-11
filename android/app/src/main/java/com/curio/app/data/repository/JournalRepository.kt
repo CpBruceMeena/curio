@@ -37,6 +37,43 @@ class JournalRepository(context: Context) {
     fun searchEntries(query: String): Flow<List<JournalEntry>> =
         dao.searchEntries(query)
 
+    // ── Stats ──
+
+    /** Total number of non-draft entries. */
+    fun getTotalEntryCount(): Flow<Int> = dao.getTotalEntryCount()
+
+    /** Number of entries in a given month. */
+    fun getEntryCountForMonth(monthStart: Long, monthEnd: Long): Flow<Int> =
+        dao.getEntryCountForMonth(monthStart, monthEnd)
+
+    /** All days (epoch day numbers) that have entries. */
+    fun getEntryDays(): Flow<List<Long>> = dao.getEntryDays()
+
+    /**
+     * Calculate current writing streak (consecutive days with at least one entry,
+     * counting backwards from today or yesterday).
+     */
+    fun calculateStreak(entryDays: List<Long>): Int {
+        if (entryDays.isEmpty()) return 0
+        val today = System.currentTimeMillis() / 86400000
+        val daysSet = entryDays.toSet()
+
+        var streak = 0
+        var checkDay = today
+
+        // If no entry today, check from yesterday
+        if (today !in daysSet) {
+            checkDay = today - 1
+        }
+
+        while (checkDay in daysSet) {
+            streak++
+            checkDay--
+        }
+
+        return streak
+    }
+
     /** Helper: get start/end of a day in epoch millis for a given date. */
     companion object {
         fun getDayBoundaries(year: Int, month: Int, day: Int): Pair<Long, Long> {
@@ -46,6 +83,17 @@ class JournalRepository(context: Context) {
             }
             val start = cal.timeInMillis
             cal.add(Calendar.DAY_OF_MONTH, 1)
+            val end = cal.timeInMillis
+            return Pair(start, end)
+        }
+
+        fun getMonthBoundaries(year: Int, month: Int): Pair<Long, Long> {
+            val cal = Calendar.getInstance().apply {
+                set(year, month, 1, 0, 0, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
+            val start = cal.timeInMillis
+            cal.add(Calendar.MONTH, 1)
             val end = cal.timeInMillis
             return Pair(start, end)
         }
