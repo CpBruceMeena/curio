@@ -13,8 +13,11 @@ data class CurioColors(
     val surfaceVariant: Color,
     val surfaceContainer: Color,
     val surfaceContainerHigh: Color,
+    val surfaceContainerHighest: Color,
     val onSurface: Color,
     val onSurfaceVariant: Color,
+    val outlineVariant: Color,
+    val scrim: Color,
     val primary: Color,
     val secondaryContainer: Color,
     val onSecondaryContainer: Color,
@@ -23,6 +26,7 @@ data class CurioColors(
     val cardGradientEnd: Color,
     val accentGradientStart: Color,
     val accentGradientMid: Color,
+    val accentGradientEnd: Color,
     val bookmarkActive: Color
 )
 
@@ -31,8 +35,11 @@ val DarkCurioColors = CurioColors(
     surfaceVariant = SurfaceVariant,
     surfaceContainer = SurfaceContainer,
     surfaceContainerHigh = SurfaceContainerHigh,
+    surfaceContainerHighest = SurfaceContainerHighest,
     onSurface = OnSurface,
     onSurfaceVariant = OnSurfaceVariant,
+    outlineVariant = OutlineVariant,
+    scrim = Scrim,
     primary = Primary,
     secondaryContainer = SecondaryContainer,
     onSecondaryContainer = OnSecondaryContainer,
@@ -41,6 +48,7 @@ val DarkCurioColors = CurioColors(
     cardGradientEnd = CardGradientEnd,
     accentGradientStart = AccentGradientStart,
     accentGradientMid = AccentGradientMid,
+    accentGradientEnd = AccentGradientEnd,
     bookmarkActive = BookmarkActive
 )
 
@@ -49,8 +57,11 @@ val LightCurioColors = CurioColors(
     surfaceVariant = LightSurfaceContainerHighest,
     surfaceContainer = LightSurfaceContainer,
     surfaceContainerHigh = LightSurfaceContainerHigh,
+    surfaceContainerHighest = LightSurfaceContainerHighest,
     onSurface = LightOnSurface,
     onSurfaceVariant = LightOnSurfaceVariant,
+    outlineVariant = LightOutlineVariant,
+    scrim = Scrim,
     primary = LightPrimary,
     secondaryContainer = LightSecondaryContainer,
     onSecondaryContainer = LightOnSecondaryContainer,
@@ -59,6 +70,7 @@ val LightCurioColors = CurioColors(
     cardGradientEnd = LightCardGradientEnd,
     accentGradientStart = LightAccentGradientStart,
     accentGradientMid = LightAccentGradientMid,
+    accentGradientEnd = LightAccentGradientEnd,
     bookmarkActive = LightBookmarkActive
 )
 

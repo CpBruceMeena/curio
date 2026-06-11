@@ -63,10 +63,18 @@ func GetContent(c *gin.Context) {
 	jsonResponse(c, http.StatusOK, detail)
 }
 
+// LikeContent toggles the likes count on content.
+// Query param: action=like (default) increments, action=unlike decrements.
 func LikeContent(c *gin.Context) {
 	globalID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		jsonResponse(c, http.StatusBadRequest, gin.H{"error": "Invalid content ID"})
+		return
+	}
+
+	action := c.DefaultQuery("action", "like")
+	if action != "like" && action != "unlike" {
+		jsonResponse(c, http.StatusBadRequest, gin.H{"error": "Action must be 'like' or 'unlike'"})
 		return
 	}
 
@@ -77,19 +85,27 @@ func LikeContent(c *gin.Context) {
 	}
 
 	// Must update the per-category table directly (VIEW is UNION ALL, not updatable)
-	// Look up the content_table_id to find the correct per-category table
 	var category models.Category
 	if err := database.DB.First(&category, catID).Error; err != nil {
 		jsonResponse(c, http.StatusNotFound, gin.H{"error": "Category not found"})
 		return
 	}
 	tableName := database.ContentTableName(uint(category.ContentTableID), catID)
+
+	var expr string
+	if action == "like" {
+		expr = "likes + 1"
+	} else {
+		// Don't let likes go below 0
+		expr = "GREATEST(likes - 1, 0)"
+	}
+
 	result := database.DB.Table(tableName).
 		Where("id = ?", localID).
-		UpdateColumn("likes", gorm.Expr("likes + 1"))
+		UpdateColumn("likes", gorm.Expr(expr))
 
 	if result.Error != nil {
-		jsonResponse(c, http.StatusInternalServerError, gin.H{"error": "Failed to like content"})
+		jsonResponse(c, http.StatusInternalServerError, gin.H{"error": "Failed to update likes"})
 		return
 	}
 	if result.RowsAffected == 0 {

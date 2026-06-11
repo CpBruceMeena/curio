@@ -1,7 +1,10 @@
 package com.curio.app.data.repository
 
 import com.curio.app.data.api.RetrofitClient
+import com.curio.app.data.model.AddCommentRequest
+import com.curio.app.data.model.AddCommentResponse
 import com.curio.app.data.model.CategoriesResponse
+import com.curio.app.data.model.CommentsResponse
 import com.curio.app.data.model.Content
 import com.curio.app.data.model.FeedbackRequest
 import com.curio.app.data.model.FeedbackResponse
@@ -46,9 +49,9 @@ class ContentRepository {
         }
     }
 
-    suspend fun likeContent(contentId: Long): Result<Int> {
+    suspend fun likeContent(contentId: Long, action: String = "like"): Result<Int> {
         return try {
-            val response = api.likeContent(contentId)
+            val response = api.likeContent(contentId, action)
             if (response.isSuccessful) {
                 Result.success(response.body()?.get("likes") ?: 0)
             } else {
@@ -92,6 +95,33 @@ class ContentRepository {
                 Result.success(response.body()!!)
             } else {
                 Result.failure(Exception("Failed to fetch L1 categories: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // ── Comments ───────────────────────────────────────────────
+    suspend fun getComments(contentId: Long): Result<CommentsResponse> {
+        return try {
+            val response = api.getComments(contentId)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Failed to fetch comments: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun addComment(contentId: Long, text: String, email: String = "", deviceId: String = ""): Result<AddCommentResponse> {
+        return try {
+            val response = api.addComment(contentId, AddCommentRequest(text = text, email = email), deviceId)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Failed to add comment: ${response.code()}"))
             }
         } catch (e: Exception) {
             Result.failure(e)

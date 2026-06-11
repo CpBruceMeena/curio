@@ -61,6 +61,30 @@ type Feedback struct {
 	DeletedAt gorm.DeletedAt   `json:"-" gorm:"index"`
 }
 
+// ── Comment Threads ────────────────────────────────────────────
+
+// ContentComment stores all comments for a single content item as a JSON array.
+// The comments field contains an array of comment objects:
+//
+//	[
+//	  {
+//	    "id": "<uuid>",
+//	    "text": "...",
+//	    "device_id": "<uuid>",
+//	    "device_name": "My Device",
+//	    "created_at": "2025-01-01T00:00:00Z"
+//	  }
+//	]
+type ContentComment struct {
+	ID        uint             `json:"id" gorm:"primaryKey"`
+	ContentID uint             `json:"content_id" gorm:"uniqueIndex;not null"`
+	Comments  json.RawMessage `json:"comments" gorm:"type:jsonb;not null;default:'[]'"`
+	CreatedAt time.Time       `json:"created_at"`
+	UpdatedAt time.Time       `json:"updated_at"`
+}
+
+// ── Response Types ─────────────────────────────────────────────
+
 type FeedResponse struct {
 	Content   []Content `json:"content"`
 	Page      int       `json:"page"`

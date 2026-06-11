@@ -50,7 +50,7 @@ private val PUZZLE_CATEGORIES = mapOf(
     "Math Puzzles" to "math",
     "Logic Puzzles" to "logic",
     "Word Puzzles" to "word",
-    "Mixed Puzzles" to ""
+    "Mixed Puzzles" to "mixed"
 )
 
 private fun getPuzzleType(categoryName: String): String? = PUZZLE_CATEGORIES[categoryName]
