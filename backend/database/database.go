@@ -38,6 +38,11 @@ func Migrate() {
 		log.Printf("Warning: schema v2 migration error (may already be applied): %v", err)
 	}
 
+	// Run the v3 schema migration SQL (adds content_comments table)
+	if err := runSQLFile("scripts/migrate_schema_v3.sql"); err != nil {
+		log.Printf("Warning: schema v3 migration error (may already be applied): %v", err)
+	}
+
 	// Auto-migrate models
 	err := DB.AutoMigrate(
 		&models.Category{},
@@ -45,6 +50,7 @@ func Migrate() {
 		&models.Puzzle{},
 		&models.Profile{},
 		&models.DeviceInfo{},
+		&models.ContentComment{},
 	)
 	if err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)

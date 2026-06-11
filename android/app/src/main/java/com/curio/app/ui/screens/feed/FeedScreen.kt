@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.pager.HorizontalPager
@@ -21,6 +23,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.ModeComment
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -31,17 +37,22 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.curio.app.ui.components.CommentSheet
 import com.curio.app.ui.theme.curioColors
 import com.curio.app.viewmodel.FeedViewModel
 
@@ -56,6 +67,11 @@ fun FeedScreen(
     val pagerState = rememberPagerState(pageCount = {
         uiState.content.size
     })
+
+    // Comment sheet state
+    var showCommentSheet by remember { mutableStateOf(false) }
+    var commentContentId by remember { mutableStateOf<Long?>(null) }
+    var commentContentTitle by remember { mutableStateOf("") }
 
     // Jump to a specific content item when feedStartIndex is set
     LaunchedEffect(uiState.feedStartIndex) {
@@ -147,6 +163,7 @@ fun FeedScreen(
                         .padding(horizontal = 24.dp, vertical = 32.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    // ... same empty state as before ...
                     Text(text = "🌟", fontSize = 64.sp)
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
@@ -165,7 +182,6 @@ fun FeedScreen(
                     )
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // Show suggested categories as clickable pills
                     val categoryPills = uiState.l1Groups.flatMap { it.categories }.take(6)
                     categoryPills.chunked(3).forEach { row ->
                         Row(
@@ -211,7 +227,6 @@ fun FeedScreen(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // Browse all button
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(16.dp))
@@ -245,7 +260,6 @@ fun FeedScreen(
                             .fillMaxSize()
                             .padding(horizontal = 16.dp, vertical = 12.dp)
                             .graphicsLayer {
-                                // 3D tilt/parallax effect
                                 rotationY = pageOffset * 12f
                                 translationX = if (pageOffset != 0f) {
                                     pageOffset * size.width * 0.08f
@@ -262,10 +276,55 @@ fun FeedScreen(
                             body = item.body,
                             readTime = item.readTimeSecs,
                             source = item.source,
+                            likes = item.likes,
+                            isLiked = viewModel.isLiked(item.id),
                             isBookmarked = viewModel.isBookmarked(item.id),
-                            onToggleBookmark = { viewModel.toggleBookmark(item.id) }
+                            onToggleBookmark = { viewModel.toggleBookmark(item.id) },
+                            onToggleLike = { viewModel.toggleLike(item.id) },
+                            onComment = {
+                                commentContentId = item.id
+                                commentContentTitle = item.title
+                                showCommentSheet = true
+                            }
                         )
                     }
+                }
+            }
+        }
+
+        // Comment sheet (overlays the feed)
+        if (showCommentSheet && commentContentId != null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(cc.scrim)
+                    .clickable {
+                        showCommentSheet = false
+                        commentContentId = null
+                    },
+                contentAlignment = Alignment.BottomCenter
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(500.dp)
+                        .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+                        .clickable(enabled = false) {} // prevent dismiss on content tap
+                ) {
+                    CommentSheet(
+                        contentTitle = commentContentTitle,
+                        comments = viewModel.getCommentsFor(commentContentId!!),
+                        isLoading = uiState.commentsLoading.contains(commentContentId!!),
+                        isSubmitting = uiState.submittingComment,
+                        onLoadComments = { viewModel.loadComments(commentContentId!!) },
+                        onAddComment = { text ->
+                            viewModel.addComment(commentContentId!!, text)
+                        },
+                        onDismiss = {
+                            showCommentSheet = false
+                            commentContentId = null
+                        }
+                    )
                 }
             }
         }
@@ -280,10 +339,15 @@ internal fun FullPageCard(
     body: String,
     readTime: Int,
     source: String,
+    likes: Int = 0,
+    isLiked: Boolean = false,
     isBookmarked: Boolean = false,
-    onToggleBookmark: () -> Unit = {}
+    onToggleBookmark: () -> Unit = {},
+    onToggleLike: () -> Unit = {},
+    onComment: () -> Unit = {}
 ) {
     val context = LocalContext.current
+    val clipboardManager = LocalClipboardManager.current
     val cc = curioColors()
 
     Box(
@@ -409,12 +473,55 @@ internal fun FullPageCard(
                     )
                 }
 
-                // Right: bookmark + share
+                // Right: action buttons
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Copy button
+                    IconButton(
+                        onClick = {
+                            clipboardManager.setText(AnnotatedString(body))
+                        },
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.ContentCopy,
+                            contentDescription = "Copy content",
+                            tint = cc.onSurfaceVariant.copy(alpha = 0.6f),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+
+                    // Like button
+                    IconButton(
+                        onClick = { onToggleLike() },
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (isLiked) Icons.Filled.Favorite
+                                else Icons.Filled.FavoriteBorder,
+                            contentDescription = if (isLiked) "Unlike" else "Like",
+                            tint = if (isLiked) cc.bookmarkActive
+                                else cc.onSurfaceVariant.copy(alpha = 0.6f),
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+
+                    // Comment button
+                    IconButton(
+                        onClick = onComment,
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.ModeComment,
+                            contentDescription = "Comments",
+                            tint = cc.onSurfaceVariant.copy(alpha = 0.6f),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+
                     // Bookmark button
                     IconButton(
                         onClick = { onToggleBookmark() },
-                        modifier = Modifier.size(44.dp)
+                        modifier = Modifier.size(40.dp)
                     ) {
                         Icon(
                             imageVector = if (isBookmarked) Icons.Filled.Bookmark
@@ -444,7 +551,7 @@ internal fun FullPageCard(
                                 Intent.createChooser(sendIntent, "Share via Curio")
                             )
                         },
-                        modifier = Modifier.size(44.dp)
+                        modifier = Modifier.size(40.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Filled.Share,

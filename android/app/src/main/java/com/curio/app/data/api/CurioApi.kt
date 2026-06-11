@@ -1,6 +1,9 @@
 package com.curio.app.data.api
 
+import com.curio.app.data.model.AddCommentRequest
+import com.curio.app.data.model.AddCommentResponse
 import com.curio.app.data.model.CategoriesResponse
+import com.curio.app.data.model.CommentsResponse
 import com.curio.app.data.model.Content
 import com.curio.app.data.model.FeedbackRequest
 import com.curio.app.data.model.FeedbackResponse
@@ -33,7 +36,8 @@ interface CurioApi {
 
     @POST("content/{id}/like")
     suspend fun likeContent(
-        @Path("id") contentId: Long
+        @Path("id") contentId: Long,
+        @Query("action") action: String = "like"
     ): Response<Map<String, Int>>
 
     @GET("categories")
@@ -46,6 +50,19 @@ interface CurioApi {
     suspend fun submitFeedback(
         @Body request: FeedbackRequest
     ): Response<FeedbackResponse>
+
+    // ── Comments ───────────────────────────────────────────────
+    @GET("content/{id}/comments")
+    suspend fun getComments(
+        @Path("id") contentId: Long
+    ): Response<CommentsResponse>
+
+    @POST("content/{id}/comments")
+    suspend fun addComment(
+        @Path("id") contentId: Long,
+        @Body request: AddCommentRequest,
+        @Query("device_id") deviceId: String = ""
+    ): Response<AddCommentResponse>
 
     // ── Puzzles ────────────────────────────────────────────────
     @GET("puzzles")

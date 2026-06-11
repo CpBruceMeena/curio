@@ -1,11 +1,15 @@
 package com.curio.app.viewmodel
 
 import android.app.Application
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.curio.app.CurioApp
 import com.curio.app.data.model.Category
 import com.curio.app.data.model.Content
+import com.curio.app.data.model.CommentEntry
 import com.curio.app.data.model.L1Group
 import com.curio.app.data.repository.ContentRepository
 import kotlinx.coroutines.async
@@ -13,9 +17,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 
 data class FeedUiState(
     val isLoading: Boolean = false,
@@ -26,11 +27,17 @@ data class FeedUiState(
     val l1Groups: List<L1Group> = emptyList(),
     val selectedCategoryIds: Set<Long> = emptySet(),
     val bookmarkedIds: Set<Long> = emptySet(),
+    val likedIds: Set<Long> = emptySet(),
     val feedStartIndex: Int? = null,
     val lastFeedPosition: Int = 0,
     val currentPage: Int = 1,
     val hasMore: Boolean = true,
-    val error: String? = null
+    val error: String? = null,
+
+    // Comment state per content item (key = contentId)
+    val comments: Map<Long, List<CommentEntry>> = emptyMap(),
+    val commentsLoading: Set<Long> = emptySet(),
+    val submittingComment: Boolean = false
 )
 
 class FeedViewModel(application: Application) : AndroidViewModel(application) {
@@ -424,5 +431,131 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
                 _uiState.value = _uiState.value.copy(l1Groups = response.groups)
             }
         }
+    }
+
+    // ── Likes ──────────────────────────────────────────────────
+
+    /**
+     * Toggle like/unlike for a content item.
+     * Updates likedIds set locally and calls the backend to adjust the count.
+     */
+    fun toggleLike(contentId: Long) {
+        val currentLiked = _uiState.value.likedIds.contains(contentId)
+        val action = if (currentLiked) "unlike" else "like"
+
+        // Optimistic update: like state flips immediately
+        val updatedLikedIds = if (currentLiked) {
+            _uiState.value.likedIds - contentId
+        } else {
+            _uiState.value.likedIds + contentId
+        }
+
+        // Optimistically update the likes count in the content list too
+        val updatedContent = _uiState.value.content.map { item ->
+            if (item.id == contentId) {
+                val delta = if (currentLiked) -1 else 1
+                item.copy(likes = (item.likes + delta).coerceAtLeast(0))
+            } else item
+        }
+
+        _uiState.value = _uiState.value.copy(
+            likedIds = updatedLikedIds,
+            content = updatedContent
+        )
+
+        // Backend call
+        viewModelScope.launch {
+            repository.likeContent(contentId, action).onSuccess { newLikes ->
+                // Sync with actual backend count
+                val syncedContent = _uiState.value.content.map { item ->
+                    if (item.id == contentId) item.copy(likes = newLikes) else item
+                }
+                _uiState.value = _uiState.value.copy(content = syncedContent)
+            }.onFailure {
+                // Revert on failure
+                val revertedLiked = if (currentLiked) {
+                    _uiState.value.likedIds + contentId
+                } else {
+                    _uiState.value.likedIds - contentId
+                }
+                val revertedContent = _uiState.value.content.map { item ->
+                    if (item.id == contentId) {
+                        val delta = if (currentLiked) 1 else -1
+                        item.copy(likes = (item.likes + delta).coerceAtLeast(0))
+                    } else item
+                }
+                _uiState.value = _uiState.value.copy(
+                    likedIds = revertedLiked,
+                    content = revertedContent
+                )
+            }
+        }
+    }
+
+    fun isLiked(contentId: Long): Boolean {
+        return _uiState.value.likedIds.contains(contentId)
+    }
+
+    // ── Comments ───────────────────────────────────────────────
+
+    /**
+     * Load comments for a content item.
+     */
+    fun loadComments(contentId: Long) {
+        // Mark as loading
+        _uiState.value = _uiState.value.copy(
+            commentsLoading = _uiState.value.commentsLoading + contentId
+        )
+
+        viewModelScope.launch {
+            repository.getComments(contentId).onSuccess { response ->
+                val updatedComments = _uiState.value.comments.toMutableMap()
+                updatedComments[contentId] = response.comments
+                _uiState.value = _uiState.value.copy(
+                    comments = updatedComments,
+                    commentsLoading = _uiState.value.commentsLoading - contentId
+                )
+            }.onFailure {
+                _uiState.value = _uiState.value.copy(
+                    commentsLoading = _uiState.value.commentsLoading - contentId
+                )
+            }
+        }
+    }
+
+    /**
+     * Add a comment to a content item.
+     */
+    fun addComment(contentId: Long, text: String, email: String = "") {
+        _uiState.value = _uiState.value.copy(submittingComment = true)
+
+        viewModelScope.launch {
+            repository.addComment(contentId, text, email, prefs.deviceUuid).onSuccess { response ->
+                if (response.success && response.comment != null) {
+                    // Append locally for instant UI update
+                    val currentComments = _uiState.value.comments.toMutableMap()
+                    val existing = currentComments[contentId]?.toMutableList() ?: mutableListOf()
+                    existing.add(response.comment)
+                    currentComments[contentId] = existing
+                    _uiState.value = _uiState.value.copy(
+                        comments = currentComments,
+                        submittingComment = false
+                    )
+                } else {
+                    // Re-fetch to sync
+                    loadComments(contentId)
+                    _uiState.value = _uiState.value.copy(submittingComment = false)
+                }
+            }.onFailure {
+                _uiState.value = _uiState.value.copy(submittingComment = false)
+            }
+        }
+    }
+
+    /**
+     * Get comments for a specific content item from the local state.
+     */
+    fun getCommentsFor(contentId: Long): List<CommentEntry> {
+        return _uiState.value.comments[contentId] ?: emptyList()
     }
 }

@@ -143,3 +143,32 @@ data class DeviceInfoRequest(
     val language: String,
     val timezone: String
 )
+
+// ── Comments ───────────────────────────────────────────────────
+
+data class CommentEntry(
+    val id: String = "",
+    val text: String = "",
+    @SerializedName("device_id")
+    val deviceId: String = "",
+    val email: String = "",
+    @SerializedName("created_at")
+    val createdAt: String = ""
+)
+
+data class CommentsResponse(
+    @SerializedName("content_id")
+    val contentId: Long = 0,
+    val comments: List<CommentEntry> = emptyList(),
+    val total: Int = 0
+)
+
+data class AddCommentRequest(
+    val text: String,
+    val email: String = ""
+)
+
+data class AddCommentResponse(
+    val success: Boolean = false,
+    val comment: CommentEntry? = null
+)
