@@ -73,6 +73,7 @@ fun MainTabScreen(
     var showFeedbackDialog by remember { mutableStateOf(false) }
     var currentCategory by remember { mutableStateOf("") }
     var selectedTab by remember { mutableStateOf(BottomTab.Feed) }
+    var startBookmarkPagerIndex by remember { mutableStateOf<Int?>(null) }
 
     val prefs = remember { CurioApp.instance.prefs }
 
@@ -152,15 +153,23 @@ fun MainTabScreen(
 
         // ── Main Content Area ──
         Box(modifier = Modifier.weight(1f)) {
-            when (selectedTab) {
-                BottomTab.Feed -> {
+            val bookmarkIndex = startBookmarkPagerIndex
+            when {
+                bookmarkIndex != null -> {
+                    BookmarkPagerScreen(
+                        viewModel = feedViewModel,
+                        startIndex = bookmarkIndex,
+                        onBack = { startBookmarkPagerIndex = null }
+                    )
+                }
+                selectedTab == BottomTab.Feed -> {
                     FeedScreen(
                         viewModel = feedViewModel,
                         onCategoryChange = { category -> currentCategory = category },
                         onNavigateToDiscover = { selectedTab = BottomTab.Discover }
                     )
                 }
-                BottomTab.Discover -> {
+                selectedTab == BottomTab.Discover -> {
                     DiscoverScreen(
                         viewModel = feedViewModel,
                         onApplyFilter = { selectedTab = BottomTab.Feed },
@@ -174,13 +183,19 @@ fun MainTabScreen(
                         onContentClick = onContentClick
                     )
                 }
-                BottomTab.Bookmarks -> {
+                selectedTab == BottomTab.Bookmarks -> {
                     BookmarksScreen(
                         viewModel = feedViewModel,
-                        onContentClick = onContentClick
+                        onContentClick = { contentId ->
+                            val bookmarked = feedViewModel.uiState.value.bookmarkedContent
+                            val index = bookmarked.indexOfFirst { it.id == contentId }
+                            if (index >= 0) {
+                                startBookmarkPagerIndex = index
+                            }
+                        }
                     )
                 }
-                BottomTab.Profile -> {
+                selectedTab == BottomTab.Profile -> {
                     ProfileScreen(prefs = prefs)
                 }
             }
