@@ -1,62 +1,75 @@
-
-__pycache__/
-.backend.pid
-.cache/code-review-graph/
-.cache/crg/
-.code_review_graph/
-.code-review-graph/
-.cxx/
-.DS_Store
-.env
-.env.development
-.env.local
-.env.production
-.idea/
-.ngrok.pid
-.vscode/
-*.avi
-*.crg
-*.dll
-*.dylib
-*.exe
-*.exe~
-*.hprof
-*.iml
-*.log
-*.mkv
-*.mov
-*.mp4
-*.out
-*.so
-*.swo
-*.swp
-*.tar.gz
-*.test
-*.zip
-*~
-# --- Android ---
-# --- Backend runtime ---
-# --- Code Review Graph ---
-# --- Environment ---
-# --- Go ---
-# --- IDE ---
-# --- Logs ---
-# --- macOS ---
-# --- Media / Archives ---
-# --- Python ---
+# ── Android ─────────────────────────────────────────────
 android/.gradle/
 android/.idea/
 android/app/build/
 android/app/curio-keystore.jks
 android/build/
 android/local.properties
+*.iml
+
+# ── Go / Backend ─────────────────────────────────────────
 backend/backend
 backend/curio-server
 backend/server
 backend/tmp/
-code-review-graph-cache/
-crg-cache/
+vendor/
+
+# ── Python / Scraper ─────────────────────────────────────
+__pycache__/
 scripts/scraper/node_modules/
 scripts/scraper/storage/
 scripts/venv/
-vendor/
+
+# ── IDE / Editors ────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ── macOS ────────────────────────────────────────────────
+.DS_Store
+
+# ── Environment ──────────────────────────────────────────
+.env
+.env.local
+.env.development
+.env.production
+
+# ── Logs ─────────────────────────────────────────────────
+*.log
+
+# ── Media / Archives ─────────────────────────────────────
+*.avi
+*.dll
+*.dylib
+*.exe
+*.exe~
+*.hprof
+*.mkv
+*.mov
+*.mp4
+*.mp3
+*.out
+*.so
+*.tar.gz
+*.zip
+
+# ── Runtime / PID files ─────────────────────────────────
+.backend.pid
+.ngrok.pid
+
+# ── Testing ─────────────────────────────────────────────
+*.test
+
+# ── Code Review Graph ───────────────────────────────────
+.cache/code-review-graph/
+.cache/crg/
+.code_review_graph/
+.code-review-graph/
+code-review-graph-cache/
+crg-cache/
+*.crg
+
+# ── Misc ────────────────────────────────────────────────
+.cxx/
+*~

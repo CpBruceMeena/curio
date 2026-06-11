@@ -44,6 +44,16 @@ Each puzzle supports validation, hints, and explanations.
 ### 👤 Profile & Personalization
 Create a profile to help Curio personalize your experience. Share your name, age, gender, likes, and dislikes — all stored securely on the backend and linked to your device via a unique UUID. A dedicated profile tab lets you manage your information and preferences.
 
+### 🔊 Text-to-Speech
+Every card in your feed can be read aloud with a single tap. Curio uses Microsoft Edge TTS (via a self-hosted Docker container) to generate natural-sounding narration tailored to each category:
+- **Facts & Stories** — narrated by Aria (warm, clear female voice)
+- **Poetry & Shayari** — expressive voices: Jenny for English poems, Salman for Urdu Shayari, Swara for Hindi poems
+- **Classic Literature** — Sonia (British English) for a classic feel
+- **Puzzles** — Davis (calm, precise male voice)
+- **Serialized Stories** — Guy (authoritative male voice)
+
+**Auto-play mode** lets you sit back and listen to an entire feed session — audio plays through each card, pauses briefly between cards, and auto-swipes to the next. Tap the ▶️ button in the top bar to start, or use the per-card ▶️ button to play individual cards.
+
 ### 📱 Device-Based Identification
 Curio generates a persistent UUID on first launch, stored securely in the app's local storage. All profile, feedback, and device-info API calls are attributed to this UUID — enabling personalized experiences without requiring an account or login.
 
@@ -90,7 +100,44 @@ The app is designed for the commute, the coffee break, or the moment you just wa
 - **Frontend:** Android (Jetpack Compose + Kotlin)
 - **Backend:** Go (Gin + GORM)
 - **Database:** PostgreSQL
+- **Text-to-Speech:** Microsoft Edge TTS via Docker (travisvn/openai-edge-tts)
 - **Data Scraping:** Python
+
+---
+
+## Running Locally
+
+### Prerequisites
+- [Go](https://go.dev/) (1.21+)
+- [PostgreSQL](https://www.postgresql.org/) running on localhost:5432
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (for TTS)
+- Android Studio & an Android emulator (for the app)
+
+### Quick Start
+
+```bash
+# Start all services (TTS Docker + Go backend)
+./run.sh start
+
+# Check status
+./run.sh status
+
+# Stop all services
+./run.sh stop
+```
+
+The `run.sh` script manages:
+1. **TTS Docker** — starts the `edge-tts` container on port 5050
+2. **Go backend** — builds and starts on port 8080
+
+On the Android side, open `android/` in Android Studio and run on an emulator. The app connects to `https://helpful-supposedly-moose.ngrok-free.app` (managed separately) which tunnels to `localhost:8080`.
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PORT` | `8080` | Backend port |
+| `TTS_PORT` | `5050` | TTS container port |
 
 ---
 
