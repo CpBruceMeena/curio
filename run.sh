@@ -30,7 +30,7 @@ get_pid() {
     fi
 }
 
-is_running() {
+is_pid_running() {
     local pid
     pid="$(get_pid)"
     if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
@@ -39,16 +39,54 @@ is_running() {
     return 1
 }
 
+# Check if anything is listening on the port
+is_port_in_use() {
+    lsof -ti:"$PORT" &>/dev/null
+}
+
+# Get the PID of whatever is listening on the port
+get_port_pid() {
+    lsof -ti:"$PORT" 2>/dev/null
+}
+
 clean_pid() {
     rm -f "$PID_FILE"
+}
+
+free_port() {
+    local port_pid
+    port_pid="$(get_port_pid)"
+    if [ -n "$port_pid" ]; then
+        log "Port $PORT is in use by PID $port_pid — freeing..."
+        kill "$port_pid" 2>/dev/null || true
+        sleep 1
+        if is_port_in_use; then
+            kill -9 "$port_pid" 2>/dev/null || true
+            sleep 1
+        fi
+    fi
+}
+
+health_check() {
+    local url="http://localhost:$PORT/health"
+    if curl -sf "$url" >/dev/null 2>&1; then
+        return 0
+    fi
+    return 1
 }
 
 # ── commands ─────────────────────────────────────────────────────────
 
 cmd_start() {
-    if is_running; then
+    if is_pid_running; then
         log "Backend is already running (PID $(get_pid))"
         return 0
+    fi
+
+    # If something else is on the port (stale process), free it
+    if is_port_in_use; then
+        log "Port $PORT is occupied by a different process."
+        free_port
     fi
 
     log "Building backend..."
@@ -61,15 +99,33 @@ cmd_start() {
     local pid=$!
     echo "$pid" > "$PID_FILE"
 
-    # Give it a moment to boot, then check
-    sleep 2
-    if kill -0 "$pid" 2>/dev/null; then
-        log "Backend started (PID $pid) — listening on :$PORT"
-    else
-        err "Backend failed to start. Check backend/server.log for details."
-        clean_pid
-        return 1
-    fi
+    # Wait for the process to start and become healthy
+    local waited=0
+    while [ "$waited" -lt 8 ]; do
+        sleep 1
+        waited=$((waited + 1))
+
+        if ! kill -0 "$pid" 2>/dev/null; then
+            # Process died — report error with log tail
+            err "Backend failed to start. Check backend/server.log for details."
+            err "Last 10 lines of log:"
+            tail -10 "$ROOT_DIR/backend/server.log" >&2
+            clean_pid
+            return 1
+        fi
+
+        if health_check; then
+            log "Backend started (PID $pid) — listening on :$PORT"
+            return 0
+        fi
+    done
+
+    # Timed out waiting for health check
+    err "Backend started but not responding on :$PORT after ${waited}s."
+    err "Last 10 lines of log:"
+    tail -10 "$ROOT_DIR/backend/server.log" >&2
+    clean_pid
+    return 1
 }
 
 cmd_stop() {
@@ -116,8 +172,18 @@ cmd_restart() {
 cmd_status() {
     local pid
     pid="$(get_pid)"
-    if is_running; then
+    local port_pid
+    port_pid="$(get_port_pid || true)"
+
+    if is_pid_running; then
         echo "● Curio backend is running (PID $pid, port :$PORT)"
+    elif [ -n "$port_pid" ]; then
+        if [ -n "$pid" ]; then
+            echo "○ Mismatch — PID file says $pid but port $PORT is held by PID $port_pid"
+        else
+            echo "○ Port $PORT is in use by PID $port_pid (not tracked by PID file)"
+        fi
+        echo "  Run './run.sh restart' to reclaim."
     else
         if [ -n "$pid" ]; then
             echo "○ Stale PID file found (PID $pid not running)"

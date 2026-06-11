@@ -26,6 +26,7 @@ data class CurioColors(
     val cardGradientEnd: Color,
     val accentGradientStart: Color,
     val accentGradientMid: Color,
+    val accentGradientEnd: Color,
     val bookmarkActive: Color
 )
 
@@ -47,6 +48,7 @@ val DarkCurioColors = CurioColors(
     cardGradientEnd = CardGradientEnd,
     accentGradientStart = AccentGradientStart,
     accentGradientMid = AccentGradientMid,
+    accentGradientEnd = AccentGradientEnd,
     bookmarkActive = BookmarkActive
 )
 
@@ -68,6 +70,7 @@ val LightCurioColors = CurioColors(
     cardGradientEnd = LightCardGradientEnd,
     accentGradientStart = LightAccentGradientStart,
     accentGradientMid = LightAccentGradientMid,
+    accentGradientEnd = LightAccentGradientEnd,
     bookmarkActive = LightBookmarkActive
 )
 

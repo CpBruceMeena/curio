@@ -297,19 +297,24 @@ fun FeedScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(cc.scrim)
-                    .clickable {
-                        showCommentSheet = false
-                        commentContentId = null
-                    },
-                contentAlignment = Alignment.BottomCenter
             ) {
+                // Scrim — taps here dismiss the sheet
                 Box(
                     modifier = Modifier
+                        .fillMaxSize()
+                        .background(cc.scrim)
+                        .clickable {
+                            showCommentSheet = false
+                            commentContentId = null
+                        }
+                )
+                // Sheet content — drawn on top of scrim, touch events naturally consumed by children
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
                         .fillMaxWidth()
                         .height(500.dp)
                         .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
-                        .clickable(enabled = false) {} // prevent dismiss on content tap
                 ) {
                     CommentSheet(
                         contentTitle = commentContentTitle,
