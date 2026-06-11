@@ -41,7 +41,6 @@ A private, offline-first journal that lives entirely on your device. No data is 
   - **Reflection** — guided Q&A ("What went well?", "What could be better?", "What did I learn?")
 - **Mood tracking** with 6 emojis (😊😌😐😔😰🤩)
 - **Auto-save** drafts every 2 seconds so you never lose your thoughts
-- **Search** through all entries by title or content
 - **Delete with confirmation** to prevent accidental loss
 
 ### 🃏 Shuffle
