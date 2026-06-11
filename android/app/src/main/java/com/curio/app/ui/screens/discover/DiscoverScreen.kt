@@ -249,7 +249,7 @@ fun DiscoverScreen(
                     row.forEach { content ->
                         ContentCard(
                             content = content, onClick = {
-                                onContentClick(content.id)
+                                onCategoryClick(content.categoryId)
                             },
                             modifier = Modifier.weight(1f)
                         )
