@@ -44,10 +44,18 @@ CREATE TABLE IF NOT EXISTS user_novel_progress (
 -- (PostgreSQL requires DO block for IF NOT EXISTS on constraints)
 DO $$
 BEGIN
-    IF NOT EXISTS (
+    -- Drop the auto-named constraint if it exists (from old migration)
+    IF EXISTS (
         SELECT 1 FROM pg_constraint WHERE conname = 'novels_title_key'
     ) THEN
-        ALTER TABLE novels ADD UNIQUE (title);
+        ALTER TABLE novels DROP CONSTRAINT novels_title_key;
+    END IF;
+
+    -- Create constraint with GORM-compatible name
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'uni_novels_title'
+    ) THEN
+        ALTER TABLE novels ADD CONSTRAINT uni_novels_title UNIQUE (title);
     END IF;
 END;
 $$;
