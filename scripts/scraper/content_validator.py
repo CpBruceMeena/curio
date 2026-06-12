@@ -54,55 +54,50 @@ POETIC_CATEGORIES = {"Poetry", "Shayari", "Hindi Poems", "English Poems",
 def normalize_text_alignment(text: str, category: str = "") -> str:
     """Normalise text so it renders cleanly in the app.
 
-    Fixes the following alignment issues at the scraper level:
-      1. Leading whitespace on each line (causes ragged left edges)
-      2. Trailing whitespace on each line
-      3. Inconsistent paragraph spacing (ensures double \n\n between paragraphs)
-      4. Single newlines within prose paragraphs (rejoin as spaces)
-      5. Lines that are just whitespace (collapse to empty)
-    """
-    lines = text.split("\n")
-    cleaned_lines = []
+    Strategy:
+      For poetry:  Strip whitespace per line, preserve verse line breaks.
+      For prose:   1. Split by double-newlines (real paragraph boundaries).
+                   2. Within each paragraph, rejoin arbitrary single-newlines
+                      (caused by Gutenberg word-wrap at ~70 chars) into spaces.
+                   3. Rejoin paragraphs with exactly double-newline.
 
+    This fixes Gutenberg texts where each paragraph is word-wrapped at 70 chars
+    with single newlines mid-sentence — a common source of misaligned text.
+    """
     is_poetic = any(cat.lower() in category.lower() for cat in POETIC_CATEGORIES)
 
-    for line in lines:
-        # Strip leading/trailing whitespace from each line
-        stripped = line.strip()
+    if is_poetic:
+        # ── Poetry: strip whitespace per line, keep verse line breaks ──
+        lines = text.split("\n")
+        cleaned = [line.strip() for line in lines]
+        # Collapse 3+ consecutive empty lines to at most 1 (stanza break)
+        result = "\n".join(cleaned)
+        result = re.sub(r"\n{3,}", "\n\n", result)
+        return result.strip()
 
-        if is_poetic:
-            # Poetry: keep every non-empty line as-is (just stripped)
-            # Empty lines separate stanzas
-            cleaned_lines.append(stripped)
-        else:
-            # Prose: collapse intra-paragraph single newlines into spaces.
-            # A line is a paragraph break if:
-            #   - It's empty (was a blank line)
-            #   - It ends with sentence-ending punctuation
-            #   - The original had double \n\n
-            if stripped:
-                # Prose line — if previous line was also prose (not empty),
-                # this was a single-\n within a paragraph, so join with space
-                if cleaned_lines and cleaned_lines[-1]:
-                    # Check if previous line ended with punctuation (paragraph end)
-                    prev = cleaned_lines[-1]
-                    if not re.search(r"[.?!:;]$", prev) and len(prev) > 20:
-                        # This is a mid-paragraph line break — rejoin with space
-                        # But only if the line doesn't start with a capital letter
-                        # (which might indicate a new sentence)
-                        if not stripped[0].isupper() or len(stripped) < 30:
-                            cleaned_lines[-1] = prev + " " + stripped
-                            continue
-                cleaned_lines.append(stripped)
-            else:
-                # Empty line = paragraph break
-                cleaned_lines.append("")
+    # ── Prose: split by real paragraph boundaries (double newlines) ──
+    # Step 1: Normalise all line endings to \n
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
 
-    # Normalise paragraph spacing: ensure exactly one blank line between paragraphs
-    result = "\n".join(cleaned_lines)
-    result = re.sub(r"\n{3,}", "\n\n", result)
+    # Step 2: Collapse 3+ consecutive newlines to \n\n (paragraph boundary)
+    text = re.sub(r"\n{3,}", "\n\n", text)
 
-    return result.strip()
+    # Step 3: Split into paragraphs by double newlines
+    raw_paragraphs = text.split("\n\n")
+
+    paragraphs = []
+    for para in raw_paragraphs:
+        lines = para.split("\n")
+        # Strip each line and rejoin with space (Gutenberg word-wrap fix)
+        stripped_lines = [l.strip() for l in lines if l.strip()]
+        if stripped_lines:
+            joined = " ".join(stripped_lines)
+            # Collapse multiple consecutive spaces within the paragraph
+            joined = re.sub(r" {2,}", " ", joined)
+            paragraphs.append(joined)
+
+    # Step 4: Join paragraphs with double newline
+    return "\n\n".join(paragraphs)
 
 
 # ─── Unicode / Encoding ─────────────────────────────────────────────────────────
