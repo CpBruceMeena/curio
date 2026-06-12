@@ -1,0 +1,16 @@
+#!/bin/sh
+# pre-commit hook — prevents committing directly on the `main` branch.
+# All changes to main must go through a feature branch + pull request.
+#
+# Install by running:  git config core.hooksPath .githooks
+
+branch=$(git symbolic-ref HEAD 2>/dev/null | sed 's|refs/heads/||')
+if [ "$branch" = "main" ]; then
+  echo "❌  Committing directly on 'main' is NOT allowed."
+  echo "    Create a feature branch first:"
+  echo ""
+  echo "    git checkout -b feat/your-feature-name"
+  exit 1
+fi
+
+exit 0
