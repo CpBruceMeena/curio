@@ -38,9 +38,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -50,7 +47,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.curio.app.ui.theme.OnSurface
 import com.curio.app.ui.theme.OnSurfaceVariant
 import com.curio.app.ui.theme.Primary
 import com.curio.app.ui.theme.Surface
@@ -113,9 +109,7 @@ fun NovelReaderScreen(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = state.currentChapter?.title
-                        ?.ifBlank { "Chapter ${state.currentChapterIndex + 1}" }
-                        ?: "Reading",
+                    text = state.currentChapterTitle.ifBlank { "Chapter ${state.currentChapterIndex + 1}" },
                     style = MaterialTheme.typography.titleSmall,
                     color = textColor,
                     fontWeight = FontWeight.Bold,
@@ -142,10 +136,10 @@ fun NovelReaderScreen(
             // Bookmark toggle
             IconButton(onClick = { viewModel.toggleBookmark() }) {
                 Icon(
-                    imageVector = if (state.progress?.bookmarked == true) Icons.Filled.Bookmark
+                    imageVector = if (state.isBookmarked) Icons.Filled.Bookmark
                         else Icons.Filled.BookmarkBorder,
                     contentDescription = "Bookmark",
-                    tint = if (state.progress?.bookmarked == true) SecondaryContainer else textColor,
+                    tint = if (state.isBookmarked) SecondaryContainer else textColor,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -165,21 +159,19 @@ fun NovelReaderScreen(
                     .verticalScroll(scrollState)
             ) {
                 // Chapter title
-                state.currentChapter?.title?.let { title ->
-                    if (title.isNotBlank()) {
-                        Text(
-                            text = title,
-                            style = MaterialTheme.typography.headlineSmall,
-                            color = textColor,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(vertical = 16.dp)
-                        )
-                    }
+                if (state.currentChapterTitle.isNotBlank()) {
+                    Text(
+                        text = state.currentChapterTitle,
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = textColor,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(vertical = 16.dp)
+                    )
                 }
 
                 // Body
                 Text(
-                    text = state.currentChapter?.body ?: "",
+                    text = state.currentChapterBody,
                     style = MaterialTheme.typography.bodyLarge.copy(
                         fontSize = state.fontSize.sp,
                         lineHeight = (state.fontSize * state.lineSpacing).sp
@@ -205,7 +197,6 @@ fun NovelReaderScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Previous chapter
                 IconButton(
                     onClick = { viewModel.previousChapter() },
                     enabled = viewModel.hasPreviousChapter()
@@ -229,9 +220,7 @@ fun NovelReaderScreen(
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.clickable {
-                            viewModel.toggleTts()
-                        }
+                        modifier = Modifier.clickable { viewModel.toggleTts() }
                     ) {
                         Icon(
                             imageVector = if (state.isPlaying) Icons.Filled.Pause
@@ -251,7 +240,6 @@ fun NovelReaderScreen(
                     }
                 }
 
-                // Next chapter
                 IconButton(
                     onClick = { viewModel.nextChapter() },
                     enabled = viewModel.hasNextChapter()
@@ -298,5 +286,3 @@ fun NovelReaderScreen(
         }
     }
 }
-
-

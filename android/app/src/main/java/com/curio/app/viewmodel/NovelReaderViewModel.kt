@@ -2,28 +2,48 @@ package com.curio.app.viewmodel
 
 import android.app.Application
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.curio.app.CurioApp
-import com.curio.app.data.model.Novel
-import com.curio.app.data.model.NovelChapter
-import com.curio.app.data.model.NovelProgress
-import com.curio.app.data.model.NovelProgressRequest
-import com.curio.app.data.repository.NovelRepository
+import com.curio.app.data.NovelDownloadManager
+import com.curio.app.data.local.JournalDatabase
+import com.curio.app.data.local.LocalNovelProgress
+import com.curio.app.data.local.OfflineNovelChapter
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 data class NovelReaderUiState(
-    val novel: Novel? = null,
-    val chapters: List<NovelChapter> = emptyList(),
-    val currentChapter: NovelChapter? = null,
-    val currentChapterIndex: Int = 0,
+    val novelId: Long = 0,
+    val title: String = "",
+    val author: String = "",
+    val description: String = "",
     val totalChapters: Int = 0,
-    val progress: NovelProgress? = null,
+    val chaptersDownloaded: Int = 0,
+    val isDownloadCompleted: Boolean = false,
+
+    // Current reading position
+    val chapters: List<OfflineNovelChapter> = emptyList(),
+    val currentChapterIndex: Int = 0,
+    val currentChapterBody: String = "",
+    val currentChapterTitle: String = "",
+    val lastChapter: Int = 1,
+
+    // Progress
+    val isBookmarked: Boolean = false,
+    val isCompleted: Boolean = false,
+
+    // Download state
+    val isDownloading: Boolean = false,
+    val isReadyToRead: Boolean = false,
+    val downloadError: String? = null,
+
+    // Loading
     val isLoading: Boolean = true,
     val error: String? = null,
 
@@ -32,7 +52,7 @@ data class NovelReaderUiState(
     val isTtsLoading: Boolean = false,
     val audioFilePath: String? = null,
 
-    // Font settings
+    // Reading preferences
     val fontSize: Int = 18,
     val lineSpacing: Float = 1.6f,
     val isDarkMode: Boolean = false
@@ -40,36 +60,75 @@ data class NovelReaderUiState(
 
 class NovelReaderViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val repository = NovelRepository()
+    private val db = JournalDatabase.getInstance(application)
+    private val downloadManager = NovelDownloadManager(application)
     private val prefs = (application as CurioApp).prefs
 
     var uiState by mutableStateOf(NovelReaderUiState())
         private set
 
-    private var autoSaveJob: kotlinx.coroutines.Job? = null
+    private var autoSaveJob: Job? = null
+    private var downloadJob: Job? = null
 
+    // Expose download progress for the detail screen
+    private val _downloadProgress = MutableStateFlow<com.curio.app.data.DownloadProgress?>(null)
+    val downloadProgress: StateFlow<com.curio.app.data.DownloadProgress?> = _downloadProgress.asStateFlow()
+
+    // ── Initialize / Load ───────────────────────────────────
+
+    /**
+     * Load novel from local Room storage. If not yet downloaded, just show metadata
+     * from the API and the download button.
+     */
     fun loadNovel(novelId: Long) {
         viewModelScope.launch {
-            uiState = uiState.copy(isLoading = true, error = null)
+            uiState = uiState.copy(isLoading = true, novelId = novelId)
 
-            // Load novel detail
-            repository.getNovel(novelId, prefs.deviceUuid).fold(
+            // Try to load from local storage first
+            val localNovel = db.offlineNovelDao().getById(novelId)
+            val progress = db.localNovelProgressDao().getProgress(novelId)
+            val chapters = db.offlineNovelChapterDao().getChapters(novelId)
+
+            if (localNovel != null && chapters.isNotEmpty()) {
+                // Fully available offline
+                val lastCh = progress?.lastChapter ?: 1
+                val startIdx = (lastCh - 1).coerceIn(0, chapters.size - 1)
+                val currentCh = chapters[startIdx]
+
+                uiState = uiState.copy(
+                    title = localNovel.title,
+                    author = localNovel.author,
+                    description = localNovel.description,
+                    totalChapters = localNovel.totalChapters,
+                    chaptersDownloaded = localNovel.chaptersDownloaded,
+                    isDownloadCompleted = localNovel.downloadCompleted,
+                    chapters = chapters,
+                    currentChapterIndex = startIdx,
+                    currentChapterBody = currentCh.body,
+                    currentChapterTitle = currentCh.title.ifBlank { "Chapter ${currentCh.chapterNumber}" },
+                    lastChapter = lastCh,
+                    isBookmarked = progress?.bookmarked ?: false,
+                    isCompleted = progress?.completed ?: false,
+                    isReadyToRead = true,
+                    isDownloading = false,
+                    isLoading = false
+                )
+                startAutoSave()
+                return@launch
+            }
+
+            // Not downloaded — fetch metadata from server, show detail screen
+            val repo = com.curio.app.data.repository.NovelRepository()
+            repo.getNovel(novelId).fold(
                 onSuccess = { detail ->
-                    val savedChapter = detail.progress?.lastChapter ?: 1
-                    val startIndex = (savedChapter - 1).coerceIn(0, detail.chapters.size - 1)
-
                     uiState = uiState.copy(
-                        novel = detail.novel,
-                        chapters = detail.chapters,
-                        totalChapters = detail.chapters.size,
-                        currentChapterIndex = startIndex,
-                        currentChapter = detail.chapters.getOrNull(startIndex),
-                        progress = detail.progress,
-                        isLoading = false
+                        title = detail.novel.title,
+                        author = detail.novel.author,
+                        description = detail.novel.description,
+                        totalChapters = detail.novel.totalChapters,
+                        isLoading = false,
+                        isReadyToRead = false
                     )
-
-                    // Start auto-save timer
-                    startAutoSave(novelId)
                 },
                 onFailure = { e ->
                     uiState = uiState.copy(
@@ -78,20 +137,62 @@ class NovelReaderViewModel(application: Application) : AndroidViewModel(applicat
                     )
                 }
             )
+
+            // Start auto-save in case user reads offline
+            startAutoSave()
         }
     }
 
+    /**
+     * Start downloading the novel progressively.
+     * Chapter 1 is fetched first → isReadyToRead becomes true → user can start reading.
+     */
+    fun startDownload() {
+        val novelId = uiState.novelId
+        if (novelId == 0L) return
+
+        uiState = uiState.copy(isDownloading = true, downloadError = null)
+
+        downloadJob = viewModelScope.launch {
+            // Pipe DownloadManager progress into our own flow for the detail screen
+            val progressJob = launch {
+                downloadManager.downloadProgress.collect { allProgress ->
+                    allProgress[novelId]?.let { prog ->
+                        _downloadProgress.value = prog
+                        if (prog.isReadyToRead) {
+                            uiState = uiState.copy(isReadyToRead = true)
+                        }
+                    }
+                }
+            }
+
+            downloadManager.downloadNovel(novelId)
+            progressJob.cancel()
+
+            // After download completes, reload from local storage
+            loadNovel(novelId)
+        }
+    }
+
+    /** Cancel an ongoing download. */
+    fun cancelDownload() {
+        downloadJob?.cancel()
+        uiState = uiState.copy(isDownloading = false)
+    }
+
+    // ── Chapter Navigation ──────────────────────────────────
+
     fun navigateToChapter(chapterNum: Int) {
-        val index = chapterNum - 1
         val chapters = uiState.chapters
+        val index = chapterNum - 1
         if (index < 0 || index >= chapters.size) return
 
+        val ch = chapters[index]
         uiState = uiState.copy(
             currentChapterIndex = index,
-            currentChapter = chapters[index]
+            currentChapterBody = ch.body,
+            currentChapterTitle = ch.title.ifBlank { "Chapter ${ch.chapterNumber}" }
         )
-
-        // Save progress immediately on chapter change
         saveProgress()
     }
 
@@ -110,63 +211,48 @@ class NovelReaderViewModel(application: Application) : AndroidViewModel(applicat
     fun hasNextChapter(): Boolean = uiState.currentChapterIndex < uiState.totalChapters - 1
     fun hasPreviousChapter(): Boolean = uiState.currentChapterIndex > 0
 
-    // ── Progress Saving ─────────────────────────────────────
+    // ── Local Progress ──────────────────────────────────────
 
     fun saveProgress(lastPosition: Int = 0) {
-        val novelId = uiState.novel?.id ?: return
-        val chapterNum = uiState.currentChapterIndex + 1
+        val novelId = uiState.novelId
+        if (novelId == 0L) return
 
         viewModelScope.launch {
-            repository.updateProgress(
-                request = NovelProgressRequest(
-                    deviceId = prefs.deviceUuid,
-                    lastChapter = chapterNum,
-                    lastPosition = lastPosition
-                ),
-                novelId = novelId
+            db.localNovelProgressDao().upsert(LocalNovelProgress(
+                novelId = novelId,
+                lastChapter = uiState.currentChapterIndex + 1,
+                lastPosition = lastPosition,
+                completed = uiState.isCompleted,
+                bookmarked = uiState.isBookmarked,
+                updatedAt = System.currentTimeMillis()
+            ))
+        }
+    }
+
+    fun toggleBookmark() {
+        val newState = !uiState.isBookmarked
+        uiState = uiState.copy(isBookmarked = newState)
+        viewModelScope.launch {
+            db.localNovelProgressDao().setBookmarked(
+                uiState.novelId, newState, System.currentTimeMillis()
             )
         }
     }
 
     fun markAsCompleted() {
-        val novelId = uiState.novel?.id ?: return
+        uiState = uiState.copy(isCompleted = true)
         viewModelScope.launch {
-            repository.updateProgress(
-                request = NovelProgressRequest(
-                    deviceId = prefs.deviceUuid,
-                    completed = true
-                ),
-                novelId = novelId
-            )
-            uiState = uiState.copy(
-                progress = uiState.progress?.copy(completed = true)
+            db.localNovelProgressDao().markCompleted(
+                uiState.novelId, System.currentTimeMillis()
             )
         }
     }
 
-    fun toggleBookmark() {
-        val novelId = uiState.novel?.id ?: return
-        val newBookmarkState = !(uiState.progress?.bookmarked ?: false)
-
-        viewModelScope.launch {
-            repository.updateProgress(
-                request = NovelProgressRequest(
-                    deviceId = prefs.deviceUuid,
-                    bookmarked = newBookmarkState
-                ),
-                novelId = novelId
-            )
-            uiState = uiState.copy(
-                progress = uiState.progress?.copy(bookmarked = newBookmarkState)
-            )
-        }
-    }
-
-    private fun startAutoSave(novelId: Long) {
+    private fun startAutoSave() {
         autoSaveJob?.cancel()
         autoSaveJob = viewModelScope.launch {
             while (true) {
-                delay(30_000) // Save every 30 seconds
+                delay(30_000)
                 saveProgress()
             }
         }
@@ -175,29 +261,24 @@ class NovelReaderViewModel(application: Application) : AndroidViewModel(applicat
     // ── TTS ─────────────────────────────────────────────────
 
     fun toggleTts() {
-        if (uiState.isPlaying) {
-            stopTts()
-        } else {
-            startTts()
-        }
+        if (uiState.isPlaying) stopTts() else startTts()
     }
 
     private fun startTts() {
-        val chapter = uiState.currentChapter ?: return
-        if (chapter.body.isBlank()) return
+        val body = uiState.currentChapterBody
+        if (body.isBlank()) return
 
         uiState = uiState.copy(isTtsLoading = true)
 
         viewModelScope.launch {
             try {
-                // Pass chapter body text directly to TTS API
-                // (novel chapters use their own IDs, not content item IDs)
                 val api = com.curio.app.data.api.RetrofitClient.api
-                val request = com.curio.app.data.model.TtsRequest(
-                    text = chapter.body,
-                    voice = "en-US-JennyNeural"
+                val responseBody = api.generateSpeech(
+                    com.curio.app.data.model.TtsRequest(
+                        text = body,
+                        voice = "en-US-JennyNeural"
+                    )
                 )
-                val responseBody = api.generateSpeech(request)
                 val file = java.io.File.createTempFile("tts_chapter_", ".mp3")
                 file.outputStream().use { output ->
                     responseBody.byteStream().use { input ->
@@ -210,23 +291,16 @@ class NovelReaderViewModel(application: Application) : AndroidViewModel(applicat
                     audioFilePath = file.absolutePath
                 )
             } catch (e: Exception) {
-                uiState = uiState.copy(
-                    isTtsLoading = false,
-                    isPlaying = false
-                )
+                uiState = uiState.copy(isTtsLoading = false, isPlaying = false)
             }
         }
     }
 
     fun stopTts() {
-        uiState = uiState.copy(
-            isPlaying = false,
-            audioFilePath = null
-        )
+        uiState = uiState.copy(isPlaying = false, audioFilePath = null)
     }
 
     fun ttsFinished() {
-        // Auto-advance to next chapter when TTS finishes
         uiState = uiState.copy(isPlaying = false, audioFilePath = null)
         if (hasNextChapter()) {
             nextChapter()
@@ -237,15 +311,13 @@ class NovelReaderViewModel(application: Application) : AndroidViewModel(applicat
     // ── Reading Preferences ─────────────────────────────────
 
     fun increaseFontSize() {
-        if (uiState.fontSize < 28) {
+        if (uiState.fontSize < 28)
             uiState = uiState.copy(fontSize = uiState.fontSize + 2)
-        }
     }
 
     fun decreaseFontSize() {
-        if (uiState.fontSize > 12) {
+        if (uiState.fontSize > 12)
             uiState = uiState.copy(fontSize = uiState.fontSize - 2)
-        }
     }
 
     fun toggleDarkMode() {
@@ -255,7 +327,6 @@ class NovelReaderViewModel(application: Application) : AndroidViewModel(applicat
     override fun onCleared() {
         super.onCleared()
         autoSaveJob?.cancel()
-        // Save progress on exit
         saveProgress()
     }
 }
