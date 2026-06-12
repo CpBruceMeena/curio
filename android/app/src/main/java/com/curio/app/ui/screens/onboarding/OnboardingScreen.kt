@@ -61,6 +61,7 @@ private fun l1Emoji(name: String): String = when (name) {
     "Poems" -> "\uD83C\uDFB5"
     "Short Stories" -> "\uD83D\uDCC4"
     "Puzzles" -> "\uD83E\uDDE9"
+    "Novels" -> "\uD83D\uDCDA"
     else -> "\u2728"
 }
 
@@ -69,6 +70,7 @@ private fun l1Gradient(name: String): Pair<Color, Color> = when (name) {
     "Poems" -> Color(0xFFf472b6) to Color(0xFF4A1A2E)
     "Short Stories" -> Color(0xFF06b6d4) to Color(0xFF0A3A44)
     "Puzzles" -> Color(0xFFf97316) to Color(0xFF4A1E0A)
+    "Novels" -> Color(0xFF8b5cf6) to Color(0xFF2A1A4E)
     else -> Color(0xFFA8CEC8) to Color(0xFF1A2E2A)
 }
 
@@ -82,7 +84,7 @@ fun OnboardingScreen(
     val uiState by viewModel.uiState.collectAsState()
 
     val sortedGroups = uiState.l1Groups.sortedBy { g ->
-        when (g.name) { "Facts" -> 0; "Poems" -> 1; "Short Stories" -> 2; "Puzzles" -> 3; else -> 4 }
+        when (g.name) { "Facts" -> 0; "Poems" -> 1; "Short Stories" -> 2; "Puzzles" -> 3; "Novels" -> 4; else -> 5 }
     }
 
     Box(

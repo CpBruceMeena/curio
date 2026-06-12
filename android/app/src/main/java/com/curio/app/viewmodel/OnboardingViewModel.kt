@@ -69,6 +69,13 @@ private fun fallbackL1Groups(): List<L1Group> = listOf(
             Category(33, "Word Puzzles", "abc", "#fbbf24", 28, l1Category = "Puzzles"),
         )
     ),
+    L1Group(
+        name = "Novels", icon = "auto_stories", colorHex = "#8b5cf6",
+        categories = listOf(
+            Category(34, "Classic Novels", "menu_book", "#8b5cf6", 34, l1Category = "Novels"),
+            Category(35, "Fiction", "auto_stories", "#a78bfa", 35, l1Category = "Novels"),
+        )
+    ),
 )
 
 data class OnboardingUiState(

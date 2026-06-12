@@ -72,7 +72,8 @@ def scrape(db: DB, target: int, is_batch: bool, filter_category: str = None, dry
                 error_msg = f"{type(e).__name__}: {e}"
                 print(f"  ⚠ {src['name']} failed: {error_msg}")
                 if not dry_run:
-                    log_source_result(db, src["name"], 0, error_msg)                random.shuffle(all_items)
+                    log_source_result(db, src["name"], 0, error_msg)
+                random.shuffle(all_items)
 
         if not all_items:
             print("⚠ No new candidates from any source.")
