@@ -69,6 +69,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import com.curio.app.ui.components.CommentSheet
+import com.curio.app.ui.components.getCategoryEmoji
 import com.curio.app.ui.theme.curioColors
 import com.curio.app.viewmodel.FeedViewModel
 
@@ -294,10 +295,8 @@ fun FeedScreen(
                                 ) {
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                         Text(
-                                            text = cat.name.take(2).uppercase(),
-                                            style = MaterialTheme.typography.labelLarge,
-                                            color = cc.secondaryContainer,
-                                            fontWeight = FontWeight.ExtraBold
+                                            text = getCategoryEmoji(cat.name),
+                                            fontSize = 22.sp
                                         )
                                         Spacer(modifier = Modifier.height(2.dp))
                                         Text(

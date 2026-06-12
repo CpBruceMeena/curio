@@ -129,7 +129,14 @@ fun getCategoryEmoji(categoryName: String): String {
         "Math Puzzles" to "\u2797",
         "Logic Puzzles" to "\uD83E\uDDE0",
         "Word Puzzles" to "\uD83D\uDCDD",
-        "Mixed Puzzles" to "\uD83E\uDDE9"
+        "Mixed Puzzles" to "\uD83E\uDDE9",
+        "English Poems" to "\uD83D\uDCDD",
+        "Hindi Poems" to "\uD83C\uDFB5",
+        "Classics" to "\uD83C\uDFDB\uFE0F",
+        "Modern" to "\uD83C\uDFA8",
+        "Classic Fiction" to "\uD83D\uDCD6",
+        "Micro Stories" to "\uD83D\uDCD0",
+        "Serialized Stories" to "\uD83D\uDCCA"
     )
     return iconMap[categoryName] ?: getIconEmoji(categoryName.lowercase().replace(" ", "_")) ?: ""
 }
@@ -159,6 +166,13 @@ private fun getIconEmoji(iconName: String): String {
         "edit_note" -> "\u270D\uFE0F"    // ✍️ Shayari
         "extension" -> "\uD83E\uDDE9"   // 🧩 Puzzles
         "article" -> "\uD83D\uDCC4"     // 📄 Short Stories
+        "english_poems" -> "\uD83D\uDCDD"   // 📝 English Poems
+        "hindi_poems" -> "\uD83C\uDFB5"    // 🎵 Hindi Poems
+        "classics" -> "\uD83C\uDFDB\uFE0F"  // 🏛️ Classics
+        "modern" -> "\uD83C\uDFA8"         // 🎨 Modern
+        "classic_fiction" -> "\uD83D\uDCD6"  // 📖 Classic Fiction
+        "micro_stories" -> "\uD83D\uDCD0"   // 📐 Micro Stories
+        "serialized_stories" -> "\uD83D\uDCCA" // 📊 Serialized Stories
         else -> "\u2728"                 // ✨ fallback
     }
 }

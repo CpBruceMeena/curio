@@ -36,6 +36,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,7 +52,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.curio.app.CurioApp
-import com.curio.app.ui.components.FeedbackDialog
 import com.curio.app.ui.screens.discover.DiscoverScreen
 import com.curio.app.ui.screens.journal.JournalScreen
 import com.curio.app.ui.screens.profile.ProfileScreen
@@ -76,9 +76,9 @@ fun MainTabScreen(
     onPuzzleNavigate: (categoryId: Long, puzzleType: String) -> Unit = { _, _ -> },
     onContentClick: (Long) -> Unit = {}
 ) {
-    var showFeedbackDialog by remember { mutableStateOf(false) }
     var currentCategory by remember { mutableStateOf("") }
     var selectedTab by remember { mutableStateOf(BottomTab.Feed) }
+    val feedState by feedViewModel.uiState.collectAsState()
     var startBookmarkPagerIndex by remember { mutableStateOf<Int?>(null) }
 
     val prefs = remember { CurioApp.instance.prefs }
@@ -113,68 +113,72 @@ fun MainTabScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
                                 text = currentCategory,
-                                style = MaterialTheme.typography.titleMedium,
-                                color = cc.secondaryContainer,
+                                style = MaterialTheme.typography.headlineSmall,
+                                color = cc.onSurface,
                                 fontWeight = FontWeight.Bold
                             )
-                            // Auto-play toggle button
-                            IconButton(
-                                onClick = { feedViewModel.toggleAutoPlay() },
-                                modifier = Modifier.size(36.dp)
-                            ) {
-                                Icon(
-                                    imageVector = if (feedViewModel.autoPlayEnabled) Icons.Filled.PauseCircle
-                                        else Icons.Filled.PlayCircle,
-                                    contentDescription = if (feedViewModel.autoPlayEnabled) "Stop auto-play" else "Auto-play all",
-                                    tint = if (feedViewModel.autoPlayEnabled) cc.accentGradientStart
-                                        else cc.onSurfaceVariant.copy(alpha = 0.6f),
-                                    modifier = Modifier.size(24.dp)
-                                )
+                            // Auto-play toggle button — only show when there's content
+                            if (feedState.content.isNotEmpty()) {
+                                IconButton(
+                                    onClick = { feedViewModel.toggleAutoPlay() },
+                                    modifier = Modifier.size(36.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = if (feedViewModel.autoPlayEnabled) Icons.Filled.PauseCircle
+                                            else Icons.Filled.PlayCircle,
+                                        contentDescription = if (feedViewModel.autoPlayEnabled) "Stop auto-play" else "Auto-play all",
+                                        tint = if (feedViewModel.autoPlayEnabled) cc.accentGradientStart
+                                            else cc.onSurfaceVariant.copy(alpha = 0.6f),
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
                             }
                         }
 
-                        // Shuffle button
-                        IconButton(
-                            onClick = { feedViewModel.shuffleFeed() },
-                            modifier = Modifier.size(36.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Shuffle,
-                                contentDescription = "Shuffle",
-                                tint = cc.accentGradientStart.copy(alpha = 0.8f),
-                                modifier = Modifier.size(24.dp)
-                            )
+                        // Shuffle button — only show when there's content
+                        if (feedState.content.isNotEmpty()) {
+                            IconButton(
+                                onClick = { feedViewModel.shuffleFeed() },
+                                modifier = Modifier.size(36.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Shuffle,
+                                    contentDescription = "Shuffle",
+                                    tint = cc.accentGradientStart.copy(alpha = 0.8f),
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
                         }
                     }
                 }
                 isDiscover -> {
                     Text(
                         text = "Discover",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = cc.secondaryContainer,
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = cc.onSurface,
                         fontWeight = FontWeight.Bold
                     )
                 }
                 isBookmarks -> {
                     Text(
                         text = "Bookmarks",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = cc.bookmarkActive,
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = cc.onSurface,
                         fontWeight = FontWeight.Bold
                     )
                 }
                 isJournal -> {
                     Text(
                         text = "Journal",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = cc.accentGradientStart,
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = cc.onSurface,
                         fontWeight = FontWeight.Bold
                     )
                 }
                 isProfile -> {
                     Text(
                         text = "Profile",
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.headlineSmall,
                         color = cc.onSurface,
                         fontWeight = FontWeight.Bold
                     )
@@ -249,13 +253,7 @@ fun MainTabScreen(
                 val cc = curioColors()
                 val isActive = selectedTab == tab
                 val tabColor = if (isActive) {
-                    when (tab) {
-                        BottomTab.Discover -> cc.secondaryContainer
-                        BottomTab.Feed -> cc.secondaryContainer
-                        BottomTab.Bookmarks -> cc.bookmarkActive
-                        BottomTab.Journal -> cc.accentGradientStart
-                        BottomTab.Profile -> cc.onSurface
-                    }
+                    cc.secondaryContainer
                 } else {
                     cc.onSurfaceVariant.copy(alpha = 0.5f)
                 }
@@ -288,32 +286,7 @@ fun MainTabScreen(
             }
         }
 
-        // ── Feedback FAB (small clickable text above bottom bar) ──
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surface)
-                .padding(horizontal = 16.dp, vertical = 2.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            val cc = curioColors()
-            Text(
-                text = "💬 Feedback",
-                fontSize = 11.sp,
-                color = cc.onSurfaceVariant.copy(alpha = 0.4f),
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .clickable { showFeedbackDialog = true }
-                    .padding(horizontal = 12.dp, vertical = 4.dp)
-            )
-        }
+
     }
 
-    // Feedback dialog
-    if (showFeedbackDialog) {
-        FeedbackDialog(
-            onDismiss = { showFeedbackDialog = false }
-        )
-    }
 }

@@ -32,6 +32,9 @@ Save your favorite insights with a single tap. Your bookmarks are stored locally
 ### 📔 Journal
 A private, offline-first journal that lives entirely on your device. No data is ever sent to the server.
 
+- **Moleskine-inspired notebook design** — ruled paper with wire spiral binding, page shadows, and a warm copper accent palette on rich dark paper
+- **Quick-start prompt selector** — when the editor opens for a new day, pick from 6 curated prompts (Morning Pages, Today's Highlights, Daily Gratitude, Evening Reflection, Task List, Letter to Future Self)
+- **Font customization** — change font family (Serif, Sans, Mono, Cursive, System), font size (S/M/L/XL), and line spacing (Tight/Normal/Relaxed) with live preview. Settings persist across sessions.
 - **Calendar view** with dots showing which days have entries, month navigation, and a jump-to-today button
 - **Writing streak** tracking and entry statistics (total entries, this month's count)
 - **4 entry types** with guided experiences:
@@ -41,6 +44,7 @@ A private, offline-first journal that lives entirely on your device. No data is 
   - **Reflection** — guided Q&A ("What went well?", "What could be better?", "What did I learn?")
 - **Mood tracking** with 6 emojis (😊😌😐😔😰🤩)
 - **Auto-save** drafts every 2 seconds so you never lose your thoughts
+- **Auto-navigate** to the editor when today has no entries — start writing instantly
 - **Delete with confirmation** to prevent accidental loss
 
 ### 🃏 Shuffle

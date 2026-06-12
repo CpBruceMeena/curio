@@ -1,5 +1,10 @@
 package com.curio.app.ui.screens.journal
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -18,8 +23,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
+
 import androidx.compose.material.icons.filled.Today
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -47,12 +54,7 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
-// ── Mood emoji helpers ──
-
-private val moodEmojis = mapOf(
-    "happy" to "\uD83D\uDE0A", "calm" to "\uD83D\uDE0C", "neutral" to "\uD83D\uDE10",
-    "sad" to "\uD83D\uDE14", "anxious" to "\uD83D\uDE30", "excited" to "\uD83E\uDD29"
-)
+// ── Icons & helpers ──
 
 private val typeIcons = mapOf(
     "free_write" to "\u270D\uFE0F", "gratitude" to "\uD83D\uDE4F",
@@ -78,29 +80,6 @@ fun JournalListScreen(
             .fillMaxSize()
             .background(cc.surface)
     ) {
-        // ── Header + Stats ──
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 20.dp, top = 8.dp, end = 20.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text(
-                    text = "Journal",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = cc.onSurface,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "Write what's on your mind",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = cc.onSurfaceVariant.copy(alpha = 0.7f)
-                )
-            }
-        }
-
         // ── Stats bar ──
         Row(
             modifier = Modifier
@@ -108,78 +87,105 @@ fun JournalListScreen(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Streak
             val streak = state.writingStreak
             StatCard(
-                icon = "🔥",
+                icon = "\uD83D\uDD25",
                 value = "${streak}",
-                label = if (streak == 1) "day streak" else "day streak",
+                label = "day streak",
                 color = cc.accentGradientStart,
                 modifier = Modifier.weight(1f),
                 cc = cc
             )
-            // Total entries
             StatCard(
-                icon = "📝",
+                icon = "\uD83D\uDCDD",
                 value = "${state.totalEntries}",
-                label = if (state.totalEntries == 1) "total entry" else "total entries",
+                label = "total entries",
                 color = cc.secondaryContainer,
                 modifier = Modifier.weight(1f),
                 cc = cc
             )
-            // Month entries
             StatCard(
-                icon = "📅",
+                icon = "\uD83D\uDCC5",
                 value = "${state.thisMonthEntries}",
-                label = if (state.thisMonthEntries == 1) "this month" else "this month",
+                label = "this month",
                 color = cc.bookmarkActive,
                 modifier = Modifier.weight(1f),
                 cc = cc
             )
         }
 
-        // ── Calendar ──
-        CalendarCard(
-            selectedYear = state.selectedYear,
-            selectedMonth = state.selectedMonth,
-            selectedDate = state.selectedDate,
-            daysWithEntries = state.daysWithEntries,
-            onPreviousMonth = { viewModel.previousMonth() },
-            onNextMonth = { viewModel.nextMonth() },
-            onDayClick = { day -> viewModel.selectDate(day) },
-            onTodayClick = { viewModel.selectToday() }
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // ── Date header + entry count ──
+        // ── Date header + calendar toggle ──
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp),
+                .padding(horizontal = 20.dp, vertical = 4.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             val dateFormat = remember { SimpleDateFormat("EEEE, MMMM d", Locale.getDefault()) }
             Text(
                 text = dateFormat.format(Date(state.selectedDate)),
-                style = MaterialTheme.typography.titleSmall,
+                style = MaterialTheme.typography.titleMedium,
                 color = cc.onSurface,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.Bold
             )
-            if (state.entries.isNotEmpty()) {
-                Text(
-                    text = "${state.entries.size} ${if (state.entries.size == 1) "entry" else "entries"}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = cc.onSurfaceVariant.copy(alpha = 0.6f)
-                )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (state.entries.isNotEmpty()) {
+                    Text(
+                        text = "${state.entries.size} ${if (state.entries.size == 1) "entry" else "entries"}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = cc.onSurfaceVariant.copy(alpha = 0.6f),
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                }
+                // Calendar toggle button
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(
+                            if (viewModel.showCalendar) cc.accentGradientStart.copy(alpha = 0.15f)
+                            else cc.surfaceContainerHigh.copy(alpha = 0.3f)
+                        )
+                        .clickable { viewModel.toggleCalendar() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.CalendarMonth,
+                        contentDescription = if (viewModel.showCalendar) "Hide calendar" else "Show calendar",
+                        tint = if (viewModel.showCalendar) cc.accentGradientStart
+                            else cc.onSurfaceVariant.copy(alpha = 0.6f),
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
             }
+        }
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        // ── Collapsible Calendar ──
+        AnimatedVisibility(
+            visible = viewModel.showCalendar,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut()
+        ) {
+            CalendarCard(
+                selectedYear = state.selectedYear,
+                selectedMonth = state.selectedMonth,
+                selectedDate = state.selectedDate,
+                daysWithEntries = state.daysWithEntries,
+                onPreviousMonth = { viewModel.previousMonth() },
+                onNextMonth = { viewModel.nextMonth() },
+                onDayClick = { day -> viewModel.selectDate(day) },
+                onTodayClick = { viewModel.selectToday() }
+            )
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // ── Entry list ──
+        // ── Entry list (empty or populated) ──
         if (state.entries.isEmpty()) {
+            // Refined empty state — inviting the user to write
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -187,18 +193,30 @@ fun JournalListScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(text = "\uD83D\uDCDD", fontSize = 48.sp)
-                    Spacer(modifier = Modifier.height(12.dp))
+                    // Decorative circle
+                    Box(
+                        modifier = Modifier
+                            .size(80.dp)
+                            .clip(RoundedCornerShape(40.dp))
+                            .background(cc.surfaceContainerHigh.copy(alpha = 0.3f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = "\u270D\uFE0F", fontSize = 36.sp)
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = "Nothing written yet",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = cc.onSurfaceVariant.copy(alpha = 0.6f),
-                        fontWeight = FontWeight.Medium
+                        text = "What's on your mind?",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = cc.onSurface,
+                        fontWeight = FontWeight.Bold
                     )
+                    Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "Tap the + button to start journaling",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = cc.onSurfaceVariant.copy(alpha = 0.4f)
+                        text = "Tap the + to start writing\nyour thoughts for today",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = cc.onSurfaceVariant.copy(alpha = 0.6f),
+                        textAlign = TextAlign.Center,
+                        lineHeight = 22.sp
                     )
                 }
             }
@@ -208,7 +226,7 @@ fun JournalListScreen(
                     .weight(1f)
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 items(state.entries, key = { it.id }) { entry ->
                     EntryCard(
@@ -217,7 +235,8 @@ fun JournalListScreen(
                         cc = cc
                     )
                 }
-                item { Spacer(modifier = Modifier.height(80.dp)) }
+                // Bottom padding so content doesn't touch the screen bottom
+                item { Spacer(modifier = Modifier.height(16.dp)) }
             }
         }
     }
@@ -406,7 +425,6 @@ private fun EntryCard(
     onClick: () -> Unit,
     cc: com.curio.app.ui.theme.CurioColors
 ) {
-    val moodEmoji = entry.mood?.let { moodEmojis[it] } ?: "\uD83D\uDCDD"
     val typeIcon = typeIcons[entry.entryType] ?: "\uD83D\uDCC4"
     val dateFormat = remember { SimpleDateFormat("h:mm a", Locale.getDefault()) }
     val previewText = entry.content.take(120).replace('\n', ' ')
@@ -445,8 +463,6 @@ private fun EntryCard(
                         style = MaterialTheme.typography.labelSmall,
                         color = cc.onSurfaceVariant.copy(alpha = 0.5f)
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(text = moodEmoji, fontSize = 16.sp)
                 }
             }
 

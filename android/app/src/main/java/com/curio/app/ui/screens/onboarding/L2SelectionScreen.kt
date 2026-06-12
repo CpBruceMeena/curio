@@ -258,14 +258,6 @@ fun L2SelectionScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = if (selectedIds.isNotEmpty()) "${selectedIds.size} topic${if (selectedIds.size != 1) "s" else ""} selected"
-                else "Tap topics above to customize",
-                style = MaterialTheme.typography.labelMedium,
-                color = if (selectedIds.isNotEmpty()) SecondaryContainer else OnSurfaceVariant
-            )
         }
     }
 }

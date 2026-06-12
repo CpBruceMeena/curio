@@ -67,6 +67,20 @@ class PreferencesHelper(context: Context) {
         get() = prefs.getBoolean(KEY_DEVICE_INFO_SUBMITTED, false)
         set(value) = prefs.edit().putBoolean(KEY_DEVICE_INFO_SUBMITTED, value).apply()
 
+    // ── Journal font preferences ──
+
+    var journalFontFamily: String
+        get() = prefs.getString(KEY_JOURNAL_FONT_FAMILY, "serif") ?: "serif"
+        set(value) = prefs.edit().putString(KEY_JOURNAL_FONT_FAMILY, value).apply()
+
+    var journalFontSize: String
+        get() = prefs.getString(KEY_JOURNAL_FONT_SIZE, "medium") ?: "medium"
+        set(value) = prefs.edit().putString(KEY_JOURNAL_FONT_SIZE, value).apply()
+
+    var journalLineSpacing: Float
+        get() = prefs.getFloat(KEY_JOURNAL_LINE_SPACING, 1.8f)
+        set(value) = prefs.edit().putFloat(KEY_JOURNAL_LINE_SPACING, value).apply()
+
     fun clear() {
         prefs.edit().clear().apply()
     }
@@ -79,6 +93,9 @@ class PreferencesHelper(context: Context) {
         private const val KEY_BOOKMARKS = "bookmarked_content_ids"
         private const val KEY_DEVICE_UUID = "device_uuid"
         private const val KEY_DEVICE_INFO_SUBMITTED = "device_info_submitted"
+        private const val KEY_JOURNAL_FONT_FAMILY = "journal_font_family"
+        private const val KEY_JOURNAL_FONT_SIZE = "journal_font_size"
+        private const val KEY_JOURNAL_LINE_SPACING = "journal_line_spacing"
 
         @Volatile
         private var instance: PreferencesHelper? = null

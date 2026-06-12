@@ -8,6 +8,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.curio.app.data.local.EntryType
 import com.curio.app.data.local.JournalEntry
+import com.curio.app.data.local.PreferencesHelper
 import com.curio.app.data.repository.JournalRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -17,6 +18,29 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.util.Calendar
 import java.util.UUID
+
+data class JournalFontSettings(
+    val fontFamily: String = "serif",       // serif, sans_serif, monospace, cursive
+    val fontSize: String = "medium",         // small, medium, large, xlarge
+    val lineSpacing: Float = 1.8f             // 1.2f (tight), 1.5f (normal), 1.8f (relaxed)
+)
+
+data class WritingPrompt(
+    val id: String,
+    val icon: String,
+    val title: String,
+    val description: String,
+    val type: String = EntryType.FREE_WRITE.key
+)
+
+val quickStartPrompts = listOf(
+    WritingPrompt("morning_pages", "☀️", "Morning Pages", "Clear your mind with free-form stream-of-consciousness writing"),
+    WritingPrompt("highlights", "🌟", "Today's Highlights", "Capture what stood out most about your day"),
+    WritingPrompt("gratitude", "🙏", "Daily Gratitude", "List 3 things you're grateful for today", EntryType.GRATITUDE.key),
+    WritingPrompt("reflection", "🌙", "Evening Reflection", "Reflect on what went well, what could improve, and what you learned", EntryType.REFLECTION.key),
+    WritingPrompt("task_list", "✅", "Task List", "Plan your day with an interactive checklist", EntryType.TASK_LIST.key),
+    WritingPrompt("letter_future", "💌", "Letter to Future Self", "Write a note to your future self to read later"),
+)
 
 data class TaskItem(
     val id: String = UUID.randomUUID().toString(),
@@ -62,16 +86,48 @@ data class JournalUiState(
 class JournalViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = JournalRepository(application)
+    private val prefs = PreferencesHelper.getInstance(application)
 
     private val _uiState = MutableStateFlow(JournalUiState())
     val uiState: StateFlow<JournalUiState> = _uiState.asStateFlow()
 
     private var autoSaveJob: Job? = null
     var selectedTab by mutableStateOf(0) // 0 = list, 1 = editor, 2 = detail
+    var showCalendar by mutableStateOf(false)
+    private var initialLoadDone = false
+
+    // ── Font settings ──
+    var fontFamily by mutableStateOf(prefs.journalFontFamily)
+    var fontSize by mutableStateOf(prefs.journalFontSize)
+    var lineSpacing by mutableStateOf(prefs.journalLineSpacing)
+    var showFontSettings by mutableStateOf(false)
+
+    fun toggleFontSettings() {
+        showFontSettings = !showFontSettings
+    }
+
+    fun updateFontFamily(family: String) {
+        fontFamily = family
+        prefs.journalFontFamily = family
+    }
+
+    fun updateFontSize(size: String) {
+        fontSize = size
+        prefs.journalFontSize = size
+    }
+
+    fun updateLineSpacing(spacing: Float) {
+        lineSpacing = spacing
+        prefs.journalLineSpacing = spacing
+    }
 
     init {
         loadEntries()
         loadStats()
+    }
+
+    fun toggleCalendar() {
+        showCalendar = !showCalendar
     }
 
     // ── Calendar navigation ──
@@ -148,6 +204,55 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
     fun startNewEntryWithType(type: String) {
         startNewEntry()
         _uiState.value = _uiState.value.copy(editType = type)
+    }
+
+    fun startNewEntryWithPrompt(prompt: WritingPrompt) {
+        startNewEntry()
+        val state = _uiState.value
+        when (prompt.id) {
+            "morning_pages" -> {
+                _uiState.value = state.copy(
+                    editType = EntryType.FREE_WRITE.key,
+                    editTitle = "Morning Pages",
+                    editContent = ""
+                )
+            }
+            "highlights" -> {
+                _uiState.value = state.copy(
+                    editType = EntryType.FREE_WRITE.key,
+                    editTitle = "Today's Highlights",
+                    editContent = ""
+                )
+            }
+            "letter_future" -> {
+                _uiState.value = state.copy(
+                    editType = EntryType.FREE_WRITE.key,
+                    editTitle = "Letter to Future Self",
+                    editContent = ""
+                )
+            }
+            "gratitude" -> {
+                _uiState.value = state.copy(
+                    editType = EntryType.GRATITUDE.key,
+                    editTitle = "Daily Gratitude",
+                    editGratitudeItems = listOf("", "", "")
+                )
+            }
+            "reflection" -> {
+                _uiState.value = state.copy(
+                    editType = EntryType.REFLECTION.key,
+                    editTitle = "Evening Reflection",
+                    editReflectionAnswers = listOf("", "", "")
+                )
+            }
+            "task_list" -> {
+                _uiState.value = state.copy(
+                    editType = EntryType.TASK_LIST.key,
+                    editTitle = "Today's Tasks",
+                    editTaskItems = emptyList()
+                )
+            }
+        }
     }
 
     fun startEditEntry(entry: JournalEntry) {
@@ -393,7 +498,7 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
         }
         val now = Calendar.getInstance()
         loadDaysWithEntries()
-        loadEntriesForDay(System.currentTimeMillis())
+        loadEntriesForDay(System.currentTimeMillis(), autoOpenIfEmpty = true)
         loadThisMonthCount()
     }
 
@@ -424,14 +529,22 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    private fun loadEntriesForDay(dayMillis: Long) {
+    private fun loadEntriesForDay(dayMillis: Long, autoOpenIfEmpty: Boolean = false) {
         viewModelScope.launch {
             val cal = Calendar.getInstance().apply { timeInMillis = dayMillis }
             val (start, end) = JournalRepository.getDayBoundaries(
                 cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)
             )
+            var firstEmission = true
             repository.getEntriesForDay(start, end).collect { entries ->
                 _uiState.value = _uiState.value.copy(entries = entries)
+                if (firstEmission) {
+                    firstEmission = false
+                    initialLoadDone = true
+                    if (autoOpenIfEmpty && entries.isEmpty() && selectedTab == 0) {
+                        selectedTab = 3 // Show prompt selector instead of directly opening editor
+                    }
+                }
             }
         }
     }
