@@ -27,12 +27,11 @@ import com.curio.app.viewmodel.JournalViewModel
 
 /**
  * Internal navigation states for Journal:
- *   0 = entries list, 1 = editor (new/edit), 2 = detail view
+ *   0 = entries list, 1 = editor (new/edit)
  *   3 = prompt selector (shown on first open when today has no entries)
  */
 private const val VIEW_LIST = 0
 private const val VIEW_EDITOR = 1
-private const val VIEW_DETAIL = 2
 private const val VIEW_PROMPTS = 3
 
 @Composable
@@ -70,24 +69,6 @@ fun JournalScreen(
                             viewModel.startNewEntry()
                         }
                     )
-                }
-                VIEW_DETAIL -> {
-                    val entry = state.currentEntry
-                    if (entry != null) {
-                        JournalDetailScreen(
-                            viewModel = viewModel,
-                            entry = entry,
-                            onBack = {
-                                viewModel.clearCurrentEntry()
-                                viewModel.selectedTab = VIEW_LIST
-                            },
-                            onEdit = {
-                                viewModel.startEditEntry(it)
-                            }
-                        )
-                    } else {
-                        JournalListScreen(viewModel = viewModel)
-                    }
                 }
                 else -> {
                     JournalListScreen(viewModel = viewModel)

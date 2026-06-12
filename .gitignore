@@ -77,3 +77,6 @@ stitch_curio_knowledge_discovery_app/
 .cache/
 .cxx/
 *~
+
+# Duplicate design export
+stitch_curio_knowledge_discovery_app (1)/

@@ -37,6 +37,10 @@ class JournalRepository(context: Context) {
     fun searchEntries(query: String): Flow<List<JournalEntry>> =
         dao.searchEntries(query)
 
+    /** All bookmarked entries across all dates, newest first. */
+    fun getBookmarkedEntries(): Flow<List<JournalEntry>> =
+        dao.getBookmarkedEntries()
+
     // ── Stats ──
 
     /** Total number of non-draft entries. */

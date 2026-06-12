@@ -2,6 +2,8 @@ package com.curio.app.ui.screens.journal
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -21,8 +23,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -33,6 +37,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -43,14 +51,21 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.curio.app.data.local.EntryType
+import com.curio.app.viewmodel.FormatRange
 import com.curio.app.viewmodel.JournalViewModel
 import com.curio.app.viewmodel.TaskItem
 import java.text.SimpleDateFormat
@@ -161,6 +176,10 @@ fun JournalEditorScreen(
         color = inkMuted.copy(alpha = 0.8f),
         lineHeight = currentBodySize * 1.8f
     )
+
+    // ── Formatting toolbar toggle state ──
+    var showFormatting by remember { mutableStateOf(false) }
+    val hasActiveFormat = state.isBoldActive || state.isItalicActive || state.activeTextColor != null
 
     Box(
         modifier = Modifier
@@ -300,6 +319,42 @@ fun JournalEditorScreen(
                     }
                 }
 
+                // ── Formatting toggle (Bold/Italic/Color) ──
+                Box(
+                    modifier = Modifier
+                        .padding(end = 2.dp)
+                        .clip(RoundedCornerShape(3.dp))
+                        .background(
+                            if (showFormatting) accent.copy(alpha = 0.18f)
+                            else if (hasActiveFormat) accent.copy(alpha = 0.08f)
+                            else Color.Transparent
+                        )
+                        .clickable { showFormatting = !showFormatting }
+                        .padding(horizontal = 5.dp, vertical = 4.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "B",
+                            style = TextStyle(
+                                fontSize = 12.sp,
+                                fontFamily = FontFamily.Serif,
+                                color = if (showFormatting || hasActiveFormat) accent else inkMuted,
+                                fontWeight = FontWeight.ExtraBold
+                            )
+                        )
+                        Text(
+                            text = "I",
+                            style = TextStyle(
+                                fontSize = 10.sp,
+                                fontFamily = FontFamily.Serif,
+                                fontStyle = FontStyle.Italic,
+                                color = if (showFormatting || hasActiveFormat) accent else inkMuted.copy(alpha = 0.7f),
+                                fontWeight = FontWeight.Bold
+                            )
+                        )
+                    }
+                }
+
                 // ── Aa font settings toggle ──
                 Box(
                     modifier = Modifier
@@ -418,9 +473,11 @@ fun JournalEditorScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Entry type chips
+                // Entry type chips (horizontally scrollable so all 4 fit on one line)
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     EntryType.entries.forEach { type ->
@@ -456,7 +513,7 @@ fun JournalEditorScreen(
                     "gratitude" -> GratitudeEditor(state.editGratitudeItems, state.editGratitudePrompts, viewModel, notebookTextStyle, notebookTitleStyle, notebookLabelStyle)
                     "task_list" -> TaskListEditor(state.editTaskItems, viewModel, notebookTextStyle, notebookTitleStyle, notebookLabelStyle)
                     "reflection" -> ReflectionEditor(state.editReflectionAnswers, state.editReflectionPrompts, viewModel, notebookTextStyle, notebookTitleStyle, notebookLabelStyle)
-                    else -> FreeWriteEditor(state.editTitle, state.editContent, state.editTags, viewModel, notebookTextStyle, notebookTitleStyle, notebookLabelStyle)
+                    else -> FreeWriteEditor(state.editTitle, state.editContent, viewModel, notebookTextStyle, notebookTitleStyle, notebookLabelStyle, showFormatting)
                 }
 
                 // Gold foil page number
@@ -624,18 +681,64 @@ private fun FontSettingsPanel(
     }
 }
 
-// ── Free Write ──
+// ── Free Write (with formatting toolbar) ──
+
+private val formatColors = listOf(
+    "#D4A373" to null,        // copper (accent) → clear
+    "#FF6B6B" to "#FF6B6B",   // warm red
+    "#4ECDC4" to "#4ECDC4",   // teal
+    "#FFE66D" to "#FFE66D",   // soft yellow
+    "#A8E6CF" to "#A8E6CF",   // mint
+    "#FF8E53" to "#FF8E53"    // orange
+)
+
+/** Build an AnnotatedString from plain text + format ranges. */
+private fun buildStyledContent(
+    text: String,
+    ranges: List<FormatRange>,
+    baseStyle: TextStyle
+): androidx.compose.ui.text.AnnotatedString {
+    if (ranges.isEmpty()) return androidx.compose.ui.text.AnnotatedString(text)
+    return buildAnnotatedString {
+        append(text)
+        ranges.forEach { range ->
+            val start = range.s.coerceIn(0, text.length)
+            val end = range.e.coerceIn(start, text.length)
+            if (start < end && range.b || range.i || range.c != null) {
+                addStyle(
+                    SpanStyle(
+                        fontWeight = if (range.b) FontWeight.Bold else null,
+                        fontStyle = if (range.i) FontStyle.Italic else null,
+                        color = range.c?.let { parseColorSafe(it) } ?: Color.Unspecified
+                    ),
+                    start, end
+                )
+            }
+        }
+    }
+}
+
+private fun parseColorSafe(hex: String): Color {
+    try {
+        return Color(android.graphics.Color.parseColor(hex))
+    } catch (_: Exception) {
+        return inkColor
+    }
+}
 
 @Composable
 private fun FreeWriteEditor(
     title: String,
     content: String,
-    tags: String,
     viewModel: JournalViewModel,
     notebookTextStyle: TextStyle,
     notebookTitleStyle: TextStyle,
-    notebookLabelStyle: TextStyle
+    notebookLabelStyle: TextStyle,
+    showFormatting: Boolean
 ) {
+    val state by viewModel.uiState.collectAsState()
+
+    // ── Title ──
     BasicTextField(
         value = title,
         onValueChange = { viewModel.updateTitle(it) },
@@ -658,9 +761,81 @@ private fun FreeWriteEditor(
 
     Spacer(modifier = Modifier.height(4.dp))
 
+    // ── Formatting Toolbar (collapsible) ──
+    AnimatedVisibility(
+        visible = showFormatting,
+        enter = expandVertically(expandFrom = Alignment.Top) + fadeIn(),
+        exit = shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut()
+    ) {
+        FormattingToolbar(
+            isBold = state.isBoldActive,
+            isItalic = state.isItalicActive,
+            activeColor = state.activeTextColor,
+            onToggleBold = { viewModel.toggleBold() },
+            onToggleItalic = { viewModel.toggleItalic() },
+            onSetColor = { viewModel.setActiveColor(it) },
+            notebookLabelStyle = notebookLabelStyle
+        )
+    }
+
+    Spacer(modifier = Modifier.height(8.dp))
+
+    // ── Content with formatting ──
+    // NOTE: `content` must NOT be a remember key — that would recreate TextFieldValue
+    // on every keystroke and reset the cursor to position 0.
+    var textFieldValue by remember {
+        mutableStateOf(
+            TextFieldValue(
+                annotatedString = buildStyledContent(content, state.editFormatRanges, notebookTextStyle),
+                selection = TextRange(content.length)
+            )
+        )
+    }
+
+    // When format ranges change (e.g. bold/italic/color toggle), rebuild the annotated
+    // string but preserve the cursor position from the current TextFieldValue.
+    LaunchedEffect(state.editFormatRanges) {
+        val current = textFieldValue
+        if (current.annotatedString.text == content) {
+            textFieldValue = current.copy(
+                annotatedString = buildStyledContent(content, state.editFormatRanges, notebookTextStyle)
+            )
+        }
+    }
+
     BasicTextField(
-        value = content,
-        onValueChange = { viewModel.updateContent(it) },
+        value = textFieldValue,
+        onValueChange = { newValue ->
+            val oldText = textFieldValue.annotatedString.text
+            val newText = newValue.annotatedString.text
+
+            // Detect inserted range (new characters)
+            val insertedRange = findInsertedRange(oldText, newText)
+
+            // If there's a format active and new characters were typed, apply format
+            val updatedRanges = if (insertedRange != null && (state.isBoldActive || state.isItalicActive || state.activeTextColor != null)) {
+                viewModel.applyFormatToSelection(insertedRange.first, insertedRange.second)
+                state.editFormatRanges + FormatRange(
+                    s = insertedRange.first,
+                    e = insertedRange.second,
+                    b = state.isBoldActive,
+                    i = state.isItalicActive,
+                    c = state.activeTextColor
+                )
+            } else {
+                state.editFormatRanges
+            }
+
+            viewModel.updateContent(newText)
+            if (updatedRanges !== state.editFormatRanges) {
+                viewModel.updateFormatRanges(updatedRanges)
+            }
+
+            // Update TextFieldValue with styled text, preserving cursor from newValue
+            textFieldValue = newValue.copy(
+                annotatedString = buildStyledContent(newText, updatedRanges, notebookTextStyle)
+            )
+        },
         textStyle = notebookTextStyle,
         cursorBrush = SolidColor(accent),
         modifier = Modifier
@@ -679,32 +854,144 @@ private fun FreeWriteEditor(
         },
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default)
     )
+}
 
-    Spacer(modifier = Modifier.height(12.dp))
+/** Find the range of newly inserted characters between old and new text. */
+private fun findInsertedRange(oldText: String, newText: String): Pair<Int, Int>? {
+    if (newText.length <= oldText.length) return null // deletion, not insertion
 
-    Text(
-        text = "Tags:",
-        style = notebookLabelStyle
-    )
-    BasicTextField(
-        value = tags,
-        onValueChange = { viewModel.updateTags(it) },
-        textStyle = notebookTextStyle.copy(fontSize = notebookTextStyle.fontSize * 0.875f, color = inkMuted),
-        cursorBrush = SolidColor(accent),
-        modifier = Modifier.fillMaxWidth(),
-        decorationBox = { innerTextField ->
-            Box {
-                if (tags.isEmpty()) {
+    // Find the longest common prefix
+    val prefixLen = oldText.zip(newText).takeWhile { (a, b) -> a == b }.count()
+
+    // Find the longest common suffix from the end
+    val oldSuffixStart = oldText.length - 1
+    val newSuffixStart = newText.length - 1
+    var suffixLen = 0
+    while (
+        oldSuffixStart - suffixLen >= prefixLen &&
+        newSuffixStart - suffixLen >= prefixLen &&
+        oldText[oldSuffixStart - suffixLen] == newText[newSuffixStart - suffixLen]
+    ) {
+        suffixLen++
+    }
+
+    val insertStart = prefixLen
+    val insertEnd = newText.length - suffixLen
+    return if (insertStart < insertEnd) Pair(insertStart, insertEnd) else null
+}
+
+// ── Formatting Toolbar ──
+
+@Composable
+private fun FormattingToolbar(
+    isBold: Boolean,
+    isItalic: Boolean,
+    activeColor: String?,
+    onToggleBold: () -> Unit,
+    onToggleItalic: () -> Unit,
+    onSetColor: (String?) -> Unit,
+    notebookLabelStyle: TextStyle
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(6.dp))
+            .background(Color(0xFF222220))
+            .padding(horizontal = 8.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        // Bold
+        FormatButton(
+            label = "B",
+            isActive = isBold,
+            activeStyle = notebookLabelStyle.copy(fontWeight = FontWeight.ExtraBold, color = accent),
+            inactiveStyle = notebookLabelStyle.copy(fontWeight = FontWeight.Bold, color = inkMuted),
+            onClick = onToggleBold,
+            hint = "Bold"
+        )
+
+        // Italic
+        FormatButton(
+            label = "I",
+            isActive = isItalic,
+            activeStyle = notebookLabelStyle.copy(fontStyle = FontStyle.Italic, color = accent),
+            inactiveStyle = notebookLabelStyle.copy(fontStyle = FontStyle.Italic, color = inkMuted),
+            onClick = onToggleItalic,
+            hint = "Italic"
+        )
+
+        // Divider
+        Box(
+            modifier = Modifier
+                .width(1.dp)
+                .height(18.dp)
+                .background(notebookLine.copy(alpha = 0.5f))
+        )
+
+        // Color palette
+        formatColors.forEach { (hex, colorVal) ->
+            val isColorActive = activeColor != null && activeColor == colorVal
+            val isClear = colorVal == null
+            val chipColor = if (isClear) Color.Transparent else parseColorSafe(hex)
+
+            Box(
+                modifier = Modifier
+                    .size(22.dp)
+                    .clip(CircleShape)
+                    .background(
+                        if (isClear && isColorActive) accent.copy(alpha = 0.15f)
+                        else if (isClear) Color.Transparent
+                        else chipColor
+                    )
+                    .clickable { onSetColor(colorVal) },
+                contentAlignment = Alignment.Center
+            ) {
+                if (isClear) {
+                    // No color — draw a strikethrough "A"
                     Text(
-                        text = "comma-separated tags",
-                        style = notebookTextStyle.copy(fontSize = notebookTextStyle.fontSize * 0.875f, color = inkMuted.copy(alpha = 0.25f))
+                        text = "A",
+                        style = TextStyle(
+                            fontSize = 11.sp,
+                            color = if (isColorActive) accent else inkMuted.copy(alpha = 0.4f),
+                            fontWeight = FontWeight.Bold
+                        )
                     )
                 }
-                innerTextField()
+                if (isColorActive && colorVal != null) {
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .background(accent.copy(alpha = 0.2f), CircleShape)
+                    )
+                }
             }
-        },
-        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done)
-    )
+        }
+    }
+}
+
+@Composable
+private fun FormatButton(
+    label: String,
+    isActive: Boolean,
+    activeStyle: TextStyle,
+    inactiveStyle: TextStyle,
+    onClick: () -> Unit,
+    hint: String
+) {
+    Box(
+        modifier = Modifier
+            .size(28.dp)
+            .clip(RoundedCornerShape(4.dp))
+            .background(if (isActive) accent.copy(alpha = 0.15f) else Color.Transparent)
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = label,
+            style = if (isActive) activeStyle else inactiveStyle
+        )
+    }
 }
 
 // ── Gratitude ──

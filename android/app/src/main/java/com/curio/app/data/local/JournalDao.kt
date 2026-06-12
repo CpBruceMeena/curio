@@ -41,6 +41,9 @@ interface JournalDao {
     @Query("SELECT * FROM journal_entries WHERE isDraft = 0 AND (title LIKE '%' || :query || '%' OR content LIKE '%' || :query || '%') ORDER BY dateCreated DESC")
     fun searchEntries(query: String): Flow<List<JournalEntry>>
 
+    @Query("SELECT * FROM journal_entries WHERE isDraft = 0 AND isBookmarked = 1 ORDER BY dateCreated DESC")
+    fun getBookmarkedEntries(): Flow<List<JournalEntry>>
+
     // ── Stats ──
 
     @Query("SELECT COUNT(*) FROM journal_entries WHERE isDraft = 0")

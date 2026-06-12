@@ -19,6 +19,16 @@ import kotlinx.coroutines.launch
 import java.util.Calendar
 import java.util.UUID
 
+// ── Rich text formatting ──
+
+data class FormatRange(
+    val s: Int,       // start index
+    val e: Int,       // end index
+    val b: Boolean = false,  // bold
+    val i: Boolean = false,  // italic
+    val c: String? = null    // color hex, e.g. "#D4A373"
+)
+
 data class JournalFontSettings(
     val fontFamily: String = "serif",       // serif, sans_serif, monospace, cursive
     val fontSize: String = "medium",         // small, medium, large, xlarge
@@ -59,7 +69,6 @@ data class JournalUiState(
     val editTitle: String = "",
     val editContent: String = "",
     val editType: String = EntryType.FREE_WRITE.key,
-    val editTags: String = "",
     val isSaving: Boolean = false,
     val savedSuccess: Boolean = false,
     val error: String? = null,
@@ -77,6 +86,13 @@ data class JournalUiState(
         "What could have been better?",
         "What did I learn?"
     ),
+    // Formatting
+    val isBoldActive: Boolean = false,
+    val isItalicActive: Boolean = false,
+    val activeTextColor: String? = null,
+    val editFormatRanges: List<FormatRange> = emptyList(),
+    // Cross-day bookmarks
+    val bookmarkedEntries: List<JournalEntry> = emptyList(),
     // Stats
     val writingStreak: Int = 0,
     val totalEntries: Int = 0,
@@ -101,6 +117,22 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
     var fontSize by mutableStateOf(prefs.journalFontSize)
     var lineSpacing by mutableStateOf(prefs.journalLineSpacing)
     var showFontSettings by mutableStateOf(false)
+    var showBookmarkedOnly by mutableStateOf(false)
+
+    fun toggleBookmarkedFilter() {
+        showBookmarkedOnly = !showBookmarkedOnly
+        if (showBookmarkedOnly) {
+            loadBookmarkedEntries()
+        }
+    }
+
+    private fun loadBookmarkedEntries() {
+        viewModelScope.launch {
+            repository.getBookmarkedEntries().collect { bookmarked ->
+                _uiState.value = _uiState.value.copy(bookmarkedEntries = bookmarked)
+            }
+        }
+    }
 
     fun toggleFontSettings() {
         showFontSettings = !showFontSettings
@@ -119,6 +151,70 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
     fun updateLineSpacing(spacing: Float) {
         lineSpacing = spacing
         prefs.journalLineSpacing = spacing
+    }
+
+    // ── Formatting toggles ──
+
+    fun toggleBold() {
+        _uiState.value = _uiState.value.copy(isBoldActive = !_uiState.value.isBoldActive)
+    }
+
+    fun toggleItalic() {
+        _uiState.value = _uiState.value.copy(isItalicActive = !_uiState.value.isItalicActive)
+    }
+
+    fun setActiveColor(color: String?) {
+        _uiState.value = _uiState.value.copy(activeTextColor = if (_uiState.value.activeTextColor == color) null else color)
+    }
+
+    fun applyFormatToSelection(selectionStart: Int, selectionEnd: Int) {
+        if (selectionStart == selectionEnd) return
+        val state = _uiState.value
+        val start = minOf(selectionStart, selectionEnd)
+        val end = maxOf(selectionStart, selectionEnd)
+
+        val existing = state.editFormatRanges.toMutableList()
+        // Remove any existing format range that overlaps with same styles
+        existing.removeAll { range ->
+            range.s >= start && range.e <= end &&
+                range.b == state.isBoldActive && range.i == state.isItalicActive && range.c == state.activeTextColor
+        }
+        existing.add(FormatRange(s = start, e = end, b = state.isBoldActive, i = state.isItalicActive, c = state.activeTextColor))
+        _uiState.value = state.copy(editFormatRanges = existing.sortedBy { it.s })
+        scheduleAutoSave()
+    }
+
+    fun removeFormatFromSelection(selectionStart: Int, selectionEnd: Int) {
+        if (selectionStart == selectionEnd) return
+        val state = _uiState.value
+        val start = minOf(selectionStart, selectionEnd)
+        val end = maxOf(selectionStart, selectionEnd)
+        val existing = state.editFormatRanges.filter { range ->
+            !(range.s >= start && range.e <= end)
+        }
+        _uiState.value = state.copy(editFormatRanges = existing)
+        scheduleAutoSave()
+    }
+
+    fun updateFormatRanges(ranges: List<FormatRange>) {
+        _uiState.value = _uiState.value.copy(editFormatRanges = ranges.sortedBy { it.s })
+    }
+
+    // ── Bookmark toggle ──
+
+    fun toggleBookmark(entryId: Long) {
+        viewModelScope.launch {
+            val entry = repository.getEntry(entryId)
+            if (entry != null) {
+                val updated = entry.copy(isBookmarked = !entry.isBookmarked)
+                repository.saveEntry(updated)
+                // Update currentEntry in state so the detail screen reflects the change
+                val cur = _uiState.value.currentEntry
+                if (cur?.id == entryId) {
+                    _uiState.value = _uiState.value.copy(currentEntry = updated)
+                }
+            }
+        }
     }
 
     init {
@@ -191,12 +287,15 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
             editTitle = "",
             editContent = "",
             editType = EntryType.FREE_WRITE.key,
-            editTags = "",
             editTaskItems = emptyList(),
             editGratitudeItems = listOf("", "", ""),
             editReflectionAnswers = listOf("", "", ""),
             savedSuccess = false,
-            error = null
+            error = null,
+            isBoldActive = false,
+            isItalicActive = false,
+            activeTextColor = null,
+            editFormatRanges = emptyList()
         )
         selectedTab = 1
     }
@@ -268,18 +367,25 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
             parseGuidedFields(entry.content, 3)
         } else listOf("", "", "")
 
+        val formatRanges = if (!entry.contentFormatJson.isNullOrBlank()) {
+            parseFormatsJson(entry.contentFormatJson)
+        } else emptyList()
+
         _uiState.value = _uiState.value.copy(
             isEditing = true,
             currentEntry = entry,
             editTitle = entry.title,
             editContent = entry.content,
             editType = entry.entryType,
-            editTags = entry.tags,
             editTaskItems = taskItems,
             editGratitudeItems = gratitudeItems,
             editReflectionAnswers = reflectionAnswers,
             savedSuccess = false,
-            error = null
+            error = null,
+            isBoldActive = false,
+            isItalicActive = false,
+            activeTextColor = null,
+            editFormatRanges = formatRanges
         )
         selectedTab = 1
     }
@@ -292,12 +398,15 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
             editTitle = "",
             editContent = "",
             editType = EntryType.FREE_WRITE.key,
-            editTags = "",
             editTaskItems = emptyList(),
             editGratitudeItems = listOf("", "", ""),
             editReflectionAnswers = listOf("", "", ""),
             savedSuccess = false,
-            error = null
+            error = null,
+            isBoldActive = false,
+            isItalicActive = false,
+            activeTextColor = null,
+            editFormatRanges = emptyList()
         )
     }
 
@@ -319,10 +428,6 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
             "reflection" -> base.copy(editReflectionAnswers = if (base.editReflectionAnswers.all { it.isBlank() }) listOf("", "", "") else base.editReflectionAnswers)
             else -> base
         }
-    }
-
-    fun updateTags(tags: String) {
-        _uiState.value = _uiState.value.copy(editTags = tags)
     }
 
     // ── Type-specific editor actions ──
@@ -418,6 +523,10 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
         _uiState.value = state.copy(isSaving = true, error = null)
 
         viewModelScope.launch {
+            val contentFormatJson = if (state.editFormatRanges.isNotEmpty()) {
+                serializeFormatRanges(state.editFormatRanges)
+            } else null
+
             val entry = JournalEntry(
                 id = state.currentEntry?.id ?: System.currentTimeMillis(),
                 title = state.editTitle.trim().ifEmpty { when (state.editType) {
@@ -427,9 +536,10 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
                     else -> "Untitled"
                 }},
                 content = content,
+                contentFormatJson = contentFormatJson,
+                isBookmarked = state.currentEntry?.isBookmarked ?: false,
                 entryType = state.editType,
                 mood = null,
-                tags = state.editTags,
                 tasksJson = tasksJson,
                 isDraft = false,
                 dateCreated = state.currentEntry?.dateCreated ?: System.currentTimeMillis(),
@@ -449,10 +559,13 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
                     editTitle = "",
                     editContent = "",
                     editType = EntryType.FREE_WRITE.key,
-                    editTags = "",
                     editTaskItems = emptyList(),
                     editGratitudeItems = listOf("", "", ""),
-                    editReflectionAnswers = listOf("", "", "")
+                    editReflectionAnswers = listOf("", "", ""),
+                    isBoldActive = false,
+                    isItalicActive = false,
+                    activeTextColor = null,
+                    editFormatRanges = emptyList()
                 )
                 selectedTab = 0
             } catch (e: Exception) {
@@ -473,15 +586,6 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
                 _uiState.value = _uiState.value.copy(error = "Failed to delete")
             }
         }
-    }
-
-    fun selectEntry(entry: JournalEntry) {
-        _uiState.value = _uiState.value.copy(currentEntry = entry)
-        selectedTab = 2
-    }
-
-    fun clearCurrentEntry() {
-        _uiState.value = _uiState.value.copy(currentEntry = null)
     }
 
     fun clearError() {
@@ -577,10 +681,9 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
                     title = state.editTitle.trim().ifEmpty { "Draft" },
                     content = contentForDraft.trim(),
                     entryType = state.editType,
-                    mood = null,
-                    tags = state.editTags,
-                    isDraft = true,
-                    dateCreated = state.currentEntry?.dateCreated ?: System.currentTimeMillis(),
+                mood = null,
+                isDraft = true,
+                dateCreated = state.currentEntry?.dateCreated ?: System.currentTimeMillis(),
                     dateModified = System.currentTimeMillis()
                 )
                 repository.saveEntry(draft)
@@ -612,6 +715,16 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
         return items
     }
 
+    private fun serializeFormatRanges(ranges: List<FormatRange>): String {
+        val sb = StringBuilder("[")
+        ranges.forEachIndexed { i, r ->
+            if (i > 0) sb.append(",")
+            sb.append("""{"s":${r.s},"e":${r.e},"b":${r.b},"i":${r.i},"c":"${r.c ?: ""}"}""")
+        }
+        sb.append("]")
+        return sb.toString()
+    }
+
     private fun parseGuidedFields(content: String, count: Int): List<String> {
         val lines = content.lines().filter { it.isNotBlank() && !it.startsWith("•") }
         val results = mutableListOf<String>()
@@ -624,5 +737,25 @@ class JournalViewModel(application: Application) : AndroidViewModel(application)
         }
         while (results.size < count) results.add("")
         return results.take(count)
+    }
+
+    /** Parse format ranges JSON into a list of FormatRange objects. */
+    private fun parseFormatsJson(json: String): List<FormatRange> {
+        val ranges = mutableListOf<FormatRange>()
+        try {
+            val regex = """\{"s":(\d+),"e":(\d+),"b":(true|false),"i":(true|false),"c":"(.*?)"\}""".toRegex()
+            regex.findAll(json).forEach { match ->
+                ranges.add(
+                    FormatRange(
+                        s = match.groupValues[1].toInt(),
+                        e = match.groupValues[2].toInt(),
+                        b = match.groupValues[3].toBoolean(),
+                        i = match.groupValues[4].toBoolean(),
+                        c = match.groupValues[5].ifBlank { null }
+                    )
+                )
+            }
+        } catch (_: Exception) {}
+        return ranges
     }
 }
