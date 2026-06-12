@@ -6,6 +6,7 @@ import com.curio.app.data.model.AddCommentResponse
 import com.curio.app.data.model.CategoriesResponse
 import com.curio.app.data.model.CommentsResponse
 import com.curio.app.data.model.Content
+import com.curio.app.data.local.CachedContent
 import com.curio.app.data.model.FeedbackRequest
 import com.curio.app.data.model.FeedbackResponse
 import com.curio.app.data.model.FeedResponse
@@ -24,6 +25,12 @@ class ContentRepository(
     private val bookmarkDao: com.curio.app.data.local.BookmarkedContentDao? by lazy {
         context?.let {
             com.curio.app.data.local.JournalDatabase.getInstance(it).bookmarkedContentDao()
+        }
+    }
+
+    private val cacheDao: com.curio.app.data.local.CachedContentDao? by lazy {
+        context?.let {
+            com.curio.app.data.local.JournalDatabase.getInstance(it).cachedContentDao()
         }
     }
 
@@ -253,5 +260,80 @@ class ContentRepository(
     /** Check if a content ID exists in local bookmarks. */
     suspend fun isBookmarkedLocally(contentId: Long): Boolean {
         return bookmarkDao?.getById(contentId) != null
+    }
+
+    // ── Offline content cache (25 items per category) ───────────────
+
+    /**
+     * Save a list of Content items to the local cache.
+     * Only saves items for L1 categories (Facts, Poems, Short Stories, Puzzles).
+     */
+    suspend fun saveToOfflineCache(items: List<Content>, l1Name: String) {
+        val entities = items.map { item ->
+            CachedContent(
+                id = item.id,
+                categoryId = item.categoryId,
+                categoryName = item.categoryName,
+                title = item.title,
+                body = item.body,
+                description = item.description,
+                poet = item.poet,
+                source = item.source,
+                sourceUrl = item.sourceUrl,
+                readTimeSecs = item.readTimeSecs,
+                tags = item.tags,
+                likes = item.likes,
+                createdAt = item.createdAt,
+                l1Name = l1Name
+            )
+        }
+        cacheDao?.insertAll(entities)
+    }
+
+    /** Load all cached content for offline use. */
+    suspend fun loadOfflineCache(): List<Content> {
+        return cacheDao?.getAll()?.map { entity ->
+            Content(
+                id = entity.id,
+                categoryId = entity.categoryId,
+                categoryName = entity.categoryName,
+                title = entity.title,
+                body = entity.body,
+                description = entity.description,
+                poet = entity.poet,
+                source = entity.source,
+                sourceUrl = entity.sourceUrl,
+                readTimeSecs = entity.readTimeSecs,
+                tags = entity.tags,
+                likes = entity.likes,
+                createdAt = entity.createdAt
+            )
+        } ?: emptyList()
+    }
+
+    /** Check if the offline cache has been populated. */
+    suspend fun isCachePopulated(): Boolean {
+        return (cacheDao?.count() ?: 0) > 0
+    }
+
+    /** Get cached content for a specific L1 category. */
+    suspend fun getCachedByL1(l1Name: String): List<Content> {
+        return cacheDao?.getByL1(l1Name)?.map { entity ->
+            Content(
+                id = entity.id,
+                categoryId = entity.categoryId,
+                categoryName = entity.categoryName,
+                title = entity.title,
+                body = entity.body,
+                description = entity.description,
+                poet = entity.poet,
+                source = entity.source,
+                sourceUrl = entity.sourceUrl,
+                readTimeSecs = entity.readTimeSecs,
+                tags = entity.tags,
+                likes = entity.likes,
+                createdAt = entity.createdAt
+            )
+        } ?: emptyList()
     }
 }
