@@ -1,28 +1,29 @@
 """
-Novels scraper — downloads public domain novels from Project Gutenberg,
-using EPUB files for reliable chapter structure and clean paragraph formatting.
+Novels scraper — downloads public domain novels from free PDF sources
+and parses them into clean chapter structures using liteparse.
 
-Primary method: EPUB (ebooklib + BeautifulSoup) via novels_formatter.py
-Fallback: Improved text-based chapter detection with paragraph reflow.
-
-Supports:
-  - Curated novels (well-known classics with hand-written descriptions)
-  - Auto-discovered novels (metadata fetched from Gutendex API by Gutenberg ID)
+Content sources (tried in order, no external APIs used):
+  1. Direct PDF URL (from Global Grey Ebooks or other mirrors)
+  2. Gutenberg EPUB (fallback)
+  3. Gutenberg plain text (last resort)
 
 Usage:
     from scraper.handlers.novels import fetch_novels
     novels = fetch_novels(limit=5)  # process curated list
-    novels = fetch_novels(limit=3, gutenberg_ids=[1342, 1661, 84])  # curated + auto
 """
 
-from scraper.novels_formatter import fetch_and_format_novel, fetch_novel_metadata
+from typing import Optional
+
+from scraper.novels_formatter import fetch_and_format_novel
 
 
 # ─── Curated novel list ──────────────────────────────────────────────────────────
-# Well-known public domain works with stable Gutenberg IDs and hand-written descriptions.
-# These provide richer descriptions than auto-discovered metadata.
+# Each entry has explicit metadata (no API calls) and a pdf_url for
+# direct PDF parsing via liteparse. PDFs come from Global Grey Ebooks
+# and other free public domain sources. Falls back to Gutenberg EPUB/text.
 
 CURATED_NOVELS = [
+    # ── Already seeded (Pride and Prejudice - keep) ──
     {
         "gutenberg_id": 1342,
         "title": "Pride and Prejudice",
@@ -33,16 +34,19 @@ CURATED_NOVELS = [
             "in English literature."
         ),
         "language": "en",
+        "pdf_url": "https://giove.isti.cnr.it/demo/eread/Libri/joy/Pride.pdf",
     },
+    # ── New PDF-based additions ──
     {
         "gutenberg_id": 2701,
-        "title": "Moby Dick; or, The Whale",
+        "title": "Moby Dick",
         "author": "Herman Melville",
         "description": (
             "Captain Ahab's obsessive quest for vengeance against the white whale that took his leg. "
             "A monumental work of American literature weaving adventure, philosophy, and symbolism."
         ),
         "language": "en",
+        "pdf_url": "https://www.globalgreyebooks.com/ebooks/herman-melville_moby-dick.pdf",
     },
     {
         "gutenberg_id": 345,
@@ -53,16 +57,18 @@ CURATED_NOVELS = [
             "Jonathan Harker's journey to Transylvania unleashes a nightmare upon Victorian England."
         ),
         "language": "en",
+        "pdf_url": "https://www.globalgreyebooks.com/ebooks/bram-stoker_dracula.pdf",
     },
     {
         "gutenberg_id": 84,
-        "title": "Frankenstein; or, The Modern Prometheus",
-        "author": "Mary Wollstonecraft Shelley",
+        "title": "Frankenstein",
+        "author": "Mary Shelley",
         "description": (
             "Victor Frankenstein's scientific ambition creates a sentient being, leading to a tragic "
             "exploration of creation, responsibility, and monstrosity. The birth of science fiction."
         ),
         "language": "en",
+        "pdf_url": "https://www.globalgreyebooks.com/ebooks/mary-shelley_frankenstein.pdf",
     },
     {
         "gutenberg_id": 11,
@@ -73,6 +79,7 @@ CURATED_NOVELS = [
             "mad tea parties, and playing card royalty. Nonsense literature at its finest."
         ),
         "language": "en",
+        "pdf_url": "https://www.globalgreyebooks.com/ebooks/lewis-carroll_alices-adventures-in-wonderland.pdf",
     },
     {
         "gutenberg_id": 1661,
@@ -83,6 +90,8 @@ CURATED_NOVELS = [
             "and Dr. Watson, solving baffling mysteries in Victorian London."
         ),
         "language": "en",
+        # No PDF URL — Global Grey PDF has poor chapter structure.
+        # Uses Gutenberg EPUB which produces clean 16 chapters.
     },
     {
         "gutenberg_id": 1400,
@@ -93,6 +102,7 @@ CURATED_NOVELS = [
             "after a mysterious benefactor changes his fortunes. Dickens' most acclaimed novel."
         ),
         "language": "en",
+        "pdf_url": "https://www.globalgreyebooks.com/ebooks/charles-dickens_great-expectations.pdf",
     },
     {
         "gutenberg_id": 1260,
@@ -103,16 +113,7 @@ CURATED_NOVELS = [
             "a dark secret in his manor. A groundbreaking novel of passion, morality, and independence."
         ),
         "language": "en",
-    },
-    {
-        "gutenberg_id": 1232,
-        "title": "The Prince",
-        "author": "Niccolò Machiavelli",
-        "description": (
-            "A political treatise on power, statecraft, and leadership that introduced the term "
-            "'Machiavellian' to the world. As relevant today as it was in 1532."
-        ),
-        "language": "en",
+        "pdf_url": "https://www.globalgreyebooks.com/ebooks/charlotte-bronte_jane-eyre.pdf",
     },
     {
         "gutenberg_id": 174,
@@ -123,6 +124,32 @@ CURATED_NOVELS = [
             "reveals his moral decay. Wilde's only novel, a masterpiece of Gothic fiction."
         ),
         "language": "en",
+        "pdf_url": "https://www.globalgreyebooks.com/ebooks/oscar-wilde_picture-of-dorian-gray.pdf",
+    },
+    {
+        "gutenberg_id": 0,
+        "title": "Gitanjali",
+        "author": "Rabindranath Tagore",
+        "description": (
+            "A sublime collection of 103 prose poems by the first non-European Nobel laureate in "
+            "Literature. Tagore's verses explore the divine, love, nature, and the human spirit "
+            "with lyrical beauty and profound simplicity."
+        ),
+        "language": "en",
+        "pdf_url": "https://www.globalgreyebooks.com/ebooks/rabindranath-tagore_gitanjali.pdf",
+    },
+    {
+        "gutenberg_id": 120,
+        "title": "Treasure Island",
+        "author": "Robert Louis Stevenson",
+        "description": (
+            "Young Jim Hawkins embarks on a perilous journey to a remote island in search of "
+            "buried treasure, battling mutineers and pirates along the way. The definitive "
+            "adventure novel that shaped the modern pirate genre."
+        ),
+        "language": "en",
+        # No PDF URL — Global Grey PDF has poor chapter structure.
+        # Uses Gutenberg EPUB which produces clean 36 chapters.
     },
 ]
 
@@ -146,14 +173,15 @@ def fetch_novels(
     filter_category: str = None,
     gutenberg_ids: list[int] = None,
 ) -> list:
-    """Main entry point: download novels via EPUB format, extract formatted chapters.
+    """Download novels via PDF (primary) or Gutenberg (fallback).
+
+    Tries content sources in order: PDF → EPUB → plain text.
+    No external APIs are used — metadata comes from the curated list.
 
     Args:
         limit: Max number of novels to process
         filter_category: Only 'novels' or None for all
-        gutenberg_ids: Optional explicit list of Gutenberg IDs to process.
-                       Checks CURATED_NOVELS first; falls back to Gutendex auto-discovery
-                       for IDs not found in the curated list.
+        gutenberg_ids: Optional explicit list of Gutenberg IDs.
                        If not provided, uses CURATED_NOVELS list up to limit.
 
     Returns a list of novel dicts with embedded chapters.
@@ -164,47 +192,34 @@ def fetch_novels(
     novels_result = []
 
     if gutenberg_ids:
-        # Mixed mode: curated metadata first, Gutendex fallback for unknowns
+        # Only process IDs that are in the curated list
         sources = []
         for gid in gutenberg_ids[:limit]:
             curated = _find_curated(gid)
             if curated:
-                curated["auto"] = False
                 sources.append(curated)
             else:
-                sources.append({"gutenberg_id": gid, "auto": True})
+                print(f"  ⚠ Gutenberg #{gid} not in curated list — skipping")
     else:
-        # Curated mode only
         sources = [dict(e) for e in CURATED_NOVELS[:limit]]
-        for s in sources:
-            s["auto"] = False
 
     for entry in sources[:limit]:
         gid = entry["gutenberg_id"]
+        title_str = entry["title"]
+        author = entry["author"]
 
-        if entry.get("auto"):
-            # Auto-discover metadata via Gutendex
-            print(f"  🔍 Auto-discovering Gutenberg #{gid}...")
-            result = fetch_and_format_novel(
-                gutenberg_id=gid,
-                auto_metadata=True,
-            )
-        else:
-            # Use pre-populated curated metadata
-            title_str = entry["title"]
-            author = entry["author"]
-            print(f"  📖 Fetching: {title_str} (Gutenberg #{gid})...")
-            result = fetch_and_format_novel(
-                gutenberg_id=gid,
-                title=title_str,
-                author=author,
-                description=entry.get("description", ""),
-                language=entry.get("language", "en"),
-                auto_metadata=False,
-            )
+        print(f"  📖 Fetching: {title_str}...")
+        result = fetch_and_format_novel(
+            gutenberg_id=gid,
+            title=title_str,
+            author=author,
+            description=entry.get("description", ""),
+            language=entry.get("language", "en"),
+            pdf_url=entry.get("pdf_url"),
+        )
 
         if result is None:
-            print(f"  ⚠ Failed to fetch Gutenberg #{gid}, skipping.")
+            print(f"  ⚠ Failed to fetch '{title_str}', skipping.")
             continue
 
         novels_result.append(result)

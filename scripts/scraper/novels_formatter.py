@@ -27,6 +27,8 @@ from scraper.content_validator import (
 
 
 # ─── Gutenberg URL templates ──────────────────────────────────────────────────
+# Note: All content is downloaded directly from Gutenberg's CDN.
+# No external APIs (like Gutendex) are used for discovery or metadata.
 
 EPUB_URL = "https://www.gutenberg.org/cache/epub/{gid}/pg{gid}.epub"
 TEXT_URLS = [
@@ -34,62 +36,8 @@ TEXT_URLS = [
     "https://www.gutenberg.org/files/{gid}/{gid}-0.txt",
     "https://www.gutenberg.org/ebooks/{gid}.txt.utf-8",
 ]
-GUTENDEX_URL = "https://gutendex.com/books/{gid}"
 
 HEADERS = {"User-Agent": "Curio/1.0 (curio-reader@example.com)"}
-
-
-# ─── Metadata lookup ──────────────────────────────────────────────────────────
-
-
-def fetch_novel_metadata(gutenberg_id: int) -> Optional[dict]:
-    """Look up novel metadata via Gutendex API.
-
-    Returns dict with keys: title, author, description, language
-    Returns None if the book doesn't exist or isn't in English.
-    """
-    url = GUTENDEX_URL.format(gid=gutenberg_id)
-    try:
-        resp = requests.get(url, timeout=15, headers=HEADERS)
-        if resp.status_code != 200:
-            return None
-        data = resp.json()
-
-        # Extract title (clean up Gutendex formatting)
-        title = (data.get("title") or "").strip()
-        if not title:
-            return None
-
-        # Extract author
-        authors = data.get("authors", [])
-        author = ""
-        if authors:
-            author = authors[0].get("name", "").strip()
-
-        # Extract language — prefer English for now
-        languages = data.get("languages", [])
-        language = languages[0] if languages else "en"
-
-        # Extract subjects as a basic description
-        subjects = data.get("subjects", [])
-        description = ". ".join(subjects[:5]) if subjects else ""
-        if description and not description.endswith("."):
-            description += "."
-
-        # Download count as a quality signal
-        download_count = data.get("download_count", 0)
-
-        return {
-            "title": title[:500],
-            "author": author[:300],
-            "description": description[:1000],
-            "language": language,
-            "download_count": download_count,
-        }
-
-    except Exception as e:
-        print(f"    ⚠ Metadata lookup failed: {e}")
-        return None
 
 
 def download_file(url: str) -> Optional[bytes]:
@@ -280,6 +228,98 @@ def extract_chapters_from_epub(epub_bytes: bytes) -> Optional[list[dict]]:
         return None
 
 
+# ─── PDF-based Chapter Extraction (liteparse/pypdfium2) ────────────────────────
+# Provides PDF text extraction as an alternative parsing method.
+# Uses liteparse (PDFium under the hood) for spatial text extraction.
+# Note: Project Gutenberg does not host official PDFs for most books.
+# This function is for parsing PDFs from other sources (mirrors, uploads).
+
+PDF_CHAPTER_PATTERN = re.compile(
+    r"^(?:CHAPTER|Chapter|CHAP\.?|PART|Part|SECTION|Section|"
+    r"ACT|Act|SCENE|Scene|STORY|Story|LETTER|Letter|ADVENTURE|Adventure)"
+    r"\s+([IVXLCDM]+|\d+)[\.\s]",
+    re.MULTILINE | re.IGNORECASE,
+)
+
+
+def extract_chapters_from_pdf(pdf_data: bytes) -> Optional[list[dict]]:
+    """Parse a PDF using liteparse and split into chapters.
+
+    Uses liteparse (PDFium) for spatial text extraction, then detects
+    chapter boundaries using the same heading patterns as EPUB/text methods.
+
+    Handles PDF-specific quirks:
+    - Collapses irregular whitespace from PDF spatial layout
+    - Normalizes line breaks
+    - Strips page-level artifacts (page numbers, running headers)
+
+    Returns: list of {chapter_number, title, body} or None on failure.
+
+    Note: Project Gutenberg doesn't host official PDFs, so this is intended for
+    PDFs from alternative sources (mirrors, user uploads, etc.).
+
+    Example:
+        >>> import requests
+        >>> data = requests.get("https://example.org/book.pdf").content
+        >>> chapters = extract_chapters_from_pdf(data)
+    """
+    try:
+        from liteparse import LiteParse
+    except ImportError:
+        print(f"    ⚠ liteparse not installed — install with: pip install liteparse")
+        return None
+
+    try:
+        parser = LiteParse(ocr_enabled=False)
+        result = parser.parse(pdf_data)
+    except Exception as e:
+        print(f"    ⚠ PDF parsing error: {e}")
+        return None
+
+    if not result.text or len(result.text.strip()) < 500:
+        print(f"    ⚠ PDF text too short or empty")
+        return None
+
+    text = result.text
+
+    # ── Normalize PDF spatial artifacts ──
+    # Collapse runs of 3+ spaces (PDFium leaves irregular spacing)
+    text = re.sub(r"[ \t]{3,}", " ", text)
+    # Normalize runs of 3+ newlines to paragraph breaks
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    # Strip leading/trailing whitespace per line
+    lines = [line.strip() for line in text.split("\n")]
+    text = "\n".join(lines)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    text = text.strip()
+
+    # ── Find chapter boundaries ──
+    matches = list(PDF_CHAPTER_PATTERN.finditer(text))
+
+    if not matches:
+        print(f"    ⚠ No chapter headings found in PDF")
+        return None
+
+    # ── Split at chapter boundaries using regex match positions ──
+    chapters = []
+    for idx, m in enumerate(matches):
+        title = m.group(0).strip().rstrip(".")
+        body_start = m.end()  # content starts after the heading match
+        body_end = matches[idx + 1].start() if idx + 1 < len(matches) else len(text)
+
+        body = text[body_start:body_end].strip()
+        if len(body) < 100:
+            continue
+
+        chapters.append({
+            "chapter_number": idx + 1,
+            "title": title[:300],
+            "body": body,
+        })
+
+    return chapters if chapters else None
+
+
 # ─── Improved Text-based Fallback ─────────────────────────────────────────────
 
 GUTENBERG_START_MARKERS = [
@@ -451,51 +491,63 @@ def fetch_and_format_novel(
     author: str = "",
     description: str = "",
     language: str = "en",
-    auto_metadata: bool = True,
+    pdf_url: str = None,
 ) -> Optional[dict]:
     """Download a novel from Gutenberg and format it into chapters.
 
-    Primary method: EPUB download → chapter extraction
-    Fallback: Plain text download → improved chapter splitting + text reflow
+    Primary method: PDF download + liteparse (if pdf_url provided)
+    Fallback: EPUB download → chapter extraction
+    Fallback 2: Plain text download → improved chapter splitting + text reflow
 
-    If auto_metadata=True and title is empty, fetches metadata from Gutendex API.
+    No external APIs are used — all content comes from direct file downloads.
+    Metadata (title, author, description) must be provided explicitly.
+
+    Args:
+        gutenberg_id: Project Gutenberg ID
+        title: Novel title (required for result)
+        author: Author name
+        description: Optional description/blurb
+        language: Language code (default: "en")
+        pdf_url: Optional direct PDF URL to use instead of Gutenberg formats
 
     Returns a dict with keys matching what novels.db.insert_novel expects:
         title, author, description, source, source_url,
         language, total_chapters, likes, chapters
     Returns None if all methods fail.
     """
-    # ── Auto-discover metadata if needed ──
-    if auto_metadata and not title:
-        print(f"    🔍 Looking up metadata for Gutenberg #{gutenberg_id}...")
-        meta = fetch_novel_metadata(gutenberg_id)
-        if meta:
-            title = meta["title"]
-            author = meta["author"]
-            description = meta["description"]
-            language = meta["language"]
-            print(f"    🔍 Found: {title} by {author}")
-        else:
-            print(f"    ⚠ Could not look up metadata for #{gutenberg_id}")
-            if not title:
-                return None
+    if not title:
+        print(f"    ⚠ Title is required — cannot fetch novel #{gutenberg_id} without metadata")
+        return None
 
     chapters = None
 
-    # ── Method 1: EPUB ──
-    epub_url = EPUB_URL.format(gid=gutenberg_id)
-    print(f"    📗 Trying EPUB...")
-    epub_data = download_file(epub_url)
+    # ── Method 1: PDF (if a direct URL is provided) ──
+    if pdf_url:
+        print(f"    📕 Trying PDF: {pdf_url}...")
+        pdf_data = download_file(pdf_url)
+        if pdf_data and len(pdf_data) > 10000:
+            print(f"    📕 Parsing PDF with liteparse...")
+            chapters = extract_chapters_from_pdf(pdf_data)
+            if chapters:
+                print(f"    📕 PDF success: {len(chapters)} chapters")
+        else:
+            print(f"    ⚠ PDF not available or too small")
 
-    if epub_data:
-        print(f"    📗 Parsing EPUB...")
-        chapters = extract_chapters_from_epub(epub_data)
-        if chapters:
-            print(f"    📗 EPUB success: {len(chapters)} chapters")
-    else:
-        print(f"    ⚠ EPUB not available")
+    # ── Method 2: EPUB ──
+    if not chapters:
+        epub_url = EPUB_URL.format(gid=gutenberg_id)
+        print(f"    📗 Trying EPUB...")
+        epub_data = download_file(epub_url)
 
-    # ── Method 2: Plain text fallback ──
+        if epub_data:
+            print(f"    📗 Parsing EPUB...")
+            chapters = extract_chapters_from_epub(epub_data)
+            if chapters:
+                print(f"    📗 EPUB success: {len(chapters)} chapters")
+        else:
+            print(f"    ⚠ EPUB not available")
+
+    # ── Method 3: Plain text fallback ──
     if not chapters:
         print(f"    📄 Trying plain text...")
         raw_text = download_text(gutenberg_id)
