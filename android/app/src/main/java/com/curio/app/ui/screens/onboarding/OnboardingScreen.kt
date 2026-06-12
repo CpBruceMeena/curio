@@ -78,6 +78,7 @@ private fun l1Gradient(name: String): Pair<Color, Color> = when (name) {
 fun OnboardingScreen(
     onNavigateToFeed: () -> Unit,
     onNavigateToL2: (String) -> Unit,
+    onNavigateToNovels: () -> Unit = {},
     onBack: () -> Unit = {},
     viewModel: OnboardingViewModel = viewModel()
 ) {
@@ -206,14 +207,21 @@ fun OnboardingScreen(
                 Button(
                     onClick = {
                         viewModel.saveInterests()
-                        val subCats = viewModel.getSelectedL1Subcategories()
-                        if (subCats.size > 1) {
-                            onNavigateToL2(uiState.selectedInterest!!)
+                        val selectedL1 = uiState.selectedInterest!!
+                        // Novels skips L2 subcategory selection and goes directly to the novels feed
+                        if (selectedL1 == "Novels") {
+                            viewModel.saveFinalSelection(setOf("Classic Novels", "Fiction"))
+                            onNavigateToNovels()
                         } else {
-                            // Save all subcategories and go to Main
-                            val names = subCats.map { it.name }.toSet()
-                            viewModel.saveFinalSelection(names)
-                            onNavigateToFeed()
+                            val subCats = viewModel.getSelectedL1Subcategories()
+                            if (subCats.size > 1) {
+                                onNavigateToL2(selectedL1)
+                            } else {
+                                // Save all subcategories and go to Main
+                                val names = subCats.map { it.name }.toSet()
+                                viewModel.saveFinalSelection(names)
+                                onNavigateToFeed()
+                            }
                         }
                     },
                     enabled = uiState.canProceed,
