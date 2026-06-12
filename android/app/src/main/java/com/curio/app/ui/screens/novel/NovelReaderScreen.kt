@@ -48,10 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.curio.app.ui.components.LoadingStateScreen
-import com.curio.app.ui.theme.OnSurfaceVariant
 import com.curio.app.ui.theme.Primary
-import com.curio.app.ui.theme.Surface
-import com.curio.app.ui.theme.SurfaceContainer
 import com.curio.app.ui.theme.SecondaryContainer
 import com.curio.app.viewmodel.NovelReaderViewModel
 
@@ -76,9 +73,10 @@ fun NovelReaderScreen(
         return
     }
 
-    val bgColor = if (state.isDarkMode) Color(0xFF1A1A1A) else Color(0xFFFDF8F0)
-    val textColor = if (state.isDarkMode) Color(0xFFE0E0E0) else Color(0xFF2C2C2C)
-    val mutedColor = if (state.isDarkMode) Color(0xFF888888) else OnSurfaceVariant
+    // Dark mode = app theme colors; Light mode = warm sepia for comfortable reading
+    val bgColor = if (state.isDarkMode) MaterialTheme.colorScheme.surface else Color(0xFFFDF8F0)
+    val textColor = if (state.isDarkMode) MaterialTheme.colorScheme.onSurface else Color(0xFF2C2C2C)
+    val mutedColor = if (state.isDarkMode) MaterialTheme.colorScheme.onSurfaceVariant else Color(0xFF8C7E72)
 
     Column(
         modifier = Modifier
@@ -211,7 +209,7 @@ fun NovelReaderScreen(
                     modifier = Modifier
                         .clip(RoundedCornerShape(24.dp))
                         .background(if (state.isPlaying) SecondaryContainer.copy(alpha = 0.15f)
-                            else SurfaceContainer)
+                            else MaterialTheme.colorScheme.surfaceContainer)
                         .padding(horizontal = 16.dp, vertical = 6.dp)
                 ) {
                     Row(
