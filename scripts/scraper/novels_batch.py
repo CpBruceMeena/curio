@@ -20,7 +20,7 @@ import time
 from typing import Optional
 
 from scraper.novels_formatter import fetch_and_format_novel, fetch_novel_metadata
-from scraper.handlers.novels import CURATED_NOVELS, _find_curated
+from scraper.handlers.novels import _find_curated
 from scraper.db import DB, insert_novel
 
 
@@ -112,10 +112,6 @@ def parse_id_range(start: int, end: int) -> list[int]:
 
 def process_novel_with_retry(
     gutenberg_id: int,
-    title: str = "",
-    author: str = "",
-    description: str = "",
-    language: str = "en",
     max_retries: int = MAX_RETRIES,
 ) -> Optional[dict]:
     """Process a single novel with retries and exponential backoff.
@@ -125,11 +121,10 @@ def process_novel_with_retry(
     """
     # Check curated list first
     curated = _find_curated(gutenberg_id)
-    if curated:
-        title = curated["title"]
-        author = curated["author"]
-        description = curated.get("description", "")
-        language = curated.get("language", "en")
+    title = curated["title"] if curated else ""
+    author = curated["author"] if curated else ""
+    description = curated.get("description", "") if curated else ""
+    language = curated.get("language", "en") if curated else "en"
 
     for attempt in range(1 + max_retries):
         try:
