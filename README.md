@@ -29,6 +29,20 @@ Explore the full universe of categories. Browse by L1 sections (Facts, Poems, Sh
 ### 📑 Bookmarks
 Save your favorite insights with a single tap. Your bookmarks are stored locally on your device and persist across sessions. Access all your saved content from a dedicated bookmarks tab.
 
+### 📔 Journal
+A private, offline-first journal that lives entirely on your device. No data is ever sent to the server.
+
+- **Calendar view** with dots showing which days have entries, month navigation, and a jump-to-today button
+- **Writing streak** tracking and entry statistics (total entries, this month's count)
+- **4 entry types** with guided experiences:
+  - **Free Write** — open-ended journaling with title, content, and tags
+  - **Gratitude** — 3 prompted fields ("I'm grateful for...", "Today was special because...", "Someone who made a difference...")
+  - **Task List** — interactive checklists with add, complete, and delete
+  - **Reflection** — guided Q&A ("What went well?", "What could be better?", "What did I learn?")
+- **Mood tracking** with 6 emojis (😊😌😐😔😰🤩)
+- **Auto-save** drafts every 2 seconds so you never lose your thoughts
+- **Delete with confirmation** to prevent accidental loss
+
 ### 🃏 Shuffle
 Hit the shuffle button to get a fresh batch of content from across **all categories** — the perfect way to discover something unexpected.
 

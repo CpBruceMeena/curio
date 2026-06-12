@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.PauseCircle
@@ -25,6 +26,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.outlined.Bookmark
+import androidx.compose.material.icons.outlined.EditNote
 import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
@@ -51,6 +53,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.curio.app.CurioApp
 import com.curio.app.ui.components.FeedbackDialog
 import com.curio.app.ui.screens.discover.DiscoverScreen
+import com.curio.app.ui.screens.journal.JournalScreen
 import com.curio.app.ui.screens.profile.ProfileScreen
 import com.curio.app.ui.theme.curioColors
 import com.curio.app.viewmodel.FeedViewModel
@@ -63,6 +66,7 @@ private enum class BottomTab(
     Discover("Discover", Icons.Filled.Explore, Icons.Outlined.Explore),
     Feed("Feed", Icons.Filled.Home, Icons.Outlined.Home),
     Bookmarks("Bookmarks", Icons.Filled.Bookmark, Icons.Outlined.Bookmark),
+    Journal("Journal", Icons.Filled.EditNote, Icons.Outlined.EditNote),
     Profile("Profile", Icons.Filled.Person, Icons.Outlined.Person)
 }
 
@@ -82,6 +86,7 @@ fun MainTabScreen(
     val isFeed = selectedTab == BottomTab.Feed
     val isDiscover = selectedTab == BottomTab.Discover
     val isBookmarks = selectedTab == BottomTab.Bookmarks
+    val isJournal = selectedTab == BottomTab.Journal
     val isProfile = selectedTab == BottomTab.Profile
 
     Column(
@@ -158,6 +163,14 @@ fun MainTabScreen(
                         fontWeight = FontWeight.Bold
                     )
                 }
+                isJournal -> {
+                    Text(
+                        text = "Journal",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = cc.accentGradientStart,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
                 isProfile -> {
                     Text(
                         text = "Profile",
@@ -213,6 +226,9 @@ fun MainTabScreen(
                         }
                     )
                 }
+                selectedTab == BottomTab.Journal -> {
+                    JournalScreen()
+                }
                 selectedTab == BottomTab.Profile -> {
                     ProfileScreen(prefs = prefs)
                 }
@@ -237,6 +253,7 @@ fun MainTabScreen(
                         BottomTab.Discover -> cc.secondaryContainer
                         BottomTab.Feed -> cc.secondaryContainer
                         BottomTab.Bookmarks -> cc.bookmarkActive
+                        BottomTab.Journal -> cc.accentGradientStart
                         BottomTab.Profile -> cc.onSurface
                     }
                 } else {
