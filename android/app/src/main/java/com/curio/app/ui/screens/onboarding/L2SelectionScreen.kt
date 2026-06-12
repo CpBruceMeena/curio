@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.sp
 import com.curio.app.CurioApp
 import com.curio.app.data.model.L1Group
 import com.curio.app.data.repository.ContentRepository
+import com.curio.app.ui.components.LoadingStateScreen
 import com.curio.app.ui.theme.OnSecondaryContainer
 import com.curio.app.ui.theme.OnSurface
 import com.curio.app.ui.theme.OnSurfaceVariant
@@ -194,18 +195,7 @@ fun L2SelectionScreen(
         }
 
         if (isLoading) {
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "Loading topics...",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = OnSurfaceVariant
-                )
-            }
+            LoadingStateScreen(message = "Loading topics...")
         } else {
             Column(
                 modifier = Modifier

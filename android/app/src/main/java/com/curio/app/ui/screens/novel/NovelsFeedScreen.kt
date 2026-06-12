@@ -29,6 +29,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,11 +43,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.curio.app.data.model.Novel
 import com.curio.app.data.repository.NovelRepository
+import com.curio.app.ui.components.ErrorStateScreen
+import com.curio.app.ui.components.LoadingStateScreen
 import com.curio.app.ui.theme.OnSurface
 import com.curio.app.ui.theme.OnSurfaceVariant
 import com.curio.app.ui.theme.Surface
 import com.curio.app.ui.theme.SurfaceContainer
 import com.curio.app.ui.theme.Primary
+import kotlinx.coroutines.launch
 
 // Pairs of colors for gradient placeholder covers
 private val coverGradients = listOf(
@@ -71,6 +75,7 @@ fun NovelsFeedScreen(
     var novels by remember { mutableStateOf<List<Novel>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
         repository.getNovels(page = 1, limit = 50).fold(
@@ -109,28 +114,24 @@ fun NovelsFeedScreen(
 
         when {
             isLoading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Loading novels...",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = OnSurfaceVariant
-                    )
-                }
+                LoadingStateScreen(message = "Loading novels...")
             }
             error != null -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Couldn't load novels",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = OnSurfaceVariant
-                    )
-                }
+                ErrorStateScreen(
+                    message = "Couldn't load novels",
+                    subMessage = error,
+                    onRetry = {
+                        scope.launch {
+                            isLoading = true
+                            error = null
+                            repository.getNovels(page = 1, limit = 50).fold(
+                                onSuccess = { novels = it.novels; isLoading = false },
+                                onFailure = { error = it.message; isLoading = false }
+                            )
+                        }
+                    },
+                    onDismiss = onBack
+                )
             }
             else -> {
                 LazyVerticalGrid(

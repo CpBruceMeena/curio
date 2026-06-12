@@ -24,6 +24,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,8 +35,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.curio.app.data.model.Content
 import com.curio.app.data.repository.ContentRepository
-import com.curio.app.ui.theme.Error
+import com.curio.app.ui.components.ErrorStateScreen
+import com.curio.app.ui.components.LoadingStateScreen
 import com.curio.app.ui.theme.OnSurface
+import kotlinx.coroutines.launch
 import com.curio.app.ui.theme.OnSurfaceVariant
 import com.curio.app.ui.theme.Primary
 import com.curio.app.ui.theme.SecondaryContainer
@@ -60,6 +63,8 @@ fun ContentDetailScreen(
         )
     }
 
+    val scope = rememberCoroutineScope()
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -69,38 +74,24 @@ fun ContentDetailScreen(
     ) {
         when {
             isLoading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Loading...",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = OnSurfaceVariant
-                    )
-                }
+                LoadingStateScreen(message = "Loading content...")
             }
             error != null -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(text = "⚠️", fontSize = 64.sp)
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = "Couldn't load content",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = Error
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = error ?: "Unknown error",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = OnSurfaceVariant.copy(alpha = 0.6f)
-                        )
-                    }
-                }
+                ErrorStateScreen(
+                    message = "Couldn't load content",
+                    subMessage = error,
+                    onRetry = {
+                        scope.launch {
+                            isLoading = true
+                            error = null
+                            repository.getContent(contentId).fold(
+                                onSuccess = { content = it; isLoading = false },
+                                onFailure = { error = it.message; isLoading = false }
+                            )
+                        }
+                    },
+                    onDismiss = onBack
+                )
             }
             content != null -> {
                 val item = content!!

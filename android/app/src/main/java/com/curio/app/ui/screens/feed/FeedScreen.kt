@@ -69,6 +69,8 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import com.curio.app.ui.components.CommentSheet
+import com.curio.app.ui.components.ErrorStateScreen
+import com.curio.app.ui.components.LoadingStateScreen
 import com.curio.app.ui.components.getCategoryEmoji
 import com.curio.app.ui.theme.curioColors
 import com.curio.app.viewmodel.FeedViewModel
@@ -214,39 +216,15 @@ fun FeedScreen(
         val cc = curioColors()
         when {
             uiState.isLoading && uiState.content.isEmpty() -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Loading curious content...",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = cc.onSurfaceVariant
-                    )
-                }
+                LoadingStateScreen(message = "Loading curious content...")
             }
             uiState.error != null && uiState.content.isEmpty() -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(text = "⚠️", fontSize = 64.sp)
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = "Couldn't load feed",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = cc.error
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = uiState.error ?: "Network error",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = cc.onSurfaceVariant.copy(alpha = 0.6f),
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                }
+                ErrorStateScreen(
+                    message = "Couldn't load feed",
+                    subMessage = uiState.error,
+                    onRetry = { viewModel.loadMore() },
+                    onDismiss = null
+                )
             }
             uiState.content.isEmpty() -> {
                 Column(

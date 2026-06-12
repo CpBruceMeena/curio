@@ -47,6 +47,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.curio.app.ui.components.LoadingStateScreen
 import com.curio.app.ui.theme.OnSurfaceVariant
 import com.curio.app.ui.theme.Primary
 import com.curio.app.ui.theme.Surface
@@ -71,12 +72,7 @@ fun NovelReaderScreen(
     val state = viewModel.uiState
 
     if (state.isLoading) {
-        Box(
-            modifier = Modifier.fillMaxSize().background(Surface).statusBarsPadding(),
-            contentAlignment = Alignment.Center
-        ) {
-            Text("Loading chapter...", color = OnSurfaceVariant)
-        }
+        LoadingStateScreen(message = "Loading chapter...")
         return
     }
 

@@ -44,6 +44,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.curio.app.ui.components.LoadingStateScreen
 import com.curio.app.ui.theme.OnSurface
 import com.curio.app.ui.theme.OnSurfaceVariant
 import com.curio.app.ui.theme.Primary
@@ -73,10 +74,7 @@ fun NovelDetailScreen(
     val downloadProg by viewModel.downloadProgress.collectAsState()
 
     if (state.isLoading) {
-        Box(
-            modifier = Modifier.fillMaxSize().background(Surface).statusBarsPadding(),
-            contentAlignment = Alignment.Center
-        ) { Text("Loading...", color = OnSurfaceVariant) }
+        LoadingStateScreen(message = "Loading novel...")
         return
     }
 
