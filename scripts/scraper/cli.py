@@ -171,11 +171,42 @@ def main():
     parser.add_argument("--dry-run", action="store_true", help="Preview only, no DB writes")
     parser.add_argument("--archive", type=str, default=None, help="Archive category then refill")
     parser.add_argument("--novels", type=int, default=0, help="Scrape N novels from Gutenberg (replaces --limit)")
+    parser.add_argument("--novels-batch", type=int, default=0,
+                        help="Batch scrape N novels by popularity (auto-discovers IDs from Gutendex)")
+    parser.add_argument("--novels-verify", action="store_true",
+                        help="Verify formatting of all novels in the database")
+    parser.add_argument("--auto-fix", action="store_true",
+                        help="When used with --novels-verify, auto-fix poor-quality novels by re-downloading")
+    parser.add_argument("--ids", type=str, default=None,
+                        help="Comma-separated Gutenberg IDs (used with --novels-batch 0)")
+    parser.add_argument("--id", type=int, default=None, dest="single_id",
+                        help="Single novel ID to verify (used with --novels-verify)")
     args = parser.parse_args()
 
     db = DB(DATABASE_URL)
 
     try:
+        if args.novels_verify:
+            from scraper.novels_verify import verify_all_novels
+            verified = verify_all_novels(db, auto_fix=args.auto_fix, single_id=args.single_id)
+            print(f"\n✅ Verified {verified} novels.")
+            return
+
+        if args.novels_batch > 0 or (args.novels_batch == 0 and args.ids):
+            from scraper.novels_batch import scrape_top_novels, scrape_explicit_ids, parse_id_list
+            import time
+            start = time.time()
+
+            if args.ids:
+                ids = parse_id_list(args.ids)
+                inserted = scrape_explicit_ids(db, ids, dry_run=args.dry_run)
+            else:
+                inserted = scrape_top_novels(db, limit=args.novels_batch, dry_run=args.dry_run)
+
+            elapsed = time.time() - start
+            print(f"\n✅ Batch complete! {inserted} novels processed in {elapsed:.1f}s.")
+            return
+
         if args.novels > 0:
             scrape_novels(db, limit=args.novels, dry_run=args.dry_run)
             return

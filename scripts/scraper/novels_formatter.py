@@ -34,10 +34,62 @@ TEXT_URLS = [
     "https://www.gutenberg.org/files/{gid}/{gid}-0.txt",
     "https://www.gutenberg.org/ebooks/{gid}.txt.utf-8",
 ]
+GUTENDEX_URL = "https://gutendex.com/books/{gid}"
 
 HEADERS = {"User-Agent": "Curio/1.0 (curio-reader@example.com)"}
 
-# ─── EPUB Parsing ─────────────────────────────────────────────────────────────
+
+# ─── Metadata lookup ──────────────────────────────────────────────────────────
+
+
+def fetch_novel_metadata(gutenberg_id: int) -> Optional[dict]:
+    """Look up novel metadata via Gutendex API.
+
+    Returns dict with keys: title, author, description, language
+    Returns None if the book doesn't exist or isn't in English.
+    """
+    url = GUTENDEX_URL.format(gid=gutenberg_id)
+    try:
+        resp = requests.get(url, timeout=15, headers=HEADERS)
+        if resp.status_code != 200:
+            return None
+        data = resp.json()
+
+        # Extract title (clean up Gutendex formatting)
+        title = (data.get("title") or "").strip()
+        if not title:
+            return None
+
+        # Extract author
+        authors = data.get("authors", [])
+        author = ""
+        if authors:
+            author = authors[0].get("name", "").strip()
+
+        # Extract language — prefer English for now
+        languages = data.get("languages", [])
+        language = languages[0] if languages else "en"
+
+        # Extract subjects as a basic description
+        subjects = data.get("subjects", [])
+        description = ". ".join(subjects[:5]) if subjects else ""
+        if description and not description.endswith("."):
+            description += "."
+
+        # Download count as a quality signal
+        download_count = data.get("download_count", 0)
+
+        return {
+            "title": title[:500],
+            "author": author[:300],
+            "description": description[:1000],
+            "language": language,
+            "download_count": download_count,
+        }
+
+    except Exception as e:
+        print(f"    ⚠ Metadata lookup failed: {e}")
+        return None
 
 
 def download_file(url: str) -> Optional[bytes]:
@@ -395,21 +447,39 @@ def split_into_chapters_improved(text: str) -> list[dict]:
 
 def fetch_and_format_novel(
     gutenberg_id: int,
-    title: str,
-    author: str,
+    title: str = "",
+    author: str = "",
     description: str = "",
     language: str = "en",
+    auto_metadata: bool = True,
 ) -> Optional[dict]:
     """Download a novel from Gutenberg and format it into chapters.
 
     Primary method: EPUB download → chapter extraction
     Fallback: Plain text download → improved chapter splitting + text reflow
 
+    If auto_metadata=True and title is empty, fetches metadata from Gutendex API.
+
     Returns a dict with keys matching what novels.db.insert_novel expects:
         title, author, description, source, source_url,
         language, total_chapters, likes, chapters
     Returns None if all methods fail.
     """
+    # ── Auto-discover metadata if needed ──
+    if auto_metadata and not title:
+        print(f"    🔍 Looking up metadata for Gutenberg #{gutenberg_id}...")
+        meta = fetch_novel_metadata(gutenberg_id)
+        if meta:
+            title = meta["title"]
+            author = meta["author"]
+            description = meta["description"]
+            language = meta["language"]
+            print(f"    🔍 Found: {title} by {author}")
+        else:
+            print(f"    ⚠ Could not look up metadata for #{gutenberg_id}")
+            if not title:
+                return None
+
     chapters = None
 
     # ── Method 1: EPUB ──

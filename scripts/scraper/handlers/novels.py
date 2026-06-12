@@ -5,14 +5,22 @@ using EPUB files for reliable chapter structure and clean paragraph formatting.
 Primary method: EPUB (ebooklib + BeautifulSoup) via novels_formatter.py
 Fallback: Improved text-based chapter detection with paragraph reflow.
 
-Install:  pip install ebooklib beautifulsoup4
+Supports:
+  - Curated novels (well-known classics with hand-written descriptions)
+  - Auto-discovered novels (metadata fetched from Gutendex API by Gutenberg ID)
+
+Usage:
+    from scraper.handlers.novels import fetch_novels
+    novels = fetch_novels(limit=5)  # process curated list
+    novels = fetch_novels(limit=3, gutenberg_ids=[1342, 1661, 84])  # curated + auto
 """
 
-from scraper.novels_formatter import fetch_and_format_novel
+from scraper.novels_formatter import fetch_and_format_novel, fetch_novel_metadata
 
 
 # ─── Curated novel list ──────────────────────────────────────────────────────────
-# Well-known public domain works with stable Gutenberg IDs.
+# Well-known public domain works with stable Gutenberg IDs and hand-written descriptions.
+# These provide richer descriptions than auto-discovered metadata.
 
 CURATED_NOVELS = [
     {
@@ -119,48 +127,87 @@ CURATED_NOVELS = [
 ]
 
 
-# ─── Main entry point ─────────────────────────────────────────────────────────────
+# ─── Lookup helpers ──────────────────────────────────────────────────────────────
 
 
-def fetch_novels(limit: int, filter_category: str = None) -> list:
+def _find_curated(gutenberg_id: int) -> Optional[dict]:
+    """Find a Gutenberg ID in CURATED_NOVELS, or None."""
+    for entry in CURATED_NOVELS:
+        if entry["gutenberg_id"] == gutenberg_id:
+            return dict(entry)
+    return None
+
+
+# ─── Main entry points ───────────────────────────────────────────────────────────
+
+
+def fetch_novels(
+    limit: int,
+    filter_category: str = None,
+    gutenberg_ids: list[int] = None,
+) -> list:
     """Main entry point: download novels via EPUB format, extract formatted chapters.
 
-    Uses novels_formatter.fetch_and_format_novel() which:
-      1. Tries EPUB download (ebooklib + BeautifulSoup) for clean chapter structure
-      2. Falls back to plain text with improved chapter detection + paragraph reflow
-      3. Runs content validation pipeline (fix_line_separators, normalize_text_alignment, TTS)
-      4. Caps chapters at 15K chars, computes read times
+    Args:
+        limit: Max number of novels to process
+        filter_category: Only 'novels' or None for all
+        gutenberg_ids: Optional explicit list of Gutenberg IDs to process.
+                       Checks CURATED_NOVELS first; falls back to Gutendex auto-discovery
+                       for IDs not found in the curated list.
+                       If not provided, uses CURATED_NOVELS list up to limit.
 
     Returns a list of novel dicts with embedded chapters.
-    Each novel dict has:
-      - title, author, description, source, source_url, language, total_chapters, likes
-      - chapters: list of {chapter_number, title, body, read_time_secs}
     """
     if filter_category and filter_category.lower() != "novels":
         return []
 
     novels_result = []
 
-    for entry in CURATED_NOVELS[:limit]:
+    if gutenberg_ids:
+        # Mixed mode: curated metadata first, Gutendex fallback for unknowns
+        sources = []
+        for gid in gutenberg_ids[:limit]:
+            curated = _find_curated(gid)
+            if curated:
+                curated["auto"] = False
+                sources.append(curated)
+            else:
+                sources.append({"gutenberg_id": gid, "auto": True})
+    else:
+        # Curated mode only
+        sources = [dict(e) for e in CURATED_NOVELS[:limit]]
+        for s in sources:
+            s["auto"] = False
+
+    for entry in sources[:limit]:
         gid = entry["gutenberg_id"]
-        title_str = entry["title"]
-        author = entry["author"]
 
-        print(f"  📖 Fetching: {title_str} (Gutenberg #{gid})...")
-
-        result = fetch_and_format_novel(
-            gutenberg_id=gid,
-            title=title_str,
-            author=author,
-            description=entry.get("description", ""),
-            language=entry.get("language", "en"),
-        )
+        if entry.get("auto"):
+            # Auto-discover metadata via Gutendex
+            print(f"  🔍 Auto-discovering Gutenberg #{gid}...")
+            result = fetch_and_format_novel(
+                gutenberg_id=gid,
+                auto_metadata=True,
+            )
+        else:
+            # Use pre-populated curated metadata
+            title_str = entry["title"]
+            author = entry["author"]
+            print(f"  📖 Fetching: {title_str} (Gutenberg #{gid})...")
+            result = fetch_and_format_novel(
+                gutenberg_id=gid,
+                title=title_str,
+                author=author,
+                description=entry.get("description", ""),
+                language=entry.get("language", "en"),
+                auto_metadata=False,
+            )
 
         if result is None:
-            print(f"  ⚠ Failed to fetch {title_str}, skipping.")
+            print(f"  ⚠ Failed to fetch Gutenberg #{gid}, skipping.")
             continue
 
         novels_result.append(result)
-        print(f"  ✅ {title_str} — {result['total_chapters']} chapters ready")
+        print(f"  ✅ {result['title']} — {result['total_chapters']} chapters ready")
 
     return novels_result
