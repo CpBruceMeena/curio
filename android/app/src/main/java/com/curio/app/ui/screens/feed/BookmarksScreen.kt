@@ -80,16 +80,6 @@ fun BookmarksScreen(
                 modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                item {
-                    Text(
-                        text = "Saved Bookmarks",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = cc.onSurface,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
-                    )
-                }
-
                 items(uiState.bookmarkedContent) { content ->
                     BookmarkedItemCard(
                         title = content.title,

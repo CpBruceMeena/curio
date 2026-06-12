@@ -1,5 +1,12 @@
 package com.curio.app.ui.screens.onboarding
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -28,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -161,6 +169,7 @@ fun OnboardingScreen(
                                 gradient = l1Gradient(group.name),
                                 subCount = group.categories.size,
                                 isSelected = isSelected,
+                                isRefreshing = uiState.isRefreshing,
                                 onClick = { viewModel.toggleInterest(group.name) },
                                 modifier = Modifier.weight(1f)
                             )
@@ -225,8 +234,28 @@ fun OnboardingScreen(
 @Composable
 private fun OnboardingL1Card(
     name: String, emoji: String, gradient: Pair<Color, Color>,
-    subCount: Int, isSelected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier
+    subCount: Int, isSelected: Boolean, isRefreshing: Boolean,
+    onClick: () -> Unit, modifier: Modifier = Modifier
 ) {
+    // ── Shimmer animation ──
+    // Sweeping highlight effect while API refreshes data
+    val infiniteTransition = rememberInfiniteTransition(label = "shimmer")
+    val shimmerProgress by infiniteTransition.animateFloat(
+        initialValue = -1f, targetValue = 2f,
+        animationSpec = infiniteRepeatable(
+            tween(durationMillis = 1800, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "shimmerProgress"
+    )
+
+    // Fade out shimmer alpha smoothly when refresh completes
+    val shimmerAlpha by animateFloatAsState(
+        targetValue = if (isRefreshing) 1f else 0f,
+        animationSpec = tween(durationMillis = 600, easing = FastOutSlowInEasing),
+        label = "shimmerAlpha"
+    )
+
     Box(
         modifier = modifier
             .height(170.dp)
@@ -241,6 +270,26 @@ private fun OnboardingL1Card(
             .clickable { onClick() }
             .padding(20.dp)
     ) {
+        // ── Shimmer overlay ──
+        // Subtle diagonal light sweep across the card, only visible while refreshing
+        if (shimmerAlpha > 0.01f) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .background(
+                        brush = Brush.linearGradient(
+                            colors = listOf(
+                                Color.White.copy(alpha = 0f),
+                                Color.White.copy(alpha = 0.06f * shimmerAlpha),
+                                Color.White.copy(alpha = 0f),
+                            ),
+                            start = Offset(shimmerProgress * 500f, 0f),
+                            end = Offset(shimmerProgress * 500f + 300f, 500f)
+                        )
+                    )
+            )
+        }
+
         Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
             Row(
                 modifier = Modifier.fillMaxWidth(),

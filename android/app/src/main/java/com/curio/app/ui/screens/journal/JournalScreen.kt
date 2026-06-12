@@ -24,13 +24,16 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.curio.app.ui.theme.curioColors
 import com.curio.app.viewmodel.JournalViewModel
 
+
 /**
  * Internal navigation states for Journal:
  *   0 = entries list, 1 = editor (new/edit), 2 = detail view
+ *   3 = prompt selector (shown on first open when today has no entries)
  */
 private const val VIEW_LIST = 0
 private const val VIEW_EDITOR = 1
 private const val VIEW_DETAIL = 2
+private const val VIEW_PROMPTS = 3
 
 @Composable
 fun JournalScreen(
@@ -58,6 +61,14 @@ fun JournalScreen(
                     JournalEditorScreen(
                         viewModel = viewModel,
                         onBack = { viewModel.selectedTab = VIEW_LIST }
+                    )
+                }
+                VIEW_PROMPTS -> {
+                    JournalPromptSelector(
+                        viewModel = viewModel,
+                        onDismiss = {
+                            viewModel.startNewEntry()
+                        }
                     )
                 }
                 VIEW_DETAIL -> {

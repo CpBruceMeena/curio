@@ -48,8 +48,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.curio.app.data.local.PreferencesHelper
+import com.curio.app.ui.components.FeedbackDialog
 import com.curio.app.ui.theme.curioColors
 import com.curio.app.viewmodel.ProfileViewModel
+
 
 @Composable
 fun ProfileScreen(
@@ -58,6 +60,7 @@ fun ProfileScreen(
 ) {
     val uiState by profileViewModel.uiState.collectAsState()
     val cc = curioColors()
+    var showFeedbackDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -66,21 +69,7 @@ fun ProfileScreen(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp)
     ) {
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(
-            text = "Profile",
-            style = MaterialTheme.typography.headlineMedium,
-            color = cc.onSurface,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            text = "Help us personalize your experience",
-            style = MaterialTheme.typography.bodyMedium,
-            color = cc.onSurfaceVariant.copy(alpha = 0.7f)
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(40.dp))
 
         Text(
             text = "Personal Information",
@@ -193,6 +182,32 @@ fun ProfileScreen(
         }
 
         Spacer(modifier = Modifier.height(32.dp))
+
+        // ── Send Feedback ──
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(14.dp))
+                .background(cc.surfaceContainerHigh.copy(alpha = 0.15f))
+                .clickable { showFeedbackDialog = true }
+                .padding(horizontal = 16.dp, vertical = 14.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(text = "💬", fontSize = 18.sp)
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = "Send Feedback",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = cc.onSurface,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
 
         Divider(color = cc.onSurfaceVariant.copy(alpha = 0.15f))
         Spacer(modifier = Modifier.height(16.dp))
@@ -334,6 +349,12 @@ fun ProfileScreen(
         }
 
         Spacer(modifier = Modifier.height(32.dp))
+    }
+
+    if (showFeedbackDialog) {
+        FeedbackDialog(
+            onDismiss = { showFeedbackDialog = false }
+        )
     }
 }
 

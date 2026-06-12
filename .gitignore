@@ -70,6 +70,10 @@ code-review-graph-cache/
 crg-cache/
 *.crg
 
+# ── Design exports ──────────────────────────────────────
+stitch_curio_knowledge_discovery_app/
+
 # ── Misc ────────────────────────────────────────────────
+.cache/
 .cxx/
 *~
