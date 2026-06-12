@@ -43,6 +43,11 @@ func Migrate() {
 		log.Printf("Warning: schema v3 migration error (may already be applied): %v", err)
 	}
 
+	// Run the novels schema migration (adds novels, novel_chapters, user_novel_progress)
+	if err := runSQLFile("scripts/migrate_schema_novels.sql"); err != nil {
+		log.Printf("Warning: novels migration error (may already be applied): %v", err)
+	}
+
 	// Auto-migrate models
 	err := DB.AutoMigrate(
 		&models.Category{},
@@ -51,6 +56,9 @@ func Migrate() {
 		&models.Profile{},
 		&models.DeviceInfo{},
 		&models.ContentComment{},
+		&models.Novel{},
+		&models.NovelChapter{},
+		&models.UserNovelProgress{},
 	)
 	if err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)

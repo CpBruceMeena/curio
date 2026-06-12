@@ -14,4 +14,13 @@ sealed class Screen(val route: String) {
     data object Puzzle : Screen("puzzle/{categoryId}/{puzzleType}") {
         fun createRoute(categoryId: Long, puzzleType: String) = "puzzle/$categoryId/$puzzleType"
     }
+
+    // ── Novels ─────────────────────────────────────────────────
+    data object NovelsFeed : Screen("novels")
+    data object NovelDetail : Screen("novel/{novelId}") {
+        fun createRoute(novelId: Long) = "novel/$novelId"
+    }
+    data object NovelReader : Screen("novel/{novelId}/chapter/{chapterNum}") {
+        fun createRoute(novelId: Long, chapterNum: Int) = "novel/$novelId/chapter/$chapterNum"
+    }
 }

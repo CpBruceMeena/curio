@@ -103,6 +103,71 @@ def insert_content(db: DB, item: dict) -> bool:
         return False
 
 
+def insert_novel(db: DB, novel: dict) -> bool:
+    """Insert a novel and its chapters into the novels + novel_chapters tables.
+
+    Novel dict should have: title, author, description, source, source_url,
+    language, total_chapters, likes, and a 'chapters' list.
+    Each chapter: chapter_number, title, body, read_time_secs.
+    Returns True if inserted, False otherwise.
+    """
+    try:
+        # Insert novel
+        result = db.query_one(
+            "INSERT INTO novels (title, author, description, source, source_url, "
+            "total_chapters, language, likes) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s) "
+            "ON CONFLICT (title) DO NOTHING RETURNING id",
+            [
+                novel["title"][:500],
+                novel.get("author", "")[:300],
+                novel.get("description", ""),
+                novel.get("source", "gutenberg"),
+                novel.get("source_url", ""),
+                novel.get("total_chapters", 0),
+                novel.get("language", "en"),
+                novel.get("likes", 0),
+            ]
+        )
+        # If novel already exists (no RETURNING id), find it
+        if not result:
+            existing = db.query_one(
+                "SELECT id FROM novels WHERE title = %s",
+                [novel["title"][:500]]
+            )
+            if existing:
+                print(f"  ⚠ Novel '{novel['title']}' already exists (id={existing['id']}), skipping chapters.")
+                return False
+            return False
+
+        novel_id = result["id"]
+
+        # Insert chapters
+        chapters_inserted = 0
+        for chapter in novel.get("chapters", []):
+            try:
+                db.execute(
+                    "INSERT INTO novel_chapters (novel_id, chapter_number, title, body, read_time_secs) "
+                    "VALUES (%s, %s, %s, %s, %s) ON CONFLICT (novel_id, chapter_number) DO NOTHING",
+                    [
+                        novel_id,
+                        chapter["chapter_number"],
+                        chapter.get("title", "")[:500],
+                        chapter.get("body", ""),
+                        chapter.get("read_time_secs", 0),
+                    ]
+                )
+                chapters_inserted += 1
+            except Exception as e:
+                print(f"  ⚠ Failed to insert chapter {chapter.get('chapter_number')}: {e}")
+
+        print(f"  ✅ '{novel['title']}' inserted (id={novel_id}, {chapters_inserted} chapters)")
+        return True
+    except Exception as e:
+        print(f"  ⚠ Novel insert failed for '{novel.get('title', '?')}': {e}")
+        return False
+
+
 def archive_category(db: DB, cat_id: int) -> int:
     """Move all content from a category table to its archive table, then truncate.
 
