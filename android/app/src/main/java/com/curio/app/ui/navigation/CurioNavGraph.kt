@@ -8,6 +8,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.curio.app.ui.screens.content.ContentDetailScreen
 import com.curio.app.ui.screens.feed.MainTabScreen
+import com.curio.app.ui.screens.novel.NovelDetailScreen
+import com.curio.app.ui.screens.novel.NovelReaderScreen
+import com.curio.app.ui.screens.novel.NovelsFeedScreen
 import com.curio.app.ui.screens.onboarding.L2SelectionScreen
 import com.curio.app.ui.screens.onboarding.OnboardingScreen
 import com.curio.app.ui.screens.puzzle.PuzzleScreen
@@ -35,6 +38,9 @@ fun CurioNavGraph(navController: NavHostController) {
                 onNavigateToL2 = { l1Name ->
                     navController.navigate(Screen.L2Selection.createRoute(l1Name))
                 },
+                onNavigateToNovels = {
+                    navController.navigate(Screen.NovelsFeed.route)
+                },
                 onBack = { navController.popBackStack() }
             )
         }
@@ -60,6 +66,9 @@ fun CurioNavGraph(navController: NavHostController) {
                 },
                 onContentClick = { contentId ->
                     navController.navigate(Screen.ContentDetail.createRoute(contentId))
+                },
+                onNovelClick = { novelId ->
+                    navController.navigate(Screen.NovelDetail.createRoute(novelId))
                 }
             )
         }
@@ -86,6 +95,46 @@ fun CurioNavGraph(navController: NavHostController) {
                 puzzleType = puzzleType,
                 onBack = { navController.popBackStack() },
                 onAllDone = { navController.popBackStack() }
+            )
+        }
+
+        // ── Novels ────────────────────────────────────────────
+        composable(Screen.NovelsFeed.route) {
+            NovelsFeedScreen(
+                onNovelClick = { novelId ->
+                    navController.navigate(Screen.NovelDetail.createRoute(novelId))
+                },
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = Screen.NovelDetail.route,
+            arguments = listOf(navArgument("novelId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val novelId = backStackEntry.arguments?.getLong("novelId") ?: 0L
+            NovelDetailScreen(
+                novelId = novelId,
+                onChapterClick = { chapterNum ->
+                    navController.navigate(Screen.NovelReader.createRoute(novelId, chapterNum))
+                },
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = Screen.NovelReader.route,
+            arguments = listOf(
+                navArgument("novelId") { type = NavType.LongType },
+                navArgument("chapterNum") { type = NavType.IntType }
+            )
+        ) { backStackEntry ->
+            val novelId = backStackEntry.arguments?.getLong("novelId") ?: 0L
+            val chapterNum = backStackEntry.arguments?.getInt("chapterNum") ?: 1
+            NovelReaderScreen(
+                novelId = novelId,
+                initialChapter = chapterNum,
+                onBack = { navController.popBackStack() }
             )
         }
     }

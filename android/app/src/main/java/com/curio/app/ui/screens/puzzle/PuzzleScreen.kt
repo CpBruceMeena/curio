@@ -54,6 +54,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.curio.app.data.model.Puzzle
 import com.curio.app.data.repository.ContentRepository
+import com.curio.app.ui.components.ErrorStateScreen
+import com.curio.app.ui.components.LoadingStateScreen
 import com.curio.app.ui.theme.Error
 import com.curio.app.ui.theme.OnSurface
 import com.curio.app.ui.theme.OnSurfaceVariant
@@ -96,36 +98,17 @@ fun PuzzleScreen(
     }
 
     if (isLoading) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Surface)
-                .statusBarsPadding(),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(text = "Loading puzzles...", style = MaterialTheme.typography.bodyLarge, color = OnSurfaceVariant)
-        }
+        LoadingStateScreen(message = "Loading puzzles...")
         return
     }
 
     if (error != null) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Surface)
-                .statusBarsPadding(),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(text = "\u26A0\uFE0F", fontSize = 48.sp)
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(text = "Couldn't load puzzles", style = MaterialTheme.typography.bodyLarge, color = Error)
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedButton(onClick = { onBack() }) {
-                    Text("Go Back")
-                }
-            }
-        }
+        ErrorStateScreen(
+            message = "Couldn't load puzzles",
+            subMessage = error,
+            onRetry = null,
+            onDismiss = onBack
+        )
         return
     }
 

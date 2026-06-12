@@ -47,7 +47,7 @@ type Category struct {
 	Icon           string           `json:"icon"`
 	ColorHex       string           `json:"color_hex"`
 	Priority       int              `json:"priority" gorm:"default:0"`
-	ContentTableID int              `json:"content_table_id" gorm:"default:0"`
+	ContentTableID int              `json:"content_table_id" gorm:"uniqueIndex;default:0"`
 	L1Category     string           `json:"l1_category" gorm:"default:''"`
 	Meta           json.RawMessage  `json:"meta" gorm:"type:jsonb;default:'{}'"`
 }

@@ -26,6 +26,7 @@ from .api_sources import (
 )
 from .rss_sources import fetch_sciencedaily, fetch_smithsonian
 from .html_sources import fetch_natgeo
+from .novels import fetch_novels
 from scraper.content_validator import validate_batch
 
 # Registry: maps handler function names (from sources.yaml) → callable
@@ -43,6 +44,7 @@ SOURCE_REGISTRY = {
     "fetch_sciencedaily": fetch_sciencedaily,
     "fetch_smithsonian": fetch_smithsonian,
     "fetch_natgeo": fetch_natgeo,
+    "fetch_novels": fetch_novels,
 }
 
 __all__ = list(SOURCE_REGISTRY.keys()) + ["SOURCE_REGISTRY"]

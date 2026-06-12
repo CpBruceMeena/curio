@@ -54,7 +54,7 @@ func GetL1Categories(c *gin.Context) {
 
 	// Group categories by l1_category
 	groupMap := make(map[string][]models.Category)
-	groupOrder := []string{"Facts", "Poems", "Short Stories", "Puzzles"}
+	groupOrder := []string{"Facts", "Poems", "Short Stories", "Puzzles", "Novels"}
 	for _, cat := range categories {
 		l1 := cat.L1Category
 		if l1 == "" {
@@ -69,6 +69,7 @@ func GetL1Categories(c *gin.Context) {
 		"Poems":         {"auto_stories", "#f472b6"},
 		"Short Stories": {"article", "#06b6d4"},
 		"Puzzles":       {"extension", "#f97316"},
+		"Novels":        {"auto_stories", "#8b5cf6"},
 	}
 
 	var groups []L1Group

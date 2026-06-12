@@ -69,6 +69,10 @@ CATEGORIES = [
     {"name": "Classic Fiction", "icon": "menu_book", "color_hex": "#06b6d4", "priority": 29, "table_id": 41, "l1_category": "Short Stories"},
     {"name": "Micro Stories", "icon": "auto_stories", "color_hex": "#34d399", "priority": 30, "table_id": 42, "l1_category": "Short Stories"},
     {"name": "Serialized Stories", "icon": "library_books", "color_hex": "#6366f1", "priority": 31, "table_id": 43, "l1_category": "Short Stories"},
+
+    # Novels subcategories
+    {"name": "Classic Novels", "icon": "menu_book", "color_hex": "#8b5cf6", "priority": 34, "table_id": 46, "l1_category": "Novels"},
+    {"name": "Fiction", "icon": "auto_stories", "color_hex": "#a78bfa", "priority": 35, "table_id": 47, "l1_category": "Novels"},
 ]
 
 CONTENT = [
@@ -173,11 +177,11 @@ CONTENT = [
 CREATE_CATEGORIES_TABLE = """
 CREATE TABLE IF NOT EXISTS categories (
     id SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL UNIQUE,
+    name VARCHAR(255) NOT NULL CONSTRAINT uni_categories_name UNIQUE,
     icon VARCHAR(100) DEFAULT '',
     color_hex VARCHAR(7) DEFAULT '',
     priority INTEGER DEFAULT 0,
-    content_table_id INTEGER UNIQUE DEFAULT 0,
+    content_table_id INTEGER DEFAULT 0 CONSTRAINT uni_categories_content_table_id UNIQUE,
     l1_category VARCHAR(100) DEFAULT 'Facts'
 );
 """

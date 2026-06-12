@@ -72,7 +72,8 @@ def scrape(db: DB, target: int, is_batch: bool, filter_category: str = None, dry
                 error_msg = f"{type(e).__name__}: {e}"
                 print(f"  ⚠ {src['name']} failed: {error_msg}")
                 if not dry_run:
-                    log_source_result(db, src["name"], 0, error_msg)                random.shuffle(all_items)
+                    log_source_result(db, src["name"], 0, error_msg)
+                random.shuffle(all_items)
 
         if not all_items:
             print("⚠ No new candidates from any source.")
@@ -132,6 +133,35 @@ def scrape(db: DB, target: int, is_batch: bool, filter_category: str = None, dry
     return total_inserted
 
 
+def scrape_novels(db: DB, limit: int = 10, dry_run: bool = False):
+    """Scrape novels from Project Gutenberg and insert into novels + novel_chapters."""
+    from scraper.handlers.novels import fetch_novels
+    from scraper.db import insert_novel
+
+    print(f"📚 Novel Scraper")
+    print(f"   Target: {limit} novels")
+    if dry_run:
+        print("   Mode: DRY RUN")
+    print()
+
+    novels = fetch_novels(limit, filter_category="novels")
+    if not novels:
+        print("⚠ No novels fetched.")
+        return 0
+
+    inserted = 0
+    for novel in novels:
+        if dry_run:
+            print(f"  ✓ [DRY] '{novel['title']}' — {novel['total_chapters']} chapters")
+            inserted += 1
+        else:
+            if insert_novel(db, novel):
+                inserted += 1
+
+    print(f"\n✅ Done! {inserted} novels inserted.")
+    return inserted
+
+
 def main():
     """CLI entry point — parse args, dispatch to scrape or archive."""
     parser = argparse.ArgumentParser(description="Curio multi-source content scraper")
@@ -140,11 +170,16 @@ def main():
     parser.add_argument("--category", type=str, default=None, help="Only scrape one category")
     parser.add_argument("--dry-run", action="store_true", help="Preview only, no DB writes")
     parser.add_argument("--archive", type=str, default=None, help="Archive category then refill")
+    parser.add_argument("--novels", type=int, default=0, help="Scrape N novels from Gutenberg (replaces --limit)")
     args = parser.parse_args()
 
     db = DB(DATABASE_URL)
 
     try:
+        if args.novels > 0:
+            scrape_novels(db, limit=args.novels, dry_run=args.dry_run)
+            return
+
         if args.archive:
             cat_name = args.archive
             cat_id = get_category_id(db, cat_name)

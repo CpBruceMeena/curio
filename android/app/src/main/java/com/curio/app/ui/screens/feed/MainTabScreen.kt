@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.Explore
@@ -25,6 +26,7 @@ import androidx.compose.material.icons.filled.PauseCircle
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Shuffle
+import androidx.compose.material.icons.outlined.AutoStories
 import androidx.compose.material.icons.outlined.Bookmark
 import androidx.compose.material.icons.outlined.EditNote
 import androidx.compose.material.icons.outlined.Explore
@@ -55,6 +57,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.curio.app.CurioApp
 import com.curio.app.ui.screens.discover.DiscoverScreen
 import com.curio.app.ui.screens.journal.JournalScreen
+import com.curio.app.ui.screens.novel.NovelsFeedScreen
 import com.curio.app.ui.screens.profile.ProfileScreen
 import com.curio.app.ui.theme.curioColors
 import com.curio.app.viewmodel.FeedViewModel
@@ -64,6 +67,7 @@ private enum class BottomTab(
     val selectedIcon: ImageVector,
     val unselectedIcon: ImageVector
 ) {
+    Novels("Novels", Icons.Filled.AutoStories, Icons.Outlined.AutoStories),
     Discover("Discover", Icons.Filled.Explore, Icons.Outlined.Explore),
     Feed("Feed", Icons.Filled.Home, Icons.Outlined.Home),
     Bookmarks("Bookmarks", Icons.Filled.Bookmark, Icons.Outlined.Bookmark),
@@ -75,7 +79,8 @@ private enum class BottomTab(
 fun MainTabScreen(
     feedViewModel: FeedViewModel = viewModel(),
     onPuzzleNavigate: (categoryId: Long, puzzleType: String) -> Unit = { _, _ -> },
-    onContentClick: (Long) -> Unit = {}
+    onContentClick: (Long) -> Unit = {},
+    onNovelClick: (Long) -> Unit = {}
 ) {
     var currentCategory by remember { mutableStateOf("") }
     var selectedTab by remember { mutableStateOf(BottomTab.Feed) }
@@ -84,6 +89,7 @@ fun MainTabScreen(
 
     val prefs = remember { CurioApp.instance.prefs }
 
+    val isNovels = selectedTab == BottomTab.Novels
     val isFeed = selectedTab == BottomTab.Feed
     val isDiscover = selectedTab == BottomTab.Discover
     val isBookmarks = selectedTab == BottomTab.Bookmarks
@@ -176,6 +182,14 @@ fun MainTabScreen(
                         fontWeight = FontWeight.Bold
                     )
                 }
+                isNovels -> {
+                    Text(
+                        text = "Novels",
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = cc.onSurface,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
                 isProfile -> {
                     Text(
                         text = "Profile",
@@ -233,6 +247,12 @@ fun MainTabScreen(
                 }
                 selectedTab == BottomTab.Journal -> {
                     JournalScreen()
+                }
+                selectedTab == BottomTab.Novels -> {
+                    NovelsFeedScreen(
+                        onNovelClick = onNovelClick,
+                        onBack = { selectedTab = BottomTab.Feed }
+                    )
                 }
                 selectedTab == BottomTab.Profile -> {
                     ProfileScreen(prefs = prefs)

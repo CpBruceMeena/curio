@@ -26,6 +26,14 @@ func Setup() *gin.Engine {
 		api.GET("/content/:id", handlers.GetContent)
 		api.POST("/content/:id/like", handlers.LikeContent)
 
+		// Novels
+		api.GET("/novels", handlers.GetNovels)
+		api.GET("/novels/:id", handlers.GetNovel)
+		api.GET("/novels/:id/chapters", handlers.GetNovelChapters)
+		api.GET("/novels/:id/chapters/:chapter", handlers.GetNovelChapter)
+		api.POST("/novels/:id/progress", handlers.UpdateNovelProgress)
+		api.POST("/novels/:id/like", handlers.LikeNovel)
+
 		// Comments (stored as JSON array per content_id)
 		api.GET("/content/:id/comments", handlers.GetComments)
 		api.POST("/content/:id/comments", handlers.AddComment)
