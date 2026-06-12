@@ -49,6 +49,62 @@ POETIC_CATEGORIES = {"Poetry", "Shayari", "Hindi Poems", "English Poems",
                      "Classics", "Modern"}
 
 
+# ─── Text Alignment / Formatting ────────────────────────────────────────────────
+
+def normalize_text_alignment(text: str, category: str = "") -> str:
+    """Normalise text so it renders cleanly in the app.
+
+    Fixes the following alignment issues at the scraper level:
+      1. Leading whitespace on each line (causes ragged left edges)
+      2. Trailing whitespace on each line
+      3. Inconsistent paragraph spacing (ensures double \n\n between paragraphs)
+      4. Single newlines within prose paragraphs (rejoin as spaces)
+      5. Lines that are just whitespace (collapse to empty)
+    """
+    lines = text.split("\n")
+    cleaned_lines = []
+
+    is_poetic = any(cat.lower() in category.lower() for cat in POETIC_CATEGORIES)
+
+    for line in lines:
+        # Strip leading/trailing whitespace from each line
+        stripped = line.strip()
+
+        if is_poetic:
+            # Poetry: keep every non-empty line as-is (just stripped)
+            # Empty lines separate stanzas
+            cleaned_lines.append(stripped)
+        else:
+            # Prose: collapse intra-paragraph single newlines into spaces.
+            # A line is a paragraph break if:
+            #   - It's empty (was a blank line)
+            #   - It ends with sentence-ending punctuation
+            #   - The original had double \n\n
+            if stripped:
+                # Prose line — if previous line was also prose (not empty),
+                # this was a single-\n within a paragraph, so join with space
+                if cleaned_lines and cleaned_lines[-1]:
+                    # Check if previous line ended with punctuation (paragraph end)
+                    prev = cleaned_lines[-1]
+                    if not re.search(r"[.?!:;]$", prev) and len(prev) > 20:
+                        # This is a mid-paragraph line break — rejoin with space
+                        # But only if the line doesn't start with a capital letter
+                        # (which might indicate a new sentence)
+                        if not stripped[0].isupper() or len(stripped) < 30:
+                            cleaned_lines[-1] = prev + " " + stripped
+                            continue
+                cleaned_lines.append(stripped)
+            else:
+                # Empty line = paragraph break
+                cleaned_lines.append("")
+
+    # Normalise paragraph spacing: ensure exactly one blank line between paragraphs
+    result = "\n".join(cleaned_lines)
+    result = re.sub(r"\n{3,}", "\n\n", result)
+
+    return result.strip()
+
+
 # ─── Unicode / Encoding ─────────────────────────────────────────────────────────
 
 def normalize_unicode(text: str) -> str:
@@ -184,19 +240,23 @@ def validate_and_normalize(item: dict) -> Optional[dict]:
     if not passes_content_quality(title, body, source):
         return None
 
-    # ── Step 2: Fix line separators (✓ before TTS normalization) ──
+    # ── Step 2: Fix line separators (before TTS normalization) ──
     body = fix_line_separators(body, category)
     title = fix_line_separators(title, category)
 
-    # ── Step 3: TTS normalisation (pass category so poetry skips period-adding) ──
+    # ── Step 3: Normalise text alignment (leading/trailing space, paragraph spacing) ──
+    body = normalize_text_alignment(body, category)
+    title = normalize_text_alignment(title, category)
+
+    # ── Step 4: TTS normalisation (pass category so poetry skips period-adding) ──
     body = tts_normalize_text(body, category)
     title = tts_normalize_text(title, category)
 
-    # ── Step 4: Truncate ──
+    # ── Step 5: Truncate ──
     title = title[:MAX_TITLE_LENGTH]
     body = body[:MAX_BODY_LENGTH]
 
-    # ── Step 5: Recompute read time from cleaned body ──
+    # ── Step 6: Recompute read time from cleaned body ──
     body_words = len(body.split())
     read_time = max(MIN_READ_TIME, min(MAX_READ_TIME, round(body_words / 3)))
     item["read_time_secs"] = read_time

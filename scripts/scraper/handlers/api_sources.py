@@ -141,7 +141,9 @@ def fetch_poems(limit: int, filter_category: str = None) -> list:
                     break
                 title = (p.get("title") or "").strip()
                 lines_list = p.get("lines") or []
-                lines_text = " ".join(l for l in lines_list if l.strip())
+                # Join poem lines with \n to preserve verse structure
+                # (space-join would flatten each stanza into one wall of text)
+                lines_text = "\n".join(l for l in lines_list if l.strip())
                 if not title or not lines_text or len(lines_text) < 30:
                     continue
                 items.append({
