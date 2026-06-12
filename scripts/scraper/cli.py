@@ -10,6 +10,7 @@ import sys
 import time
 
 from scraper.config import CATEGORIES, DATABASE_URL
+from scraper.content_validator import validate_batch
 from scraper.db import DB, get_category_id, insert_content, archive_category
 from scraper.sources import get_enabled_sources, sync_source_configs, log_source_result
 from scraper.handlers import SOURCE_REGISTRY
@@ -71,12 +72,19 @@ def scrape(db: DB, target: int, is_batch: bool, filter_category: str = None, dry
                 error_msg = f"{type(e).__name__}: {e}"
                 print(f"  ⚠ {src['name']} failed: {error_msg}")
                 if not dry_run:
-                    log_source_result(db, src["name"], 0, error_msg)
-
-        random.shuffle(all_items)
+                    log_source_result(db, src["name"], 0, error_msg)                random.shuffle(all_items)
 
         if not all_items:
             print("⚠ No new candidates from any source.")
+            if not is_batch:
+                break
+            time.sleep(2)
+            continue
+
+        # Validate & normalise all items before insertion
+        all_items = validate_batch(all_items)
+        if not all_items:
+            print("⚠ All candidates failed validation.")
             if not is_batch:
                 break
             time.sleep(2)

@@ -26,6 +26,7 @@ from .api_sources import (
 )
 from .rss_sources import fetch_sciencedaily, fetch_smithsonian
 from .html_sources import fetch_natgeo
+from scraper.content_validator import validate_batch
 
 # Registry: maps handler function names (from sources.yaml) → callable
 SOURCE_REGISTRY = {

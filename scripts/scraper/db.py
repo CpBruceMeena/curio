@@ -5,6 +5,8 @@ Database module — PostgreSQL wrapper for content insertion and archiving.
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
+from scraper.content_validator import validate_and_normalize
+
 
 class DB:
     """Simple PostgreSQL wrapper with autocommit and dict cursors."""
@@ -68,9 +70,16 @@ def get_content_table_id(db: DB, cat_id: int) -> int:
 def insert_content(db: DB, item: dict) -> bool:
     """Insert one content item into its per-category table (contents_X).
 
+    Runs validate_and_normalize before writing.
     Uses content_table_id for stable table naming.
     Returns True if inserted, False if duplicate or category not found.
     """
+    # Validate and normalise before inserting
+    validated = validate_and_normalize(item)
+    if validated is None:
+        return False
+    item = validated
+
     cat_id = get_category_id(db, item["category"])
     if not cat_id:
         return False
