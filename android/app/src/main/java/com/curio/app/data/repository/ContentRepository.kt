@@ -15,9 +15,17 @@ import com.curio.app.data.model.TtsRequest
 import com.curio.app.data.model.ValidateRequest
 import com.curio.app.data.model.ValidateResponse
 
-class ContentRepository {
+class ContentRepository(
+    private val context: android.content.Context? = null
+) {
 
     private val api = RetrofitClient.api
+
+    private val bookmarkDao: com.curio.app.data.local.BookmarkedContentDao? by lazy {
+        context?.let {
+            com.curio.app.data.local.JournalDatabase.getInstance(it).bookmarkedContentDao()
+        }
+    }
 
     suspend fun getFeed(
         page: Int = 1,
@@ -191,5 +199,59 @@ class ContentRepository {
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    // ── Local bookmark storage (offline-first) ─────────────────
+
+    /** Save a Content item as a local bookmark (full content cached offline). */
+    suspend fun saveBookmarkLocally(content: com.curio.app.data.model.Content) {
+        bookmarkDao?.insert(
+            com.curio.app.data.local.BookmarkedContent(
+                id = content.id,
+                categoryId = content.categoryId,
+                categoryName = content.categoryName,
+                title = content.title,
+                body = content.body,
+                description = content.description,
+                poet = content.poet,
+                source = content.source,
+                sourceUrl = content.sourceUrl,
+                readTimeSecs = content.readTimeSecs,
+                tags = content.tags,
+                likes = content.likes,
+                createdAt = content.createdAt
+            )
+        )
+    }
+
+    /** Remove a bookmarked content item from local storage. */
+    suspend fun removeBookmarkLocally(contentId: Long) {
+        bookmarkDao?.deleteById(contentId)
+    }
+
+    /** Load all locally-stored bookmarked content items (fully offline). */
+    suspend fun getBookmarkedContentLocally(): List<com.curio.app.data.model.Content> {
+        return bookmarkDao?.getAll()?.map { entity ->
+            com.curio.app.data.model.Content(
+                id = entity.id,
+                categoryId = entity.categoryId,
+                categoryName = entity.categoryName,
+                title = entity.title,
+                body = entity.body,
+                description = entity.description,
+                poet = entity.poet,
+                source = entity.source,
+                sourceUrl = entity.sourceUrl,
+                readTimeSecs = entity.readTimeSecs,
+                tags = entity.tags,
+                likes = entity.likes,
+                createdAt = entity.createdAt
+            )
+        } ?: emptyList()
+    }
+
+    /** Check if a content ID exists in local bookmarks. */
+    suspend fun isBookmarkedLocally(contentId: Long): Boolean {
+        return bookmarkDao?.getById(contentId) != null
     }
 }

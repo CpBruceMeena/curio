@@ -23,11 +23,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
-
 import androidx.compose.material.icons.filled.Today
+import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -112,112 +113,208 @@ fun JournalListScreen(
                 modifier = Modifier.weight(1f),
                 cc = cc
             )
-        }
-
-        // ── Date header + calendar toggle ──
+        }        // ── Bookmark filter toggle ──
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 4.dp),
+                .padding(horizontal = 20.dp, vertical = 2.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            val dateFormat = remember { SimpleDateFormat("EEEE, MMMM d", Locale.getDefault()) }
-            Text(
-                text = dateFormat.format(Date(state.selectedDate)),
-                style = MaterialTheme.typography.titleMedium,
-                color = cc.onSurface,
-                fontWeight = FontWeight.Bold
-            )
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (state.entries.isNotEmpty()) {
+            if (viewModel.showBookmarkedOnly && state.bookmarkedEntries.isNotEmpty()) {
+                Text(
+                    text = "${state.bookmarkedEntries.size} ${if (state.bookmarkedEntries.size == 1) "bookmarked entry" else "bookmarked entries"}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = cc.accentGradientStart.copy(alpha = 0.7f),
+                    fontWeight = FontWeight.Medium
+                )
+            } else {
+                Spacer(modifier = Modifier.weight(1f))
+            }
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(
+                        if (viewModel.showBookmarkedOnly) cc.accentGradientStart.copy(alpha = 0.15f)
+                        else Color.Transparent
+                    )
+                    .clickable { viewModel.toggleBookmarkedFilter() }
+                    .padding(horizontal = 10.dp, vertical = 4.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = if (viewModel.showBookmarkedOnly) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
+                        contentDescription = "Bookmark filter",
+                        tint = if (viewModel.showBookmarkedOnly) cc.accentGradientStart
+                            else cc.onSurfaceVariant.copy(alpha = 0.5f),
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "${state.entries.size} ${if (state.entries.size == 1) "entry" else "entries"}",
+                        text = "Bookmarked",
                         style = MaterialTheme.typography.labelSmall,
-                        color = cc.onSurfaceVariant.copy(alpha = 0.6f),
-                        modifier = Modifier.padding(end = 8.dp)
+                        color = if (viewModel.showBookmarkedOnly) cc.accentGradientStart
+                            else cc.onSurfaceVariant.copy(alpha = 0.5f),
+                        fontWeight = if (viewModel.showBookmarkedOnly) FontWeight.SemiBold else FontWeight.Normal
                     )
                 }
-                // Calendar toggle button
-                Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(
-                            if (viewModel.showCalendar) cc.accentGradientStart.copy(alpha = 0.15f)
-                            else cc.surfaceContainerHigh.copy(alpha = 0.3f)
+            }
+        }
+
+        // ── Date header (hidden when bookmark filter active) ──
+        if (!viewModel.showBookmarkedOnly) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val dateFormat = remember { SimpleDateFormat("EEEE, MMMM d", Locale.getDefault()) }
+                Text(
+                    text = dateFormat.format(Date(state.selectedDate)),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = cc.onSurface,
+                    fontWeight = FontWeight.Bold
+                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (state.entries.isNotEmpty()) {
+                        Text(
+                            text = "${state.entries.size} ${if (state.entries.size == 1) "entry" else "entries"}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = cc.onSurfaceVariant.copy(alpha = 0.6f),
+                            modifier = Modifier.padding(end = 8.dp)
                         )
-                        .clickable { viewModel.toggleCalendar() },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.CalendarMonth,
-                        contentDescription = if (viewModel.showCalendar) "Hide calendar" else "Show calendar",
-                        tint = if (viewModel.showCalendar) cc.accentGradientStart
-                            else cc.onSurfaceVariant.copy(alpha = 0.6f),
-                        modifier = Modifier.size(18.dp)
-                    )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(
+                                if (viewModel.showCalendar) cc.accentGradientStart.copy(alpha = 0.15f)
+                                else cc.surfaceContainerHigh.copy(alpha = 0.3f)
+                            )
+                            .clickable { viewModel.toggleCalendar() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.CalendarMonth,
+                            contentDescription = if (viewModel.showCalendar) "Hide calendar" else "Show calendar",
+                            tint = if (viewModel.showCalendar) cc.accentGradientStart
+                                else cc.onSurfaceVariant.copy(alpha = 0.6f),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                 }
             }
         }
 
         Spacer(modifier = Modifier.height(4.dp))
 
-        // ── Collapsible Calendar ──
-        AnimatedVisibility(
-            visible = viewModel.showCalendar,
-            enter = expandVertically() + fadeIn(),
-            exit = shrinkVertically() + fadeOut()
-        ) {
-            CalendarCard(
-                selectedYear = state.selectedYear,
-                selectedMonth = state.selectedMonth,
-                selectedDate = state.selectedDate,
-                daysWithEntries = state.daysWithEntries,
-                onPreviousMonth = { viewModel.previousMonth() },
-                onNextMonth = { viewModel.nextMonth() },
-                onDayClick = { day -> viewModel.selectDate(day) },
-                onTodayClick = { viewModel.selectToday() }
-            )
+        // ── Collapsible Calendar (hidden when bookmark filter active) ──
+        if (!viewModel.showBookmarkedOnly) {
+            AnimatedVisibility(
+                visible = viewModel.showCalendar,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut()
+            ) {
+                CalendarCard(
+                    selectedYear = state.selectedYear,
+                    selectedMonth = state.selectedMonth,
+                    selectedDate = state.selectedDate,
+                    daysWithEntries = state.daysWithEntries,
+                    onPreviousMonth = { viewModel.previousMonth() },
+                    onNextMonth = { viewModel.nextMonth() },
+                    onDayClick = { day -> viewModel.selectDate(day) },
+                    onTodayClick = { viewModel.selectToday() }
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // ── Entry list (empty or populated) ──
-        if (state.entries.isEmpty()) {
-            // Refined empty state — inviting the user to write
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    // Decorative circle
-                    Box(
-                        modifier = Modifier
-                            .size(80.dp)
-                            .clip(RoundedCornerShape(40.dp))
-                            .background(cc.surfaceContainerHigh.copy(alpha = 0.3f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(text = "\u270D\uFE0F", fontSize = 36.sp)
+        // ── Entry list ──
+        val displayEntries = if (viewModel.showBookmarkedOnly) {
+            state.bookmarkedEntries
+        } else {
+            state.entries
+        }
+
+        if (displayEntries.isEmpty()) {
+            if (viewModel.showBookmarkedOnly) {
+                // No bookmarked entries across any day
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Box(
+                            modifier = Modifier
+                                .size(80.dp)
+                                .clip(RoundedCornerShape(40.dp))
+                                .background(cc.surfaceContainerHigh.copy(alpha = 0.3f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Outlined.BookmarkBorder,
+                                contentDescription = null,
+                                tint = cc.onSurfaceVariant.copy(alpha = 0.3f),
+                                modifier = Modifier.size(36.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "No bookmarked entries",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = cc.onSurface,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "Open a journal entry and tap\nthe bookmark icon to save it here",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = cc.onSurfaceVariant.copy(alpha = 0.6f),
+                            textAlign = TextAlign.Center,
+                            lineHeight = 22.sp
+                        )
                     }
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "What's on your mind?",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = cc.onSurface,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = "Tap the + to start writing\nyour thoughts for today",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = cc.onSurfaceVariant.copy(alpha = 0.6f),
-                        textAlign = TextAlign.Center,
-                        lineHeight = 22.sp
-                    )
+                }
+            } else {
+                // Refined empty state — inviting the user to write
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Box(
+                            modifier = Modifier
+                                .size(80.dp)
+                                .clip(RoundedCornerShape(40.dp))
+                                .background(cc.surfaceContainerHigh.copy(alpha = 0.3f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(text = "\u270D\uFE0F", fontSize = 36.sp)
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "What's on your mind?",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = cc.onSurface,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "Tap the + to start writing\nyour thoughts for today",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = cc.onSurfaceVariant.copy(alpha = 0.6f),
+                            textAlign = TextAlign.Center,
+                            lineHeight = 22.sp
+                        )
+                    }
                 }
             }
         } else {
@@ -228,14 +325,13 @@ fun JournalListScreen(
                     .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                items(state.entries, key = { it.id }) { entry ->
+                items(displayEntries, key = { it.id }) { entry ->
                     EntryCard(
                         entry = entry,
-                        onClick = { viewModel.selectEntry(entry) },
+                        onClick = { viewModel.startEditEntry(entry) },
                         cc = cc
                     )
                 }
-                // Bottom padding so content doesn't touch the screen bottom
                 item { Spacer(modifier = Modifier.height(16.dp)) }
             }
         }
@@ -298,7 +394,9 @@ private fun CalendarCard(
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Box(
-                    modifier = Modifier.size(28.dp).clip(CircleShape)
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clip(CircleShape)
                         .clickable { onTodayClick() }
                         .background(cc.surfaceContainerHigh),
                     contentAlignment = Alignment.Center
@@ -348,7 +446,10 @@ private fun CalendarCard(
                         val dayBucket = dayCal.timeInMillis / 86400000
                         val hasEntry = daysWithEntries.contains(dayBucket)
                         Box(
-                            modifier = Modifier.weight(1f).size(36.dp).clip(CircleShape)
+                            modifier = Modifier
+                                .weight(1f)
+                                .size(36.dp)
+                                .clip(CircleShape)
                                 .background(
                                     if (isSelected) cc.accentGradientStart.copy(alpha = 0.2f)
                                     else Color.Transparent
@@ -366,7 +467,9 @@ private fun CalendarCard(
                                 )
                                 if (hasEntry) {
                                     Box(
-                                        modifier = Modifier.size(4.dp).clip(CircleShape)
+                                        modifier = Modifier
+                                            .size(4.dp)
+                                            .clip(CircleShape)
                                             .background(cc.accentGradientStart.copy(alpha = 0.7f))
                                     )
                                 }
@@ -453,8 +556,10 @@ private fun EntryCard(
                     Text(
                         text = if (entry.title.isNotEmpty()) entry.title else "Untitled",
                         style = MaterialTheme.typography.titleSmall,
-                        color = cc.onSurface, fontWeight = FontWeight.SemiBold,
-                        maxLines = 1, overflow = TextOverflow.Ellipsis
+                        color = cc.onSurface,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -472,28 +577,10 @@ private fun EntryCard(
                     text = previewText + if (entry.content.length > 120) "..." else "",
                     style = MaterialTheme.typography.bodySmall,
                     color = cc.onSurfaceVariant.copy(alpha = 0.7f),
-                    maxLines = 2, overflow = TextOverflow.Ellipsis, lineHeight = 18.sp
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    lineHeight = 18.sp
                 )
-            }
-
-            if (entry.tags.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(6.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    entry.tags.split(",").filter { it.isNotBlank() }.forEach { tag ->
-                        Box(
-                            modifier = Modifier.clip(RoundedCornerShape(8.dp))
-                                .background(cc.surfaceContainerHigh.copy(alpha = 0.5f))
-                                .padding(horizontal = 8.dp, vertical = 2.dp)
-                        ) {
-                            Text(
-                                text = tag.trim(),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = cc.onSurfaceVariant.copy(alpha = 0.6f),
-                                fontSize = 10.sp
-                            )
-                        }
-                    }
-                }
             }
         }
     }

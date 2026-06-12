@@ -1,6 +1,14 @@
-# Curio — The Infinite Curiosity App
+<p align="center">
+  <img src="screenshots/curio_icon.png" alt="Curio App Icon" width="120" height="120">
+</p>
 
-> **One interesting thing at a time.**
+<h1 align="center">Curio — The Infinite Curiosity App</h1>
+
+<div align="center" style="margin-top: 8px; font-size: 1.2em; color: #888;">
+  <em>“One interesting thing at a time.”</em>
+</div>
+
+<br>
 
 Curio is a knowledge discovery app for the endlessly curious. Swipe through bite-sized, fascinating facts across science, space, history, philosophy, poetry, and more. Each card delivers a single, well-sourced insight — giving you something new to wonder about in seconds.
 
@@ -30,15 +38,18 @@ Explore the full universe of categories. Browse by L1 sections (Facts, Poems, Sh
 Save your favorite insights with a single tap. Your bookmarks are stored locally on your device and persist across sessions. Access all your saved content from a dedicated bookmarks tab.
 
 ### 📔 Journal
+
 A private, offline-first journal that lives entirely on your device. No data is ever sent to the server.
 
 - **Moleskine-inspired notebook design** — ruled paper with wire spiral binding, page shadows, and a warm copper accent palette on rich dark paper
 - **Quick-start prompt selector** — when the editor opens for a new day, pick from 6 curated prompts (Morning Pages, Today's Highlights, Daily Gratitude, Evening Reflection, Task List, Letter to Future Self)
 - **Font customization** — change font family (Serif, Sans, Mono, Cursive, System), font size (S/M/L/XL), and line spacing (Tight/Normal/Relaxed) with live preview. Settings persist across sessions.
+- **Rich text formatting** — bold, italic, and font color support with an inline formatting toolbar (B/I/color chips). Formats persist when editing existing entries.
+- **Bookmark entries** — bookmark any journal entry to easily find it later. A dedicated "Bookmarked" filter toggle in the list view shows only your bookmarked entries.
 - **Calendar view** with dots showing which days have entries, month navigation, and a jump-to-today button
 - **Writing streak** tracking and entry statistics (total entries, this month's count)
 - **4 entry types** with guided experiences:
-  - **Free Write** — open-ended journaling with title, content, and tags
+  - **Free Write** — open-ended journaling with title, content, and rich text formatting
   - **Gratitude** — 3 prompted fields ("I'm grateful for...", "Today was special because...", "Someone who made a difference...")
   - **Task List** — interactive checklists with add, complete, and delete
   - **Reflection** — guided Q&A ("What went well?", "What could be better?", "What did I learn?")
@@ -72,6 +83,20 @@ Curio generates a persistent UUID on first launch, stored securely in the app's 
 
 ### 💬 Feedback
 Share your thoughts directly from the app via the feedback dialog — now linked to your device UUID so we can better understand and improve the experience.
+
+---
+
+## Screenshots
+
+<p align="center">
+  <img src="screenshots/splash.png" alt="Splash Screen" width="200">
+  <img src="screenshots/feed_card.png" alt="Feed Card" width="200">
+  <img src="screenshots/puzzle.png" alt="Puzzle Screen" width="200">
+</p>
+
+<p align="center">
+  <em>Splash • Feed Card • Puzzle</em>
+</p>
 
 ---
 
@@ -116,6 +141,8 @@ The app is designed for the commute, the coffee break, or the moment you just wa
 - **Data Scraping:** Python
 
 ---
+
+
 
 ## Screens
 

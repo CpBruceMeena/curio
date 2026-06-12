@@ -8,9 +8,10 @@ data class JournalEntry(
     @PrimaryKey val id: Long = System.currentTimeMillis(),
     val title: String = "",
     val content: String = "",
+    val contentFormatJson: String? = null,  // JSON array of FormatRange objects: [{"s":0,"e":5,"b":true,"i":false,"c":"#D4A373"}]
+    val isBookmarked: Boolean = false,
     val entryType: String = "free_write", // free_write, gratitude, task_list, reflection
     val mood: String? = null,             // happy, calm, neutral, sad, anxious, excited
-    val tags: String = "",                // comma-separated
     val tasksJson: String? = null,        // JSON array of {text, done, order}
     val isDraft: Boolean = false,
     val dateCreated: Long = System.currentTimeMillis(),

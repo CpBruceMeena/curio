@@ -1,6 +1,10 @@
 package com.curio.app.viewmodel
 
 import android.app.Application
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -13,6 +17,7 @@ import com.curio.app.data.model.CommentEntry
 import com.curio.app.data.model.L1Group
 import com.curio.app.data.repository.ContentRepository
 import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -42,7 +47,7 @@ data class FeedUiState(
 
 class FeedViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val repository = ContentRepository()
+    private val repository = ContentRepository(application)
     private val prefs = (application as CurioApp).prefs
 
     private val _uiState = MutableStateFlow(FeedUiState())
@@ -52,12 +57,44 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
     var showDiscover by mutableStateOf(false)
     var showBookmarks by mutableStateOf(false)
 
+    private var connectivityCallback: ConnectivityManager.NetworkCallback? = null
+
     init {
         loadCategories()
         loadL1Groups()
         loadFeed()
         loadDiscoverContent()
         loadBookmarkedIds()
+        // Run a sync on init to backfill any bookmarks that were saved while offline
+        viewModelScope.launch { syncBookmarkedContent() }
+        // Register connectivity listener for automatic backfill when coming online
+        registerConnectivityListener()
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        connectivityCallback?.let {
+            val cm = getApplication<Application>().getSystemService(Application.CONNECTIVITY_SERVICE) as ConnectivityManager
+            cm.unregisterNetworkCallback(it)
+        }
+    }
+
+    /**
+     * Register a network callback that triggers bookmark backfill when connectivity is restored.
+     */
+    private fun registerConnectivityListener() {
+        val cm = getApplication<Application>().getSystemService(Application.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val callback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                // Device just came online — backfill any bookmarks that were cached as IDs only
+                viewModelScope.launch { syncBookmarkedContent() }
+            }
+        }
+        connectivityCallback = callback
+        val request = NetworkRequest.Builder()
+            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            .build()
+        cm.registerNetworkCallback(request, callback)
     }
 
     fun selectCategory(categoryId: Long?) {
@@ -283,12 +320,39 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
 
     /**
      * Toggle bookmark for a content item. Returns true if bookmarked, false if removed.
+     * The full content is saved locally so it can be viewed offline.
      */
     fun toggleBookmark(contentId: Long): Boolean {
+        val wasBookmarked = prefs.isBookmarked(contentId)
         val isNowBookmarked = prefs.toggleBookmark(contentId)
-        // Update the live bookmarkedIds set in state to trigger recomposition
         val updatedIds = prefs.bookmarkedContentIds
         _uiState.value = _uiState.value.copy(bookmarkedIds = updatedIds)
+
+        // Save or remove the full content locally for offline access
+        viewModelScope.launch {
+            if (isNowBookmarked) {
+                // Find the Content object from the current state lists
+                val state = _uiState.value
+                val content = state.content.find { it.id == contentId }
+                    ?: state.discoverContent.find { it.id == contentId }
+                    ?: state.bookmarkedContent.find { it.id == contentId }
+                if (content != null) {
+                    repository.saveBookmarkLocally(content)
+                } else {
+                    // Fallback: fetch from API
+                    repository.getContent(contentId).onSuccess { item ->
+                        repository.saveBookmarkLocally(item)
+                    }
+                }
+            } else {
+                repository.removeBookmarkLocally(contentId)
+                // Also remove from local bookmarkedContent state list
+                val state = _uiState.value
+                _uiState.value = state.copy(
+                    bookmarkedContent = state.bookmarkedContent.filter { it.id != contentId }
+                )
+            }
+        }
         return isNowBookmarked
     }
 
@@ -306,7 +370,46 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
-     * Load all bookmarked content from the API.
+     * Sync: fetch all bookmarked IDs that are NOT yet cached in the local database.
+     * Runs silently (no loading spinner) so it can be called from connectivity listener.
+     */
+    suspend fun syncBookmarkedContent() {
+        val bookmarkedIds = prefs.bookmarkedContentIds
+        if (bookmarkedIds.isEmpty()) return
+
+        val localContent = repository.getBookmarkedContentLocally()
+        val localIds = localContent.map { it.id }.toSet()
+        val missingIds = bookmarkedIds - localIds
+
+        if (missingIds.isEmpty()) return
+
+        coroutineScope {
+            // Fetch missing content from API
+            val deferredResults = missingIds.map { id ->
+                async { repository.getContent(id) }
+            }
+            val apiContent = deferredResults.mapNotNull { deferred ->
+                deferred.await().getOrNull()
+            }
+
+            if (apiContent.isEmpty()) return@coroutineScope
+
+            // Cache newly fetched content locally
+            apiContent.forEach { item ->
+                repository.saveBookmarkLocally(item)
+            }
+
+            // Update the bookmarkedContent state if the Bookmarks screen is visible
+            val current = _uiState.value.bookmarkedContent
+            _uiState.value = _uiState.value.copy(
+                bookmarkedContent = current + apiContent
+            )
+        }
+    }
+
+    /**
+     * Load all bookmarked content from local storage (offline-first).
+     * Falls back to API for content not yet cached locally.
      */
     fun loadBookmarkedContent() {
         val bookmarkedIds = prefs.bookmarkedContentIds
@@ -318,18 +421,38 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
 
-            val deferredResults = bookmarkedIds.map { id ->
-                async { repository.getContent(id) }
-            }
+            // First, load from local database (fully offline)
+            val localContent = repository.getBookmarkedContentLocally()
+            val localIds = localContent.map { it.id }.toSet()
 
-            val loadedContent = deferredResults.mapNotNull { deferred ->
-                deferred.await().getOrNull()
-            }
+            // Find which bookmarked IDs are NOT yet cached locally
+            val missingIds = bookmarkedIds - localIds
 
-            _uiState.value = _uiState.value.copy(
-                isLoading = false,
-                bookmarkedContent = loadedContent
-            )
+            if (missingIds.isNotEmpty()) {
+                // Fetch missing content from API
+                val deferredResults = missingIds.map { id ->
+                    async { repository.getContent(id) }
+                }
+                val apiContent = deferredResults.mapNotNull { deferred ->
+                    deferred.await().getOrNull()
+                }
+
+                // Cache newly fetched content locally for future offline access
+                apiContent.forEach { item ->
+                    repository.saveBookmarkLocally(item)
+                }
+
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    bookmarkedContent = localContent + apiContent
+                )
+            } else {
+                // All content is available locally — no API needed
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    bookmarkedContent = localContent
+                )
+            }
         }
     }
 
