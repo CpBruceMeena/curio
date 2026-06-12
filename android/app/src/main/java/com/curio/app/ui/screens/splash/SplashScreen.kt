@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
@@ -29,7 +30,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.animateFloatAsState
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -61,6 +66,13 @@ import kotlinx.coroutines.delay
 fun SplashScreen(
     onNavigateToOnboarding: () -> Unit
 ) {
+    // ── System back exits the app (bottommost screen) ──
+    val activity = LocalContext.current as? androidx.activity.ComponentActivity
+    BackHandler {
+        activity?.finish()
+    }
+
+    val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
     // ── Staggered reveal state ──────────────────────────────────────
@@ -76,6 +88,14 @@ fun SplashScreen(
         delay(300)
         showButton = true
     }
+
+    // ── Exit transition state ──
+    var isExiting by remember { mutableStateOf(false) }
+    val exitAlpha by animateFloatAsState(
+        targetValue = if (isExiting) 0f else 1f,
+        animationSpec = tween(500, easing = FastOutSlowInEasing),
+        label = "exitAlpha"
+    )
 
     // ── ExoPlayer for looping video background ──────────────────
     val player = remember {
@@ -131,6 +151,7 @@ fun SplashScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Surface)
+            .alpha(exitAlpha)
     ) {
         // ── Looping video background with center-crop ───────────────
         AndroidView(
@@ -201,6 +222,7 @@ fun SplashScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
+                .navigationBarsPadding()
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -241,8 +263,18 @@ fun SplashScreen(
 
             // ── Glass button at bottom ──────────────────────────────
             if (showButton) {
+                val hasNavigated = remember { mutableStateOf(false) }
                 OutlinedButton(
-                    onClick = onNavigateToOnboarding,
+                    onClick = {
+                        if (hasNavigated.value) return@OutlinedButton
+                        hasNavigated.value = true
+                        isExiting = true
+                        // Delay navigation to let the fade-out play (500ms)
+                        scope.launch {
+                            delay(500)
+                            onNavigateToOnboarding()
+                        }
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp)

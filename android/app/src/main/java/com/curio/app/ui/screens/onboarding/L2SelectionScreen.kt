@@ -13,7 +13,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -118,7 +123,8 @@ private fun subCategoryIcon(name: String): String = when (name.lowercase()) {
 @Composable
 fun L2SelectionScreen(
     l1Name: String,
-    onNavigateToMain: () -> Unit
+    onNavigateToMain: () -> Unit,
+    onBack: () -> Unit = {}
 ) {
     val repository = remember { ContentRepository() }
     var l1Group by remember { mutableStateOf<L1Group?>(null) }
@@ -143,13 +149,31 @@ fun L2SelectionScreen(
             .fillMaxSize()
             .background(Surface)
             .statusBarsPadding()
+            .navigationBarsPadding()
             .padding(bottom = 32.dp)
     ) {
+        // Top bar with back button
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    tint = OnSurfaceVariant
+                )
+            }
+            Spacer(modifier = Modifier.weight(1f))
+        }
+
         // Header section
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 24.dp),
+                .padding(horizontal = 20.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(emoji, fontSize = 48.sp)

@@ -19,8 +19,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -71,6 +76,7 @@ private fun l1Gradient(name: String): Pair<Color, Color> = when (name) {
 fun OnboardingScreen(
     onNavigateToFeed: () -> Unit,
     onNavigateToL2: (String) -> Unit,
+    onBack: () -> Unit = {},
     viewModel: OnboardingViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -106,26 +112,35 @@ fun OnboardingScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
+                .navigationBarsPadding()
                 .padding(bottom = 32.dp)
         ) {
             // Top bar
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                    .padding(horizontal = 4.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                IconButton(onClick = onBack) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = OnSurfaceVariant
+                    )
+                }
                 Text(
                     text = "Curio",
                     style = MaterialTheme.typography.headlineMedium,
                     color = Primary,
-                    fontWeight = FontWeight.ExtraBold
+                    fontWeight = FontWeight.ExtraBold,
+                    modifier = Modifier.weight(1f)
                 )
                 Text(
                     text = "1 / 3",
                     style = MaterialTheme.typography.labelMedium,
-                    color = OnSurfaceVariant
+                    color = OnSurfaceVariant,
+                    modifier = Modifier.padding(end = 16.dp)
                 )
             }
 

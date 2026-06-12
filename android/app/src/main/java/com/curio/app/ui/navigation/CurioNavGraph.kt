@@ -22,9 +22,7 @@ fun CurioNavGraph(navController: NavHostController) {
         composable(Screen.Splash.route) {
             SplashScreen(
                 onNavigateToOnboarding = {
-                    navController.navigate(Screen.Onboarding.route) {
-                        popUpTo(Screen.Splash.route) { inclusive = true }
-                    }
+                    navController.navigate(Screen.Onboarding.route)
                 }
             )
         }
@@ -32,15 +30,12 @@ fun CurioNavGraph(navController: NavHostController) {
         composable(Screen.Onboarding.route) {
             OnboardingScreen(
                 onNavigateToFeed = {
-                    navController.navigate(Screen.Main.route) {
-                        popUpTo(Screen.Onboarding.route) { inclusive = true }
-                    }
+                    navController.navigate(Screen.Main.route)
                 },
                 onNavigateToL2 = { l1Name ->
-                    navController.navigate(Screen.L2Selection.createRoute(l1Name)) {
-                        popUpTo(Screen.Onboarding.route) { inclusive = true }
-                    }
-                }
+                    navController.navigate(Screen.L2Selection.createRoute(l1Name))
+                },
+                onBack = { navController.popBackStack() }
             )
         }
 
@@ -52,10 +47,9 @@ fun CurioNavGraph(navController: NavHostController) {
             L2SelectionScreen(
                 l1Name = l1Name,
                 onNavigateToMain = {
-                    navController.navigate(Screen.Main.route) {
-                        popUpTo(Screen.L2Selection.route) { inclusive = true }
-                    }
-                }
+                    navController.navigate(Screen.Main.route)
+                },
+                onBack = { navController.popBackStack() }
             )
         }
 

@@ -67,6 +67,8 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
         loadBookmarkedIds()
         // Run a sync on init to backfill any bookmarks that were saved while offline
         viewModelScope.launch { syncBookmarkedContent() }
+        // Populate offline content cache (25 items per L1 category) on first launch
+        viewModelScope.launch { populateOfflineCacheIfNeeded() }
         // Register connectivity listener for automatic backfill when coming online
         registerConnectivityListener()
     }
@@ -260,9 +262,12 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
                     error = null
                 )
             }.onFailure { error ->
+                // On failure, fall back to offline cache
+                val cachedContent = repository.loadOfflineCache().shuffled()
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    error = error.message ?: "Failed to load feed"
+                    content = if (cachedContent.isNotEmpty()) cachedContent else _uiState.value.content,
+                    error = if (cachedContent.isNotEmpty()) null else (error.message ?: "Failed to load feed")
                 )
             }
         }
@@ -499,6 +504,47 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
                     error = error.message ?: "Failed to shuffle"
                 )
             }
+        }
+    }
+
+    /**
+     * Populate the offline cache on first launch — fetches ~25 items per L1 category
+     * and stores them locally. Only runs once.
+     */
+    suspend fun populateOfflineCacheIfNeeded() {
+        if (repository.isCachePopulated()) return
+
+        val l1Names = listOf("Facts", "Poems", "Short Stories", "Puzzles")
+        val categoryMap = _uiState.value.l1Groups.associateBy { it.name }
+
+        coroutineScope {
+            val deferred = l1Names.map { l1Name ->
+                async {
+                    // Get subcategory IDs for this L1 group
+                    val group = categoryMap[l1Name]
+                    if (group == null || group.categories.isEmpty()) return@async
+
+                    // Fetch ~25 items across all subcategories
+                    val allContent = mutableListOf<Content>()
+                    val catIds = group.categories.map { it.id }.shuffled().take(5)
+
+                    for (catId in catIds) {
+                        val remaining = 25 - allContent.size
+                        if (remaining <= 0) break
+                        repository.getFeed(page = 1, pageSize = remaining, categoryId = catId, random = true)
+                            .onSuccess { response ->
+                                allContent.addAll(response.content.take(remaining))
+                            }
+                    }
+
+                    // Shuffle and save to cache
+                    val items = allContent.shuffled().take(25)
+                    if (items.isNotEmpty()) {
+                        repository.saveToOfflineCache(items, l1Name)
+                    }
+                }
+            }
+            deferred.forEach { it.await() }
         }
     }
 

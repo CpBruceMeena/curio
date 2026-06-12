@@ -60,6 +60,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
@@ -146,6 +147,7 @@ fun JournalEditorScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val dateFormat = SimpleDateFormat("EEEE, MMMM d, yyyy", Locale.getDefault())
+    val density = androidx.compose.ui.platform.LocalDensity.current
 
     // Resolve font settings
     val currentFamily = resolveFontFamily(viewModel.fontFamily)
@@ -155,11 +157,22 @@ fun JournalEditorScreen(
     val currentLineHeight = currentBodySize * viewModel.lineSpacing
     val currentTitleLineHeight = currentTitleSize * (viewModel.lineSpacing * 0.85f)
 
+    // Compute line spacing in pixels (no dp intermediate → avoids compounding rounding)
+    val lineSpacingPxVal = with(density) { currentLineHeight.toPx() }
+
+    // Use Top-aligned LineHeightStyle so each text line starts at the top of the
+    // lineHeight box (instead of being centered in it), preventing per-line drift
+    val lineHeightStyle = LineHeightStyle(
+        alignment = LineHeightStyle.Alignment.Top,
+        trim = LineHeightStyle.Trim.None
+    )
+
     val notebookTextStyle = TextStyle(
         fontSize = currentBodySize,
         fontFamily = currentFamily,
         color = inkColor,
-        lineHeight = currentLineHeight
+        lineHeight = currentLineHeight,
+        lineHeightStyle = lineHeightStyle
     )
 
     val notebookTitleStyle = TextStyle(
@@ -167,14 +180,16 @@ fun JournalEditorScreen(
         fontFamily = currentFamily,
         color = inkColor,
         fontWeight = FontWeight.Bold,
-        lineHeight = currentTitleLineHeight
+        lineHeight = currentTitleLineHeight,
+        lineHeightStyle = lineHeightStyle
     )
 
     val notebookLabelStyle = TextStyle(
         fontSize = currentSmallSize,
         fontFamily = currentFamily,
         color = inkMuted.copy(alpha = 0.8f),
-        lineHeight = currentBodySize * 1.8f
+        lineHeight = currentBodySize * 1.8f,
+        lineHeightStyle = lineHeightStyle
     )
 
     // ── Formatting toolbar toggle state ──
@@ -187,12 +202,11 @@ fun JournalEditorScreen(
             .background(notebookPaper)
     ) {
         // ── Notebook Canvas ──
-        val lineSpacingDp = 32.dp
         val marginOffsetDp = 28.dp
         val bindingHeightDp = 36.dp
 
         Canvas(modifier = Modifier.fillMaxSize()) {
-            val lineSpacing = lineSpacingDp.toPx()
+            val lineSpacing = lineSpacingPxVal  // pixel-precise, matches text lineHeight exactly
             val marginOffset = marginOffsetDp.toPx()
             val bindingH = bindingHeightDp.toPx()
             val paperW = size.width
