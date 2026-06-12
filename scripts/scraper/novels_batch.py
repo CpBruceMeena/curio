@@ -20,6 +20,7 @@ import time
 from typing import Optional
 
 from scraper.novels_formatter import fetch_and_format_novel, fetch_novel_metadata
+from scraper.handlers.novels import CURATED_NOVELS, _find_curated
 from scraper.db import DB, insert_novel
 
 
@@ -115,10 +116,21 @@ def process_novel_with_retry(
     author: str = "",
     description: str = "",
     language: str = "en",
-    auto_metadata: bool = True,
     max_retries: int = MAX_RETRIES,
 ) -> Optional[dict]:
-    """Process a single novel with retries and exponential backoff."""
+    """Process a single novel with retries and exponential backoff.
+
+    Checks CURATED_NOVELS first for explicit metadata (avoids Gutendex).
+    Falls back to Gutendex auto-discovery only for uncatalogued IDs.
+    """
+    # Check curated list first
+    curated = _find_curated(gutenberg_id)
+    if curated:
+        title = curated["title"]
+        author = curated["author"]
+        description = curated.get("description", "")
+        language = curated.get("language", "en")
+
     for attempt in range(1 + max_retries):
         try:
             result = fetch_and_format_novel(
@@ -127,12 +139,10 @@ def process_novel_with_retry(
                 author=author,
                 description=description,
                 language=language,
-                auto_metadata=auto_metadata,
+                auto_metadata=(not bool(curated)),  # only auto-discover if not curated
             )
             if result is not None:
                 return result
-
-            # No result even without error — not retryable
             return None
 
         except Exception as e:
@@ -170,8 +180,8 @@ def scrape_novel_ids(
             delay = MIN_DELAY + random.uniform(0, 0.5)
             time.sleep(delay)
 
-        # Process with retry
-        result = process_novel_with_retry(gid, auto_metadata=True)
+        # Process with retry (curated check handled inside)
+        result = process_novel_with_retry(gid)
 
         if result is None:
             stats["failed"] += 1
