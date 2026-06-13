@@ -169,6 +169,7 @@ def main():
     parser.add_argument("--batch", type=int, default=0, help="Batch mode: target N items")
     parser.add_argument("--category", type=str, default=None, help="Only scrape one category")
     parser.add_argument("--dry-run", action="store_true", help="Preview only, no DB writes")
+    parser.add_argument("--replace", action="store_true", help="Re-download and replace existing novel chapters")
     parser.add_argument("--archive", type=str, default=None, help="Archive category then refill")
     parser.add_argument("--novels", type=int, default=0, help="Scrape N novels from Gutenberg (replaces --limit)")
     parser.add_argument("--novels-batch", type=int, default=0,
@@ -193,11 +194,14 @@ def main():
             return
 
         if args.novels_batch > 0 or (args.novels_batch == 0 and args.ids):
-            from scraper.novels_batch import scrape_top_novels, scrape_explicit_ids, parse_id_list
+            from scraper.novels_batch import scrape_top_novels, scrape_explicit_ids, scrape_novel_ids_replace, parse_id_list, curated_ids_up_to
             import time
             start = time.time()
 
-            if args.ids:
+            if args.replace:
+                ids = parse_id_list(args.ids) if args.ids else curated_ids_up_to(args.novels_batch)
+                inserted = scrape_novel_ids_replace(db, ids).get("success", 0)
+            elif args.ids:
                 ids = parse_id_list(args.ids)
                 inserted = scrape_explicit_ids(db, ids, dry_run=args.dry_run)
             else:

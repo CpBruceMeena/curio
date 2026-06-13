@@ -62,6 +62,12 @@ import com.curio.app.ui.theme.Surface
 import com.curio.app.ui.theme.SurfaceContainer
 import com.curio.app.ui.theme.SurfaceContainerHigh
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 
 // Rich gradient palette for cover placeholders
 private val coverGradients = listOf(
@@ -105,6 +111,21 @@ fun NovelsFeedScreen(
         } catch (_: Exception) {}
     }
 
+    var searchQuery by remember { mutableStateOf("") }
+
+    // Filter novels by search query (title or author)
+    val filteredNovels = remember(novels, searchQuery) {
+        if (searchQuery.isBlank()) {
+            novels
+        } else {
+            val q = searchQuery.lowercase()
+            novels.filter { novel ->
+                novel.title.lowercase().contains(q) ||
+                novel.author.lowercase().contains(q)
+            }
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -134,12 +155,56 @@ fun NovelsFeedScreen(
                 modifier = Modifier.weight(1f)
             )
             Text(
-                text = "${novels.size} titles",
+                text = "${filteredNovels.size} titles",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                 modifier = Modifier.padding(end = 16.dp)
             )
         }
+
+        // ── Search bar ──
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = { searchQuery = it },
+            placeholder = {
+                Text(
+                    "Search novels by title or author...",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Filled.Search,
+                    contentDescription = "Search",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            },
+            trailingIcon = {
+                if (searchQuery.isNotEmpty()) {
+                    IconButton(onClick = { searchQuery = "" }) {
+                        Icon(
+                            imageVector = Icons.Filled.Clear,
+                            contentDescription = "Clear",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            },
+            singleLine = true,
+            shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.3f),
+                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.2f),
+            ),
+            keyboardOptions = KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Search),
+            keyboardActions = KeyboardActions(onSearch = { /* keyboard dismissed */ }),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 4.dp)
+        )
 
         when {
             isLoading -> {
@@ -162,19 +227,47 @@ fun NovelsFeedScreen(
                 )
             }
             else -> {
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 24.dp),
-                    horizontalArrangement = Arrangement.spacedBy(14.dp),
-                    verticalArrangement = Arrangement.spacedBy(20.dp),
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    items(novels, key = { it.id }) { novel ->
-                        NovelCard(
-                            novel = novel,
-                            isDownloaded = novel.id in downloadedNovels,
-                            onClick = { onNovelClick(novel.id) }
-                        )
+                if (filteredNovels.isEmpty()) {
+                    // ── Empty search state ──
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                imageVector = Icons.Filled.Search,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+                                modifier = Modifier.size(64.dp)
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                text = "No novels found",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                            )
+                            Text(
+                                text = "Try a different search term",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                            )
+                        }
+                    }
+                } else {
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(2),
+                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp),
+                        horizontalArrangement = Arrangement.spacedBy(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(20.dp),
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        items(filteredNovels, key = { it.id }) { novel ->
+                            NovelCard(
+                                novel = novel,
+                                isDownloaded = novel.id in downloadedNovels,
+                                onClick = { onNovelClick(novel.id) }
+                            )
+                        }
                     }
                 }
             }

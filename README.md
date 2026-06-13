@@ -1,186 +1,51 @@
 <p align="center">
-  <img src="screenshots/curio_icon.png" alt="Curio App Icon" width="120" height="120">
+  <img src="screenshots/curio_icon.png" alt="Curio" width="100" height="100">
 </p>
 
-<h1 align="center">Curio — The Infinite Curiosity App</h1>
+<h1 align="center">Curio</h1>
 
-<div align="center" style="margin-top: 8px; font-size: 1.2em; color: #888;">
-  <em>“One interesting thing at a time.”</em>
-</div>
-
-<br>
-
-Curio is a knowledge discovery app for the endlessly curious. Swipe through bite-sized, fascinating facts across science, space, history, philosophy, poetry, and more. Each card delivers a single, well-sourced insight — giving you something new to wonder about in seconds.
+<p align="center">
+  <em>One interesting thing at a time.</em>
+</p>
 
 ---
+
+Curio is a knowledge discovery app — bite-sized facts, poetry, short stories, puzzles, and novels, all in one feed.
 
 ## Features
 
-### ✨ Splash
-A cinematic video background with an animated cube logo and elegant text overlay — setting the tone for discovery the moment you open the app.
+| Feature | Description |
+|---------|-------------|
+| **Feed** | Swipeable knowledge cards with 3D parallax, TTS, share, bookmark, shuffle |
+| **Onboarding** | Pick interests from 21+ categories across Facts, Poems, Stories, Puzzles, Novels |
+| **Discover** | Browse categories with emoji icons, L1 pills, and filters |
+| **Puzzles** | Interactive Sudoku, Math, Logic, and Word puzzles with validation |
+| **Novels** | 20 public-domain classics, offline download, chapter navigation, font customization |
+| **Journal** | Private offline diary with prompts, mood tracking, rich text, calendar, streak tracking |
+| **Bookmarks** | Locally-saved favorites, persist across sessions |
+| **Profile** | Personalization, dark mode toggle, privacy controls |
+| **TTS** | Chunked streaming with gapless ExoPlayer, speed control (1×–2×), sentence-level highlighting |
+| **Annotations** | Long-press any word in a novel to save it with a personal note (local-only) |
 
-### 🧠 Onboarding
-Tell Curio what excites you. Pick your interests from 21+ categories across 4 L1 sections (Facts, Poems, Short Stories, Puzzles) — from quantum physics to Urdu poetry — and your feed learns what fascinates you from day one.
+## Content
 
-### ♾️ Infinite Feed
-Swipe through an endless stream of knowledge cards with a stunning 3D parallax effect. Each card is a beautifully presented insight with:
-- **Bite-sized facts** — quick reads you can digest in seconds
-- **Poetry & Shayari** — full poems with rich contextual descriptions and poet credits (including Devanagari Urdu script support)
-- **Short stories** — micro-narratives you can finish in minutes
-- **Interactive Puzzles** — Sudoku, Math, Logic, and Word puzzles with built-in validation
-- **3D swipe navigation** — tilt and parallax effects as you glide from one discovery to the next
-- **Share & Bookmark** — share insights with friends or save your favorites for later
+**21+ categories** across 5 sections:
+- **Facts** — Science, Space, History, Biology, Psychology, Philosophy, Physics, Startups, AI, Economics, Nature, Technology, Movies, Neuroscience, Geography, Music, Sports, Food, Literature
+- **Poems** — English Poems, Shayari, Hindi Poems, Classics, Modern
+- **Short Stories** — Classic Fiction, Micro Stories, Serialized Stories
+- **Puzzles** — Sudoku, Math, Logic, Word, Mixed
+- **Novels** — 20 classic titles (Pride & Prejudice, Moby Dick, Dracula, etc.) with 804 chapters
 
-### 🔍 Discover
-Explore the full universe of categories. Browse by L1 sections (Facts, Poems, Short Stories, Puzzles), pick subcategories, apply filters, and find your next obsession in a clean 2-column grid with emoji icons. Content refreshes every time you open Discover.
+Content is scraped daily from Wikipedia, PoetryDB, Science Daily, Smithsonian, Project Gutenberg, and more.
 
-### 📑 Bookmarks
-Save your favorite insights with a single tap. Your bookmarks are stored locally on your device and persist across sessions. Access all your saved content from a dedicated bookmarks tab.
+## Design
 
-### 📔 Journal
-
-A private, offline-first journal that lives entirely on your device. No data is ever sent to the server.
-
-- **Moleskine-inspired notebook design** — ruled paper with wire spiral binding, page shadows, and a warm copper accent palette on rich dark paper
-- **Quick-start prompt selector** — when the editor opens for a new day, pick from 6 curated prompts (Morning Pages, Today's Highlights, Daily Gratitude, Evening Reflection, Task List, Letter to Future Self)
-- **Font customization** — change font family (Serif, Sans, Mono, Cursive, System), font size (S/M/L/XL), and line spacing (Tight/Normal/Relaxed) with live preview. Settings persist across sessions.
-- **Rich text formatting** — bold, italic, and font color support with an inline formatting toolbar (B/I/color chips). Formats persist when editing existing entries.
-- **Bookmark entries** — bookmark any journal entry to easily find it later. A dedicated "Bookmarked" filter toggle in the list view shows only your bookmarked entries.
-- **Calendar view** with dots showing which days have entries, month navigation, and a jump-to-today button
-- **Writing streak** tracking and entry statistics (total entries, this month's count)
-- **4 entry types** with guided experiences:
-  - **Free Write** — open-ended journaling with title, content, and rich text formatting
-  - **Gratitude** — 3 prompted fields ("I'm grateful for...", "Today was special because...", "Someone who made a difference...")
-  - **Task List** — interactive checklists with add, complete, and delete
-  - **Reflection** — guided Q&A ("What went well?", "What could be better?", "What did I learn?")
-- **Mood tracking** with 6 emojis (😊😌😐😔😰🤩)
-- **Auto-save** drafts every 2 seconds so you never lose your thoughts
-- **Auto-navigate** to the editor when today has no entries — start writing instantly
-- **Delete with confirmation** to prevent accidental loss
-
-### 🃏 Shuffle
-Hit the shuffle button to get a fresh batch of content from across **all categories** — the perfect way to discover something unexpected.
-
-### 🧩 Puzzles
-Test your mind with interactive puzzles:
-- **Sudoku** — classic number puzzles
-- **Math Puzzles** — number-based challenges
-- **Logic Puzzles** — reasoning problems
-- **Word Puzzles** — vocabulary and wordplay
-
-Each puzzle supports validation, hints, and explanations.
-
-### 👤 Profile & Personalization
-Create a profile to help Curio personalize your experience. Share your name, age, gender, likes, and dislikes — all stored securely on the backend and linked to your device via a unique UUID. A dedicated profile tab lets you manage your information and preferences.
-
-### 📚 Novels (Offline Reader)
-
-Read public-domain classics with a full-featured reading experience:
-- **Download for offline** — Novels are downloaded chapter-by-chapter and stored locally via Room database. Chapter 1 is prioritized so you can start reading immediately.
-- **Reading progress** — Auto-saves your position every 30 seconds. Tracks last chapter read, scroll position, and bookmark status.
-- **Font customization** — Adjust font size (12–28) and toggle between dark mode and warm sepia light mode.
-- **Chapter navigation** — Previous/next chapter buttons with persisted progress tracking.
-
-### 🔊 Text-to-Speech (Chunked Playback)
-
-Curio reads content aloud with a low-latency chunked audio system:
-- **Chunked streaming** — Text is split into ~1000-character chunks. The first chunk plays in ~2–3 seconds while remaining chunks pre-fetch in parallel.
-- **Gapless playback** — Chunks transition seamlessly via ExoPlayer — no gaps between chunks.
-- **Playback speed control** — Choose from 1×, 1.25×, 1.5×, or 2× speed, applied instantly to the current chunk.
-- **Sentence-level tracking** — The currently spoken sentence is highlighted in the text with a colored background. The view auto-scrolls to follow along.
-- **Auto-play mode** — Sit back and listen to an entire feed session — audio plays through each card, pauses briefly between cards, and auto-swipes to the next.
-- **Voice selection** — Curio picks the perfect voice for each type of content: warm and clear for facts, expressive for poetry, British English for classic literature, calm and precise for puzzles.
-
-### 🏷️ Word Annotations (Local Only)
-
-Save and revisit words or phrases you find interesting while reading novels:
-- **Long-press** any word in the chapter body to open a save dialog
-- **Add a personal note** to remember why it caught your attention
-- **Tap on any highlighted word** to view your saved note
-- **Delete** annotations when they're no longer needed
-- **Amber highlighter** marks all saved words in the text (persists across sessions)
-- All data stored **exclusively on your device** via Room — nothing is sent to the server
-
-### 🔊 Text-to-Speech (Feed)
-Every card in your feed can be read aloud with a single tap. Curio picks the perfect voice for each type of content — warm and clear for facts, expressive for poetry and shayari, British English for classic literature, and calm and precise for puzzles.
-
-**Auto-play mode** lets you sit back and listen to an entire feed session — audio plays through each card, pauses briefly between cards, and auto-swipes to the next. Tap the ▶️ button in the top bar to start, or use the per-card ▶️ button to play individual cards.
-
-### 📱 Device-Based Identification
-Curio generates a persistent UUID on first launch, stored securely in the app's local storage. All profile, feedback, and device-info API calls are attributed to this UUID — enabling personalized experiences without requiring an account or login.
-
-### 💬 Feedback
-Share your thoughts directly from the app via the feedback dialog — now linked to your device UUID so we can better understand and improve the experience.
-
----
+Dark-first with an emerald/cyan/gold palette. Dynamic gradients, glassmorphism, and 3D parallax cards. Warm sepia light mode for novel reading.
 
 ## Screenshots
 
 <p align="center">
-  <img src="screenshots/splash.png" alt="Splash Screen" width="200">
-  <img src="screenshots/feed_card.png" alt="Feed Card" width="200">
-  <img src="screenshots/puzzle.png" alt="Puzzle Screen" width="200">
+  <img src="screenshots/curio_icon.png" alt="Curio" width="100">
 </p>
 
-<p align="center">
-  <em>Splash • Feed Card • Puzzle</em>
-</p>
-
----
-
-## Categories
-
-Curio covers **21+ categories** — each with its own distinct icon:
-
-`🧬 Science` `🚀 Space` `📜 History` `🌿 Biology` `🧠 Psychology` `⚖️ Philosophy` `⚛️ Physics` `💡 Startups` `🤖 AI` `🏛️ Economics` `🌲 Nature` `💻 Technology` `📖 Poetry` `🎬 Movies` `🔬 Neuroscience` `📚 Literature` `🌍 Geography` `🎵 Music` `⚽ Sports` `🍜 Food` `✍️ Shayari`
-
-Organized into 4 L1 sections:
-- **Facts** — Science, Space, History, Biology, Psychology, Philosophy, Physics, Startups, AI, Economics, Nature, Technology, Movies, Neuroscience, Geography, Music, Sports, Food
-- **Poems** — Poetry, Shayari
-- **Short Stories** — Literature
-- **Puzzles** — Sudoku, Math Puzzles, Logic Puzzles, Word Puzzles, Mixed Puzzles
-
----
-
-## Product Philosophy
-
-Curio is built around a simple belief: **knowledge should feel like discovery, not work.**
-
-Every piece of content is condensed to a single insight — no fluff, no filler. Poetry and shayari come with rich contextual explanations, helping you understand *why* a poem matters, not just what it says.
-
-The app is designed for the commute, the coffee break, or the moment you just want to learn something new without committing to a deep dive. One interesting thing at a time.
-
----
-
-## Design
-
-- **Dark Mode** — A thoughtfully designed dark interface with a refined emerald/cyan/gold palette. Easy on the eyes, beautiful at any hour.
-- **Vibrant Gradients** — Dynamic gradient overlays on cards create depth and visual richness.
-- **3D Parallax Cards** — Feed cards respond to swipe with subtle tilt and depth effects for an immersive reading experience.
-- **Glassmorphism** — Subtle glass-like surfaces, soft borders, and layered depth.
-
----
-
-## Tech Stack
-
-- **Frontend:** Android (Jetpack Compose + Kotlin)
-- **Backend:** Go (Gin + GORM)
-- **Database:** PostgreSQL
-- **Data Scraping:** Python
-
----
-
-
-
-## Screens
-
-| Screen | Purpose |
-|--------|---------|
-| **Splash** | Cinematic video background with animated cube logo |
-| **Onboarding** | L1/L2 interest selection from 4 sections (Facts, Poems, Stories, Puzzles) |
-| **Feed** | Swipeable full-page knowledge cards with 3D parallax, share, bookmark & shuffle |
-| **Discover** | 2-column category grid with emoji icons, L1 pills, and filters |
-| **Bookmarks** | Locally-saved collection of your favorite content |
-| **Puzzles** | Interactive Sudoku, Math, Logic, and Word puzzles |
-| **Content Detail** | Full-screen view of any content item |
-| **Profile** | Personal info form, device UUID, privacy notice & terms, dark mode toggle |
+> Screenshots coming soon.

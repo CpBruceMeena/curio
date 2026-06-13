@@ -37,7 +37,7 @@ CURATED_NOVELS = [
         "pdf_url": "https://giove.isti.cnr.it/demo/eread/Libri/joy/Pride.pdf",
         "cover_url": "https://covers.openlibrary.org/b/id/14348537-L.jpg",
     },
-    # ── New PDF-based additions ──
+    # ── Gutenberg classics (already seeded) ──
     {
         "gutenberg_id": 2701,
         "title": "Moby Dick",
@@ -96,8 +96,6 @@ CURATED_NOVELS = [
         ),
         "language": "en",
         "cover_url": "https://covers.openlibrary.org/b/id/6717853-L.jpg",
-        # No PDF URL — Global Grey PDF has poor chapter structure.
-        # Uses Gutenberg EPUB which produces clean 16 chapters.
     },
     {
         "gutenberg_id": 1400,
@@ -136,19 +134,6 @@ CURATED_NOVELS = [
         "cover_url": "https://covers.openlibrary.org/b/id/14314858-L.jpg",
     },
     {
-        "gutenberg_id": 0,
-        "title": "Gitanjali",
-        "author": "Rabindranath Tagore",
-        "description": (
-            "A sublime collection of 103 prose poems by the first non-European Nobel laureate in "
-            "Literature. Tagore's verses explore the divine, love, nature, and the human spirit "
-            "with lyrical beauty and profound simplicity."
-        ),
-        "language": "en",
-        "pdf_url": "https://www.globalgreyebooks.com/ebooks/rabindranath-tagore_gitanjali.pdf",
-        "cover_url": "https://covers.openlibrary.org/b/id/8246100-L.jpg",
-    },
-    {
         "gutenberg_id": 120,
         "title": "Treasure Island",
         "author": "Robert Louis Stevenson",
@@ -159,8 +144,137 @@ CURATED_NOVELS = [
         ),
         "language": "en",
         "cover_url": "https://covers.openlibrary.org/b/id/13859660-L.jpg",
-        # No PDF URL — Global Grey PDF has poor chapter structure.
-        # Uses Gutenberg EPUB which produces clean 36 chapters.
+    },
+    # ── Additional trending public domain novels ──
+    {
+        "gutenberg_id": 768,
+        "title": "Wuthering Heights",
+        "author": "Emily Brontë",
+        "description": (
+            "A passionate tale of love, revenge, and the destructive power of obsession on the "
+            "Yorkshire moors. Heathcliff and Catherine Earnshaw's tumultuous relationship is "
+            "one of literature's most unforgettable and haunting stories."
+        ),
+        "language": "en",
+        "pdf_url": "https://www.globalgreyebooks.com/ebooks/emily-bronte_wuthering-heights.pdf",
+        "cover_url": "https://covers.openlibrary.org/b/id/12648523-L.jpg",
+    },
+    {
+        "gutenberg_id": 98,
+        "title": "A Tale of Two Cities",
+        "author": "Charles Dickens",
+        "description": (
+            "A sweeping historical novel set in London and Paris before and during the French "
+            "Revolution. Dickens weaves together themes of resurrection, sacrifice, and social "
+            "justice in one of the best-selling novels of all time."
+        ),
+        "language": "en",
+        "pdf_url": "https://www.globalgreyebooks.com/ebooks/charles-dickens_a-tale-of-two-cities.pdf",
+        "cover_url": "https://covers.openlibrary.org/b/id/13413553-L.jpg",
+    },
+    {
+        "gutenberg_id": 215,
+        "title": "The Call of the Wild",
+        "author": "Jack London",
+        "description": (
+            "Buck, a domesticated dog, is stolen from his California home and thrust into the "
+            "brutal world of the Klondike gold rush. A powerful tale of survival, instinct, "
+            "and the primal pull of the wilderness."
+        ),
+        "language": "en",
+        "pdf_url": "https://www.globalgreyebooks.com/ebooks/jack-london_the-call-of-the-wild.pdf",
+        "cover_url": "https://covers.openlibrary.org/b/id/14635929-L.jpg",
+    },
+    {
+        "gutenberg_id": 2554,
+        "title": "Crime and Punishment",
+        "author": "Fyodor Dostoevsky",
+        "description": (
+            "Raskolnikov, a destitute former student, commits a brutal murder and must grapple "
+            "with guilt, morality, and the consequences of his nihilistic philosophy. A "
+            "masterpiece of psychological fiction."
+        ),
+        "language": "en",
+        "pdf_url": "https://www.globalgreyebooks.com/ebooks/fyodor-dostoevsky_crime-and-punishment.pdf",
+        "cover_url": "https://covers.openlibrary.org/b/id/12645156-L.jpg",
+    },
+    {
+        "gutenberg_id": 76,
+        "title": "Adventures of Huckleberry Finn",
+        "author": "Mark Twain",
+        "description": (
+            "Huck Finn escapes his abusive father and embarks on a raft journey down the "
+            "Mississippi River with Jim, a runaway slave. Twain's masterpiece of American "
+            "literature explores freedom, racism, and the moral growth of a young boy."
+        ),
+        "language": "en",
+        "pdf_url": "https://www.globalgreyebooks.com/ebooks/mark-twain_adventures-of-huckleberry-finn.pdf",
+        "cover_url": "https://covers.openlibrary.org/b/id/14649127-L.jpg",
+    },
+    {
+        "gutenberg_id": 43,
+        "title": "The Strange Case of Dr Jekyll and Mr Hyde",
+        "author": "Robert Louis Stevenson",
+        "description": (
+            "A brilliant scientist discovers a potion that unleashes his dark alter ego, "
+            "Mr. Hyde. A chilling exploration of the duality of human nature and the battle "
+            "between good and evil within us all."
+        ),
+        "language": "en",
+        "pdf_url": "https://www.globalgreyebooks.com/ebooks/robert-louis-stevenson_strange-case-of-dr-jekyll-and-mr-hyde.pdf",
+        "cover_url": "https://covers.openlibrary.org/b/id/10714375-L.jpg",
+    },
+    {
+        "gutenberg_id": 36,
+        "title": "The War of the Worlds",
+        "author": "H.G. Wells",
+        "description": (
+            "Martian invaders bring advanced war machines to Earth, laying waste to Victorian "
+            "England. H.G. Wells' seminal science fiction novel introduced the idea of alien "
+            "invasion and remains a thrilling read over a century later."
+        ),
+        "language": "en",
+        "pdf_url": "https://www.globalgreyebooks.com/ebooks/hg-wells_the-war-of-the-worlds.pdf",
+        "cover_url": "https://covers.openlibrary.org/b/id/12640626-L.jpg",
+    },
+    {
+        "gutenberg_id": 158,
+        "title": "Emma",
+        "author": "Jane Austen",
+        "description": (
+            "Emma Woodhouse, a charming and meddlesome young woman, fancies herself a "
+            "matchmaker but repeatedly misreads the romantic entanglements of those around "
+            "her. Austen's most complex and witty novel."
+        ),
+        "language": "en",
+        "pdf_url": "https://www.globalgreyebooks.com/ebooks/jane-austen_emma.pdf",
+        "cover_url": "https://covers.openlibrary.org/b/id/12645136-L.jpg",
+    },
+    {
+        "gutenberg_id": 730,
+        "title": "Oliver Twist",
+        "author": "Charles Dickens",
+        "description": (
+            "An orphan boy escapes a workhouse and falls in with a gang of young pickpockets "
+            "in Victorian London. Dickens' searing social critique blends dark realism with "
+            "unforgettable characters like Fagin and the Artful Dodger."
+        ),
+        "language": "en",
+        "pdf_url": "https://www.globalgreyebooks.com/ebooks/charles-dickens_oliver-twist.pdf",
+        "cover_url": "https://covers.openlibrary.org/b/id/12644326-L.jpg",
+    },
+    {
+        "gutenberg_id": 161,
+        "title": "Sense and Sensibility",
+        "author": "Jane Austen",
+        "description": (
+            "The Dashwood sisters navigate love, heartbreak, and social standing in Regency "
+            "England. Elinor's rational restraint and Marianne's passionate sensibility "
+            "explore the balance between head and heart."
+        ),
+        "language": "en",
+        "pdf_url": "https://www.globalgreyebooks.com/ebooks/jane-austen_sense-and-sensibility.pdf",
+        "cover_url": "https://covers.openlibrary.org/b/id/12644465-L.jpg",
     },
 ]
 

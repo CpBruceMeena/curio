@@ -25,9 +25,12 @@ import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.DownloadDone
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.PlayCircle
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -35,10 +38,14 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -78,6 +85,9 @@ fun NovelDetailScreen(
 
     val state = viewModel.uiState
     val downloadProg by viewModel.downloadProgress.collectAsState()
+
+    var showRefreshDialog by remember { mutableStateOf(false) }
+    var showInfoDialog by remember { mutableStateOf(false) }
 
     if (state.isLoading) {
         LoadingStateScreen(message = "Loading novel...")
@@ -187,6 +197,31 @@ fun NovelDetailScreen(
                         color = Primary.copy(alpha = 0.8f),
                         fontWeight = FontWeight.SemiBold
                     )
+                }
+
+                // Refresh + Info — only when novel is downloaded
+                if (state.isReadyToRead) {
+                    Spacer(Modifier.width(4.dp))
+                    IconButton(
+                        onClick = { showRefreshDialog = true },
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            Icons.Filled.Refresh, "Refresh novel",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                    IconButton(
+                        onClick = { showInfoDialog = true },
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            Icons.Filled.Info, "About refresh",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
                 }
             }
 
@@ -448,6 +483,98 @@ fun NovelDetailScreen(
 
             Spacer(Modifier.height(32.dp))
         }
+    }
+
+    // ── Refresh confirmation dialog ──
+    if (showRefreshDialog) {
+        AlertDialog(
+            onDismissRequest = { showRefreshDialog = false },
+            title = {
+                Text(
+                    "Refresh Novel",
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column {
+                    Text(
+                        "This will clear all downloaded chapters, annotations, and progress for this novel, then re-fetch the latest version from the server.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        "Use this if the book content appears incorrect or incomplete.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showRefreshDialog = false
+                        viewModel.refreshNovel()
+                    }
+                ) {
+                    Text(
+                        "Refresh",
+                        color = Primary,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRefreshDialog = false }) {
+                    Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        )
+    }
+
+    // ── Info dialog ──
+    if (showInfoDialog) {
+        AlertDialog(
+            onDismissRequest = { showInfoDialog = false },
+            title = {
+                Text(
+                    "Refresh — How It Works",
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column {
+                    Text(
+                        "When you tap Refresh:",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "1. Your local copy is removed\n" +
+                        "2. The server re-fetches the book from the original source\n" +
+                        "3. A fresh copy is downloaded to your device\n\n" +
+                        "This is useful if the book format seems broken, " +
+                        "chapters are missing, or you want the latest version.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 22.sp
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "Your bookmarks, annotations, and reading progress will be reset.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showInfoDialog = false }) {
+                    Text("Got it", color = Primary, fontWeight = FontWeight.Bold)
+                }
+            }
+        )
     }
 }
 

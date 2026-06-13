@@ -1,5 +1,6 @@
 package com.curio.app.ui.screens.novel
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -55,7 +57,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
@@ -369,89 +375,140 @@ fun NovelReaderScreen(
                 }
             }
 
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(scrollState)
+            Row(
+                modifier = Modifier.fillMaxSize()
             ) {
-                // Chapter title in body — always shown as a decorative heading
-                if (state.currentChapterTitle.isNotBlank()) {
-                    val isNumberedChapter = state.currentChapterTitle.isBlank() ||
-                        state.currentChapterTitle.startsWith("Chapter", ignoreCase = true)
-                    if (isNumberedChapter) {
-                        // Numbered chapter: show as elegant roman-style heading
-                        Text(
-                            text = state.currentChapterTitle,
-                            style = MaterialTheme.typography.titleLarge.copy(
-                                letterSpacing = 4.sp
-                            ),
-                            color = textColor.copy(alpha = 0.6f),
-                            fontWeight = FontWeight.Normal,
-                            modifier = Modifier.padding(top = 20.dp, bottom = 8.dp)
-                        )
-                    } else {
-                        // Named section: show as strong heading
-                        Text(
-                            text = state.currentChapterTitle,
-                            style = MaterialTheme.typography.headlineSmall,
-                            color = textColor,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(vertical = 16.dp)
-                        )
-                    }
-                }
-
-                // Thin divider before body
-                Box(
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(0.5.dp)
-                        .background(mutedColor.copy(alpha = 0.15f))
-                )
+                        .weight(1f)
+                        .verticalScroll(scrollState)
+                ) {
+                    // Chapter title in body — always shown as a decorative heading
+                    if (state.currentChapterTitle.isNotBlank()) {
+                        val isNumberedChapter = state.currentChapterTitle.isBlank() ||
+                            state.currentChapterTitle.startsWith("Chapter", ignoreCase = true)
+                        if (isNumberedChapter) {
+                            // Numbered chapter: show as elegant roman-style heading
+                            Text(
+                                text = state.currentChapterTitle,
+                                style = MaterialTheme.typography.titleLarge.copy(
+                                    letterSpacing = 4.sp
+                                ),
+                                color = textColor.copy(alpha = 0.6f),
+                                fontWeight = FontWeight.Normal,
+                                modifier = Modifier.padding(top = 20.dp, bottom = 8.dp)
+                            )
+                        } else {
+                            // Named section: show as strong heading
+                            Text(
+                                text = state.currentChapterTitle,
+                                style = MaterialTheme.typography.headlineSmall,
+                                color = textColor,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(vertical = 16.dp)
+                            )
+                        }
+                    }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                    // Thin divider before body
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(0.5.dp)
+                            .background(mutedColor.copy(alpha = 0.15f))
+                    )
 
-                // Body with annotation highlights + TTS highlight + long-press selection
-                Text(
-                    text = annotatedBody,
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        fontSize = state.fontSize.sp,
-                        lineHeight = (state.fontSize * state.lineSpacing).sp
-                    ),
-                    color = textColor,
-                    textAlign = TextAlign.Start,
-                    onTextLayout = { textLayoutResult = it },
-                    modifier = Modifier.pointerInput(state.currentChapterBody, state.savedAnnotations) {
-                        detectTapGestures(
-                            onTap = { offset ->
-                                textLayoutResult?.let { layout ->
-                                    val charOffset = layout.getOffsetForPosition(offset)
-                                    // Check if tap is within a saved annotation
-                                    val tapped = state.savedAnnotations.firstOrNull { ann ->
-                                        charOffset in ann.startPosition until ann.endPosition
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    // Body with annotation highlights + TTS highlight + long-press selection
+                    Text(
+                        text = annotatedBody,
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            fontSize = state.fontSize.sp,
+                            lineHeight = (state.fontSize * state.lineSpacing).sp
+                        ),
+                        color = textColor,
+                        textAlign = TextAlign.Start,
+                        onTextLayout = { textLayoutResult = it },
+                        modifier = Modifier.pointerInput(state.currentChapterBody, state.savedAnnotations) {
+                            detectTapGestures(
+                                onTap = { offset ->
+                                    textLayoutResult?.let { layout ->
+                                        val charOffset = layout.getOffsetForPosition(offset)
+                                        // Check if tap is within a saved annotation
+                                        val tapped = state.savedAnnotations.firstOrNull { ann ->
+                                            charOffset in ann.startPosition until ann.endPosition
+                                        }
+                                        if (tapped != null) {
+                                            viewModel.showAnnotationDetails(tapped)
+                                        }
                                     }
-                                    if (tapped != null) {
-                                        viewModel.showAnnotationDetails(tapped)
-                                    }
-                                }
-                            },
-                            onLongPress = { offset ->
-                                textLayoutResult?.let { layout ->
-                                    val charOffset = layout.getOffsetForPosition(offset)
-                                    val range = findWordRange(state.currentChapterBody, charOffset)
-                                    if (range != null) {
-                                        val word = state.currentChapterBody.substring(range.first, range.second)
-                                        if (word.isNotBlank()) {
-                                            viewModel.onTextLongPressed(word, range.first, range.second)
+                                },
+                                onLongPress = { offset ->
+                                    textLayoutResult?.let { layout ->
+                                        val charOffset = layout.getOffsetForPosition(offset)
+                                        val range = findWordRange(state.currentChapterBody, charOffset)
+                                        if (range != null) {
+                                            val word = state.currentChapterBody.substring(range.first, range.second)
+                                            if (word.isNotBlank()) {
+                                                viewModel.onTextLongPressed(word, range.first, range.second)
+                                            }
                                         }
                                     }
                                 }
-                            }
-                        )
-                    }
-                )
+                            )
+                        }
+                    )
 
-                Spacer(modifier = Modifier.height(32.dp))
+                    Spacer(modifier = Modifier.height(32.dp))
+                }
+
+                // Draggable vertical scrollbar thumb
+                val scrollbarMax = scrollState.maxValue.toFloat().coerceAtLeast(1f)
+                Canvas(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width(8.dp)
+                        .padding(start = 2.dp, top = 4.dp, bottom = 4.dp)
+                        .pointerInput(scrollState) {
+                            detectDragGestures(
+                                onDragStart = { offset ->
+                                    val ratio = (offset.y / size.height).coerceIn(0f, 1f)
+                                    coroutineScope.launch {
+                                        scrollState.scrollTo((ratio * scrollbarMax).toInt().coerceIn(0, scrollState.maxValue))
+                                    }
+                                },
+                                onDrag = { change, _ ->
+                                    change.consume()
+                                    val ratio = (change.position.y / size.height).coerceIn(0f, 1f)
+                                    coroutineScope.launch {
+                                        scrollState.scrollTo((ratio * scrollbarMax).toInt().coerceIn(0, scrollState.maxValue))
+                                    }
+                                }
+                            )
+                        }
+                ) {
+                    val viewH = size.height.coerceAtLeast(1f)
+                    val thumbH = (viewH * viewH / (viewH + scrollbarMax))
+                        .coerceIn(20f, viewH * 0.8f)
+                    val thumbY = scrollProgress * (viewH - thumbH)
+
+                    // Background track (subtle line)
+                    drawRoundRect(
+                        color = mutedColor.copy(alpha = 0.12f),
+                        topLeft = Offset(size.width / 2f - 1f, 0f),
+                        size = Size(2f, viewH),
+                        cornerRadius = CornerRadius(1f, 1f)
+                    )
+
+                    // Draggable thumb
+                    drawRoundRect(
+                        color = mutedColor.copy(alpha = 0.45f),
+                        topLeft = Offset(1f, thumbY),
+                        size = Size(size.width - 2f, thumbH),
+                        cornerRadius = CornerRadius(3f, 3f)
+                    )
+                }
             }
 
             // Thin reading progress bar at the top

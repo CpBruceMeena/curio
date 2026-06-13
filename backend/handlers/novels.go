@@ -1,8 +1,11 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
+	"os/exec"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/curio/backend/database"
@@ -189,6 +192,78 @@ func UpdateNovelProgress(c *gin.Context) {
 	// Re-fetch to return current state
 	database.DB.Where("device_id = ? AND novel_id = ?", req.DeviceID, novelID).First(&progress)
 	jsonResponse(c, http.StatusOK, progress)
+}
+
+// RefreshNovel re-fetches a novel from Gutenberg and replaces all chapter data.
+// Used by the app's "Refresh" feature to fix incorrect chapter parsing.
+func RefreshNovel(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		jsonResponse(c, http.StatusBadRequest, gin.H{"error": "Invalid novel ID"})
+		return
+	}
+
+	var novel models.Novel
+	if err := database.DB.First(&novel, id).Error; err != nil {
+		jsonResponse(c, http.StatusNotFound, gin.H{"error": "Novel not found"})
+		return
+	}
+
+	// Delete existing chapters
+	if err := database.DB.Where("novel_id = ?", id).Delete(&models.NovelChapter{}).Error; err != nil {
+		jsonResponse(c, http.StatusInternalServerError, gin.H{"error": "Failed to clear existing chapters"})
+		return
+	}
+
+	// Re-fetch from Gutenberg
+	// Note: This runs a Python subprocess to re-download and re-parse the novel.
+	// The Gutenberg ID is stored in the source_url field ("https://www.gutenberg.org/ebooks/{id}")
+	gutenbergID := extractGutenbergID(novel.SourceURL)
+	if gutenbergID == 0 {
+		jsonResponse(c, http.StatusBadRequest, gin.H{"error": "Cannot determine Gutenberg ID from source URL"})
+		return
+	}
+
+	// Execute the Python batch scraper for this single ID
+	cmdStr := fmt.Sprintf(
+		"cd scripts && source venv/bin/activate && python -m scraper --novels-batch 0 --ids %d --replace 2>&1",
+		gutenbergID,
+	)
+	cmd := exec.Command("bash", "-c", cmdStr)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		jsonResponse(c, http.StatusInternalServerError, gin.H{
+			"error": fmt.Sprintf("Refresh failed: %v\n%s", err, string(output)),
+		})
+		return
+	}
+
+	// Reload chapters from DB
+	var chapters []models.NovelChapter
+	database.DB.Where("novel_id = ?", id).Order("chapter_number ASC").Find(&chapters)
+
+	jsonResponse(c, http.StatusOK, gin.H{
+		"novel_id": id,
+		"title":    novel.Title,
+		"chapters": len(chapters),
+		"message":  "Novel refreshed successfully",
+	})
+}
+
+// extractGutenbergID parses a Gutenberg URL like "https://www.gutenberg.org/ebooks/1342" → 1342
+func extractGutenbergID(sourceURL string) int {
+	if !strings.Contains(sourceURL, "gutenberg.org/ebooks/") {
+		return 0
+	}
+	parts := strings.Split(sourceURL, "/")
+	for i, part := range parts {
+		if part == "ebooks" && i+1 < len(parts) {
+			if id, err := strconv.Atoi(parts[i+1]); err == nil {
+				return id
+			}
+		}
+	}
+	return 0
 }
 
 // LikeNovel increments the likes count on a novel.

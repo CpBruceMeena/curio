@@ -122,6 +122,11 @@ interface CurioApi {
         @Path("id") novelId: Long
     ): Response<Map<String, Int>>
 
+    @POST("novels/{id}/refresh")
+    suspend fun refreshNovel(
+        @Path("id") novelId: Long
+    ): Response<Map<String, Any>>
+
     // ── TTS (Text-to-Speech) ────────────────────────────────────
     @Streaming
     @POST("tts")

@@ -160,6 +160,52 @@ def scrape_explicit_ids(
     return stats.get("success", 0)
 
 
+def scrape_novel_ids_replace(db: DB, gutenberg_ids: list[int]) -> dict:
+    """Re-download existing novels and replace their chapters.
+
+    Deletes existing chapters for each novel, then re-downloads and inserts.
+    Used by the backend's Refresh endpoint when chapter parsing is incorrect.
+    """
+    stats = {"total": len(gutenberg_ids), "success": 0, "failed": 0}
+
+    for idx, gid in enumerate(gutenberg_ids):
+        curated = _find_curated(gid)
+        label = curated["title"] if curated else f"#{gid}"
+        print(f"\n  [{idx + 1}/{stats['total']}] Refreshing: {label}...")
+
+        result = process_novel_with_retry(gid)
+        if result is None:
+            stats["failed"] += 1
+            continue
+
+        # Find existing novel by title and delete chapters
+        existing = db.query_one(
+            "SELECT id FROM novels WHERE title = %s",
+            [result["title"][:500]]
+        )
+        if existing:
+            novel_id = existing["id"]
+            db.execute("DELETE FROM novel_chapters WHERE novel_id = %s", [novel_id])
+            db.execute("DELETE FROM local_novel_progress WHERE novel_id = %s", [novel_id])
+            print(f"    🗑 Deleted existing chapters for novel #{novel_id}")
+
+        # Insert with fresh data
+        if insert_novel(db, result):
+            stats["success"] += 1
+            print(f"    ✓ Refreshed '{result['title']}' — {result['total_chapters']} chapters")
+        else:
+            stats["failed"] += 1
+
+    return stats
+
+
+def parse_id_list(ids_str: str) -> list[int]:
+    """Parse a comma-separated string of Gutenberg IDs into a list of ints."""
+    if not ids_str:
+        return []
+    return [int(gid.strip()) for gid in ids_str.split(",") if gid.strip().isdigit()]
+
+
 def clear_novels_except(db: DB, keep_ids: list[int] = None):
     """Delete all novels from DB except specified IDs."""
     if keep_ids is None:

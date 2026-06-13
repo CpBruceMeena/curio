@@ -64,6 +64,13 @@ func Migrate() {
 		log.Fatalf("Failed to migrate database: %v", err)
 	}
 	fmt.Println("Database migrated successfully")
+
+	// Run chapter integrity check after migrations
+	if err := ValidateChapterIntegrity(); err != nil {
+		log.Printf("⚠ Chapter integrity check failed: %v", err)
+	} else {
+		fmt.Println("✓ Chapter integrity check passed")
+	}
 }
 
 // runSQLFile reads a SQL file relative to the project root and executes it.
@@ -102,4 +109,59 @@ func ArchiveTableName(contentTableID, categoryID uint) string {
 		return fmt.Sprintf("archive_%d", contentTableID)
 	}
 	return fmt.Sprintf("archive_%d", categoryID)
+}
+
+// ValidateChapterIntegrity checks that all novels have sequential chapter
+// numbering (1..N, no gaps, no duplicates) and clean titles.
+// Called at startup after migrations.
+func ValidateChapterIntegrity() error {
+	type NovelCheck struct {
+		NovelID       uint
+		Title         string
+		MinCh         int
+		MaxCh         int
+		TotalChapters int
+	}
+
+	var rows []NovelCheck
+	if err := DB.Raw(`
+		SELECT n.id AS novel_id, n.title,
+			MIN(nc.chapter_number) AS min_ch,
+			MAX(nc.chapter_number) AS max_ch,
+			COUNT(*) AS total_chapters
+		FROM novels n
+		JOIN novel_chapters nc ON nc.novel_id = n.id
+		GROUP BY n.id, n.title
+		ORDER BY n.id
+	`).Scan(&rows).Error; err != nil {
+		return fmt.Errorf("query failed: %w", err)
+	}
+
+	for _, r := range rows {
+		// Check starts at 1
+		if r.MinCh != 1 {
+			return fmt.Errorf("novel %d '%s': first chapter is %d, expected 1", r.NovelID, r.Title, r.MinCh)
+		}
+		// Check no gaps (max == count means sequential 1..N)
+		if r.MaxCh != r.TotalChapters {
+			return fmt.Errorf("novel %d '%s': chapters %d..%d but count=%d (gaps or non-sequential)",
+				r.NovelID, r.Title, r.MinCh, r.MaxCh, r.TotalChapters)
+		}
+	}
+
+	// Check for duplicate chapter numbers within a novel
+	var duplicates int64
+	DB.Raw(`
+		SELECT COUNT(*) FROM (
+			SELECT novel_id, chapter_number, COUNT(*)
+			FROM novel_chapters
+			GROUP BY novel_id, chapter_number
+			HAVING COUNT(*) > 1
+		) dup
+	`).Scan(&duplicates)
+	if duplicates > 0 {
+		return fmt.Errorf("%d duplicate chapter number(s) found across novels", duplicates)
+	}
+
+	return nil
 }
