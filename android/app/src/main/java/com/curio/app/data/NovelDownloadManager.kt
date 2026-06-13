@@ -66,6 +66,7 @@ class NovelDownloadManager(private val context: Context) {
             title = novel.title,
             author = novel.author,
             description = novel.description,
+            coverImageUrl = novel.coverImageUrl,
             source = novel.source,
             sourceUrl = novel.sourceUrl,
             totalChapters = total,

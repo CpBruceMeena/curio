@@ -11,6 +11,7 @@ import com.curio.app.data.NovelDownloadManager
 import com.curio.app.data.local.JournalDatabase
 import com.curio.app.data.local.LocalNovelProgress
 import com.curio.app.data.local.OfflineNovelChapter
+import com.curio.app.data.local.SavedAnnotation
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,6 +24,7 @@ data class NovelReaderUiState(
     val title: String = "",
     val author: String = "",
     val description: String = "",
+    val coverImageUrl: String = "",
     val totalChapters: Int = 0,
     val chaptersDownloaded: Int = 0,
     val isDownloadCompleted: Boolean = false,
@@ -51,11 +53,25 @@ data class NovelReaderUiState(
     val isPlaying: Boolean = false,
     val isTtsLoading: Boolean = false,
     val audioFilePath: String? = null,
+    val chunkProgress: Int = 0,      // loaded chunks
+    val chunkTotal: Int = 0,          // total chunks
+    val currentTtsChunkIndex: Int = -1,  // -1 = not playing; 0+ = which chunk is active
+    val currentTtsSentenceIndex: Int = -1,  // which sentence within the current chunk is being read
+    val currentTtsSentenceTotal: Int = 0,    // total sentences in the current chunk
+
+    // Saved annotations (word highlight + note)
+    val savedAnnotations: List<SavedAnnotation> = emptyList(),
+    val showAnnotationPopup: Boolean = false,
+    val pendingAnnotationText: String = "",
+    val pendingAnnotationStart: Int = 0,
+    val pendingAnnotationEnd: Int = 0,
+    val viewingAnnotation: SavedAnnotation? = null,
 
     // Reading preferences
     val fontSize: Int = 18,
     val lineSpacing: Float = 1.6f,
-    val isDarkMode: Boolean = false
+    val isDarkMode: Boolean = false,
+    val playbackSpeed: Float = 1.0f  // 1.0, 1.25, 1.5, 2.0
 )
 
 class NovelReaderViewModel(application: Application) : AndroidViewModel(application) {
@@ -73,6 +89,77 @@ class NovelReaderViewModel(application: Application) : AndroidViewModel(applicat
     // Expose download progress for the detail screen
     private val _downloadProgress = MutableStateFlow<com.curio.app.data.DownloadProgress?>(null)
     val downloadProgress: StateFlow<com.curio.app.data.DownloadProgress?> = _downloadProgress.asStateFlow()
+
+    // ── Saved Annotations ─────────────────────────────────────
+
+    /** Load annotations for the current chapter from Room. */
+    fun loadAnnotationsForChapter() {
+        val novelId = uiState.novelId
+        val chapterNum = uiState.currentChapterIndex + 1
+        if (novelId == 0L) return
+        viewModelScope.launch {
+            val annotations = db.savedAnnotationDao().getByChapter(novelId, chapterNum)
+            uiState = uiState.copy(savedAnnotations = annotations)
+        }
+    }
+
+    /** Called when the user long-presses text in the chapter body. */
+    fun onTextLongPressed(text: String, startPos: Int, endPos: Int) {
+        uiState = uiState.copy(
+            pendingAnnotationText = text,
+            pendingAnnotationStart = startPos,
+            pendingAnnotationEnd = endPos,
+            showAnnotationPopup = true
+        )
+    }
+
+    /** Dismiss the annotation popup. */
+    fun dismissAnnotationPopup() {
+        uiState = uiState.copy(showAnnotationPopup = false, pendingAnnotationText = "")
+    }
+
+    /** Save a new annotation with the user's note (or empty). */
+    fun saveAnnotation(note: String) {
+        val text = uiState.pendingAnnotationText
+        if (text.isBlank()) return
+        viewModelScope.launch {
+            val annotation = SavedAnnotation(
+                novelId = uiState.novelId,
+                chapterNumber = uiState.currentChapterIndex + 1,
+                selectedText = text,
+                note = note.trim(),
+                startPosition = uiState.pendingAnnotationStart,
+                endPosition = uiState.pendingAnnotationEnd
+            )
+            db.savedAnnotationDao().insert(annotation)
+            // Reload annotations
+            val annotations = db.savedAnnotationDao().getByChapter(uiState.novelId, uiState.currentChapterIndex + 1)
+            uiState = uiState.copy(
+                savedAnnotations = annotations,
+                showAnnotationPopup = false,
+                pendingAnnotationText = ""
+            )
+        }
+    }
+
+    /** Delete an annotation by its ID. */
+    fun deleteAnnotation(id: Long) {
+        viewModelScope.launch {
+            db.savedAnnotationDao().deleteById(id)
+            uiState = uiState.copy(viewingAnnotation = null)
+            loadAnnotationsForChapter()
+        }
+    }
+
+    /** Show details for an existing annotation (triggered by tapping on a highlighted word). */
+    fun showAnnotationDetails(annotation: SavedAnnotation) {
+        uiState = uiState.copy(viewingAnnotation = annotation)
+    }
+
+    /** Dismiss the annotation details view. */
+    fun dismissAnnotationDetails() {
+        uiState = uiState.copy(viewingAnnotation = null)
+    }
 
     // ── Initialize / Load ───────────────────────────────────
 
@@ -99,6 +186,7 @@ class NovelReaderViewModel(application: Application) : AndroidViewModel(applicat
                     title = localNovel.title,
                     author = localNovel.author,
                     description = localNovel.description,
+                    coverImageUrl = localNovel.coverImageUrl,
                     totalChapters = localNovel.totalChapters,
                     chaptersDownloaded = localNovel.chaptersDownloaded,
                     isDownloadCompleted = localNovel.downloadCompleted,
@@ -114,6 +202,7 @@ class NovelReaderViewModel(application: Application) : AndroidViewModel(applicat
                     isLoading = false
                 )
                 startAutoSave()
+                loadAnnotationsForChapter()
                 return@launch
             }
 
@@ -125,6 +214,7 @@ class NovelReaderViewModel(application: Application) : AndroidViewModel(applicat
                         title = detail.novel.title,
                         author = detail.novel.author,
                         description = detail.novel.description,
+                        coverImageUrl = detail.novel.coverImageUrl,
                         totalChapters = detail.novel.totalChapters,
                         isLoading = false,
                         isReadyToRead = false
@@ -194,6 +284,7 @@ class NovelReaderViewModel(application: Application) : AndroidViewModel(applicat
             currentChapterTitle = ch.title.ifBlank { "Chapter ${ch.chapterNumber}" }
         )
         saveProgress()
+        loadAnnotationsForChapter()
     }
 
     fun nextChapter() {
@@ -264,48 +355,72 @@ class NovelReaderViewModel(application: Application) : AndroidViewModel(applicat
         if (uiState.isPlaying) stopTts() else startTts()
     }
 
-    private fun startTts() {
+    /**
+     * Start chunked TTS — ChunkedAudioPlayer handles splitting, fetching,
+     * and playing. We set initial loading state; callbacks from the player
+     * update progress.
+     */
+    fun startTts() {
         val body = uiState.currentChapterBody
         if (body.isBlank()) return
 
-        uiState = uiState.copy(isTtsLoading = true)
+        uiState = uiState.copy(
+            isTtsLoading = true,
+            isPlaying = false,
+            chunkProgress = 0,
+            chunkTotal = 0
+        )
 
-        viewModelScope.launch {
-            try {
-                val api = com.curio.app.data.api.RetrofitClient.api
-                val responseBody = api.generateSpeech(
-                    com.curio.app.data.model.TtsRequest(
-                        text = body,
-                        voice = "en-US-JennyNeural"
-                    )
-                )
-                val file = java.io.File.createTempFile("tts_chapter_", ".mp3")
-                file.outputStream().use { output ->
-                    responseBody.byteStream().use { input ->
-                        input.copyTo(output)
-                    }
-                }
-                uiState = uiState.copy(
-                    isTtsLoading = false,
-                    isPlaying = true,
-                    audioFilePath = file.absolutePath
-                )
-            } catch (e: Exception) {
-                uiState = uiState.copy(isTtsLoading = false, isPlaying = false)
-            }
+        // Actual fetching and playback is handled by ChunkedAudioPlayer
+        // in the UI layer (NovelReaderScreen), which calls back here via
+        // updateChunkProgress() and onChunksLoaded()
+    }
+
+    /** Called by ChunkedAudioPlayer as chunks load */
+    fun updateChunkProgress(loaded: Int, total: Int) {
+        uiState = uiState.copy(
+            chunkProgress = loaded,
+            chunkTotal = total,
+            isTtsLoading = loaded < total,
+            isPlaying = true
+        )
+    }
+
+    /** Called by ChunkedAudioPlayer when a new chunk starts playing */
+    fun updateCurrentTtsChunk(index: Int) {
+        uiState = uiState.copy(currentTtsChunkIndex = index, currentTtsSentenceIndex = -1, currentTtsSentenceTotal = 0)
+    }
+
+    /** Called by the sentence-tracking loop in NovelReaderScreen */
+    fun updateCurrentTtsSentence(index: Int, total: Int) {
+        if (index != uiState.currentTtsSentenceIndex || total != uiState.currentTtsSentenceTotal) {
+            uiState = uiState.copy(currentTtsSentenceIndex = index, currentTtsSentenceTotal = total)
         }
+    }
+
+    /** Called by ChunkedAudioPlayer when all chunks loaded */
+    fun onChunksLoaded() {
+        uiState = uiState.copy(isTtsLoading = false, isPlaying = true)
     }
 
     fun stopTts() {
-        uiState = uiState.copy(isPlaying = false, audioFilePath = null)
+        uiState = uiState.copy(
+            isPlaying = false,
+            isTtsLoading = false,
+            audioFilePath = null,
+            chunkProgress = 0,
+            chunkTotal = 0,
+            currentTtsChunkIndex = -1,
+            currentTtsSentenceIndex = -1,
+            currentTtsSentenceTotal = 0
+        )
     }
 
     fun ttsFinished() {
-        uiState = uiState.copy(isPlaying = false, audioFilePath = null)
-        if (hasNextChapter()) {
-            nextChapter()
-            startTts()
-        }
+        uiState = uiState.copy(isPlaying = false, chunkProgress = 0, chunkTotal = 0, currentTtsChunkIndex = -1, currentTtsSentenceIndex = -1, currentTtsSentenceTotal = 0)
+        // No auto-advance — user taps Listen per chapter.
+        // (Auto-advance can be added later with a "continuous play" toggle
+        //  that properly distinguishes user-initiated stop from natural completion.)
     }
 
     // ── Reading Preferences ─────────────────────────────────
@@ -322,6 +437,11 @@ class NovelReaderViewModel(application: Application) : AndroidViewModel(applicat
 
     fun toggleDarkMode() {
         uiState = uiState.copy(isDarkMode = !uiState.isDarkMode)
+    }
+
+    /** Set TTS playback speed. Applied by ChunkedAudioPlayer on each chunk switch. */
+    fun setPlaybackSpeed(speed: Float) {
+        uiState = uiState.copy(playbackSpeed = speed)
     }
 
     override fun onCleared() {

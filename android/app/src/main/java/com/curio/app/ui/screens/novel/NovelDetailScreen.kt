@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -37,9 +39,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -59,7 +58,6 @@ import com.curio.app.ui.components.LoadingStateScreen
 import com.curio.app.ui.theme.Primary
 import com.curio.app.ui.theme.SecondaryContainer
 import com.curio.app.viewmodel.NovelReaderViewModel
-import kotlinx.coroutines.launch
 
 private val coverGradients = listOf(
     listOf(Color(0xFF1A1A2E), Color(0xFF16213E), Color(0xFF0F3460)),
@@ -92,16 +90,8 @@ fun NovelDetailScreen(
         if (it.totalChapters > 0) it.chaptersDownloaded.toFloat() / it.totalChapters else 0f
     } ?: 0f
 
-    // Fetch cover URL for display from the server
-    val repo = remember { com.curio.app.data.repository.NovelRepository() }
-    var coverUrl by remember { mutableStateOf("") }
-    LaunchedEffect(novelId, state.title, state.isReadyToRead) {
-        if (state.title.isNotBlank() && !state.isReadyToRead) {
-            repo.getNovel(novelId).onSuccess { detail ->
-                coverUrl = detail.novel.coverImageUrl
-            }
-        }
-    }
+    // Cover URL comes from the ViewModel state (populated from API or local storage)
+    val coverUrl = state.coverImageUrl
 
     Column(
         modifier = Modifier
@@ -118,29 +108,45 @@ fun NovelDetailScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(320.dp)
+                    .aspectRatio(2f / 3f)
             ) {
                 // Load cover image or show gradient placeholder
                 if (coverUrl.isNotBlank()) {
-                        SubcomposeAsyncImage(
-                            model = ImageRequest.Builder(CurioApp.instance)
-                                .data(coverUrl)
-                                .crossfade(400)
-                                .memoryCachePolicy(CachePolicy.ENABLED)
-                                .build(),
-                            contentDescription = state.title,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize(),
-                            loading = {
-                                Box(Modifier.fillMaxSize().background(Brush.verticalGradient(colors)))
-                            },
-                            error = {
-                                CoverHeader(colors, state.title, state.author, onBack)
-                            }
-                        )
-                    } else {
-                        CoverHeader(colors, state.title, state.author, onBack)
-                    }
+                    SubcomposeAsyncImage(
+                        model = ImageRequest.Builder(CurioApp.instance)
+                            .data(coverUrl)
+                            .crossfade(400)
+                            .memoryCachePolicy(CachePolicy.ENABLED)
+                            .build(),
+                        contentDescription = state.title,
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier.fillMaxSize(),
+                        loading = {
+                            Box(Modifier.fillMaxSize().background(Brush.verticalGradient(colors)))
+                        },
+                        error = {
+                            CoverHeader(colors, state.title, state.author, onBack)
+                        }
+                    )
+                } else {
+                    CoverHeader(colors, state.title, state.author, onBack)
+                }
+
+                // Back button always on top of the cover area
+                IconButton(
+                    onClick = onBack,
+                    modifier = Modifier
+                        .padding(start = 12.dp, top = 12.dp)
+                        .align(Alignment.TopStart)
+                        .size(40.dp)
+                        .background(Color.Black.copy(alpha = 0.35f), CircleShape)
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack, "Back",
+                        tint = Color.White,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
             }
 
             // ── Metadata bar ──

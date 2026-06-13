@@ -60,6 +60,7 @@ def process_novel_with_retry(
                 description=curated.get("description", ""),
                 language=curated.get("language", "en"),
                 pdf_url=curated.get("pdf_url"),
+                cover_url=curated.get("cover_url"),
             )
             if result is not None:
                 return result
