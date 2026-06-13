@@ -244,11 +244,20 @@ def extract_chapters_from_epub(epub_bytes: bytes) -> Optional[list[dict]]:
 # Note: Project Gutenberg does not host official PDFs for most books.
 # This function is for parsing PDFs from other sources (mirrors, uploads).
 
-PDF_CHAPTER_PATTERN = re.compile(
+# Primary: classic chapter headings like "CHAPTER I", "Chapter 1", "Part One"
+PDF_CHAPTER_CLASSIC = re.compile(
     r"^(?:CHAPTER|Chapter|CHAP\.?|PART|Part|SECTION|Section|"
     r"ACT|Act|SCENE|Scene|STORY|Story|LETTER|Letter|ADVENTURE|Adventure)"
     r"\s+([IVXLCDM]+|\d+)[\.\s]",
     re.MULTILINE | re.IGNORECASE,
+)
+
+# Fallback: numbered headings like "1. Title", "2. Title" at line start
+# This catches modern books that don't use "Chapter" prefix.
+# Uses a character class [A-Z] — most chapter titles start with a capital letter.
+PDF_CHAPTER_NUMBERED = re.compile(
+    r"^[ \t]*(\d+)\.?[ \t]+[A-Z]",
+    re.MULTILINE,
 )
 
 
@@ -304,30 +313,60 @@ def extract_chapters_from_pdf(pdf_data: bytes) -> Optional[list[dict]]:
     text = text.strip()
 
     # ── Find chapter boundaries ──
-    matches = list(PDF_CHAPTER_PATTERN.finditer(text))
+    # Try classic chapter patterns first, fall back to numbered headings
+    matches = list(PDF_CHAPTER_CLASSIC.finditer(text))
+    method = "classic"
+    if len(matches) < 3:
+        numbered_matches = list(PDF_CHAPTER_NUMBERED.finditer(text))
+        if len(numbered_matches) >= len(matches):
+            matches = numbered_matches
+            method = "numbered"
 
     if not matches:
         print(f"    ⚠ No chapter headings found in PDF")
         return None
+    else:
+        print(f"    ✓ Found {len(matches)} chapter headings ({method} pattern)")
 
     # ── Split at chapter boundaries using regex match positions ──
     chapters = []
     for idx, m in enumerate(matches):
-        title = m.group(0).strip().rstrip(".")
+        if method == "numbered":
+            # Use the matched number as chapter number
+            num = int(m.group(1))
+            # Only use the heading prefix as title (e.g., "1.")
+            title = m.group(0).strip().rstrip(".")[:300]
+        else:
+            num = idx + 1
+            title = m.group(0).strip().rstrip(".")[:300]
+
         body_start = m.end()  # content starts after the heading match
         body_end = matches[idx + 1].start() if idx + 1 < len(matches) else len(text)
 
         body = text[body_start:body_end].strip()
-        if len(body) < 100:
+        if len(body) < 200:
             continue
 
         chapters.append({
-            "chapter_number": idx + 1,
-            "title": title[:300],
+            "chapter_number": num,
+            "title": title,
             "body": body,
         })
 
-    return chapters if chapters else None
+    if not chapters:
+        print(f"    ⚠ All chapters too short after splitting")
+        return None
+
+    # Guard: if less than 2 chapters survived, treat as single chapter
+    if len(chapters) < 2:
+        print(f"    ⚠ Only {len(chapters)} chapter(s) after filtering — returning as single block")
+        chapters = [{
+            "chapter_number": 1,
+            "title": "",
+            "body": text[:50000],
+        }]
+
+    return chapters
 
 
 # ─── Novel Content Cleaning (applied to all parsing paths) ────────────────────
@@ -590,6 +629,66 @@ def split_into_chapters_improved(text: str) -> list[dict]:
     return chapters
 
 
+# ─── Guardrails: chapter integrity validation ────────────────────────────────
+
+def validate_chapter_integrity(
+    chapters: list[dict],
+    novel_title: str,
+) -> None:
+    """Validate that chapters are well-formed before returning.
+
+    Checks:
+    - Chapters are numbered sequentially 1..N (no gaps, no duplicates)
+    - All titles follow 'Chapter N' format
+    - All bodies have minimum content length
+
+    Raises ValueError on validation failure to prevent bad data insertion.
+    """
+    if not chapters:
+        raise ValueError(f"[{novel_title}] No chapters to validate")
+
+    # Check sequential numbering 1..N
+    for i, ch in enumerate(chapters):
+        expected = i + 1
+        actual = ch.get("chapter_number", 0)
+        if actual != expected:
+            raise ValueError(
+                f"[{novel_title}] Chapter {actual} at index {i} — "
+                f"expected number {expected}. Non-sequential numbering detected."
+            )
+
+    # Check all titles match "Chapter N" format
+    for ch in chapters:
+        title = ch.get("title", "")
+        if not re.match(r"^Chapter \d+$", title):
+            raise ValueError(
+                f"[{novel_title}] Invalid chapter title '{title}' — "
+                f"expected 'Chapter N' format"
+            )
+
+    # Check duplicate titles (e.g., two chapters both called "Chapter 1")
+    titles_seen = set()
+    for ch in chapters:
+        t = ch.get("title", "")
+        if t in titles_seen:
+            raise ValueError(
+                f"[{novel_title}] Duplicate chapter title '{t}' — "
+                f"chapters must have unique titles"
+            )
+        titles_seen.add(t)
+
+    # Check minimum body length (reject extremely short/broken chapters)
+    for ch in chapters:
+        body = ch.get("body", "")
+        if len(body.strip()) < 200:
+            raise ValueError(
+                f"[{novel_title}] Chapter {ch.get('chapter_number')} body too short "
+                f"({len(body.strip())} chars) — likely empty or boilerplate only"
+            )
+
+    print(f"    ✓ Guardrail passed: {len(chapters)} chapters validated for '{novel_title}'")
+
+
 # ─── Main API ─────────────────────────────────────────────────────────────────
 
 
@@ -697,8 +796,11 @@ def fetch_and_format_novel(
         body = normalize_text_alignment(body, category="Short Stories")
         body = tts_normalize_text(body, category="Short Stories")
 
-        # Step 3: Cap chapter body length at 15K chars (some Gutenberg chapters are huge)
-        body = body[:15000]
+        # Step 3: Cap chapter body length
+        # For single-chapter books (PDFs without detected headings), use a higher cap (50K)
+        # to avoid truncating full books. For multi-chapter books, 15K per chapter is fine.
+        max_body = 50000 if len(processed_chapters) <= 1 else 15000
+        body = body[:max_body]
 
         read_time = max(8, min(180, round(len(body.split()) / 3)))
 
@@ -712,8 +814,24 @@ def fetch_and_format_novel(
     if not processed_chapters:
         return None
 
+    # Renumber chapters sequentially 1..N (fixes Gutenberg EPUBs where
+    # part/chapter headings produce non-sequential numbers like 45, 47, 48...)
+    # Also regenerate titles as "Chapter N" to avoid duplicates like "Chapter 1"
+    # appearing multiple times when the novel has multiple parts.
+    for i, ch in enumerate(processed_chapters):
+        ch["chapter_number"] = i + 1
+        ch["title"] = f"Chapter {i + 1}"
+
+    # ── Guardrail: validate chapter integrity ──
+    # Fail fast if chapters have gaps, duplicates, or bad titles.
+    validate_chapter_integrity(processed_chapters, title)
+
     # Determine source URL
-    source_url = f"https://www.gutenberg.org/ebooks/{gutenberg_id}"
+    if gutenberg_id >= 99000:
+        # Fake Gutenberg ID — use PDF URL or a generic reference
+        source_url = pdf_url or f"https://www.gutenberg.org/ebooks/{gutenberg_id}"
+    else:
+        source_url = f"https://www.gutenberg.org/ebooks/{gutenberg_id}"
 
     return {
         "title": title[:500],

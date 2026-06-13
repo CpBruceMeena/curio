@@ -270,6 +270,38 @@ class NovelReaderViewModel(application: Application) : AndroidViewModel(applicat
         uiState = uiState.copy(isDownloading = false)
     }
 
+    /**
+     * Refresh a novel by clearing local data and re-downloading from the backend.
+     * The backend re-fetches from Gutenberg and replaces all chapters.
+     */
+    fun refreshNovel() {
+        val novelId = uiState.novelId
+        if (novelId == 0L) return
+
+        uiState = uiState.copy(isLoading = true)
+
+        viewModelScope.launch {
+            // Clear local storage
+            db.offlineNovelChapterDao().deleteByNovelId(novelId)
+            db.localNovelProgressDao().deleteByNovelId(novelId)
+            db.offlineNovelDao().deleteById(novelId)
+            db.savedAnnotationDao().deleteByNovel(novelId)
+
+            // Tell backend to re-fetch from Gutenberg
+            val repo = com.curio.app.data.repository.NovelRepository()
+            repo.refreshNovel(novelId).onFailure { e ->
+                uiState = uiState.copy(
+                    isLoading = false,
+                    error = "Refresh failed: ${e.message}"
+                )
+                return@launch
+            }
+
+            // Re-download from scratch
+            startDownload()
+        }
+    }
+
     // ── Chapter Navigation ──────────────────────────────────
 
     fun navigateToChapter(chapterNum: Int) {

@@ -68,7 +68,9 @@ data class L1Group(
     val icon: String = "",
     @SerializedName("color_hex")
     val colorHex: String = "",
-    val categories: List<Category> = emptyList()
+    val categories: List<Category> = emptyList(),
+    @SerializedName("novel_count")
+    val novelCount: Long = 0
 )
 
 data class L1CategoriesResponse(

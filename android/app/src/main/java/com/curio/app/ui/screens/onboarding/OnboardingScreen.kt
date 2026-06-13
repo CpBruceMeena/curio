@@ -181,11 +181,17 @@ fun OnboardingScreen(
                     ) {
                         row.forEach { group ->
                             val isSelected = uiState.selectedInterest == group.name
+                            val displayCount = if (group.name == "Novels") {
+                                group.novelCount.toInt()
+                            } else {
+                                group.categories.size
+                            }
                             OnboardingL1Card(
                                 name = group.name,
                                 emoji = l1Emoji(group.name),
                                 gradient = l1Gradient(group.name),
-                                subCount = group.categories.size,
+                                subCount = displayCount,
+                                subLabel = if (group.name == "Novels") "novels" else "topics",
                                 isSelected = isSelected,
                                 isRefreshing = uiState.isRefreshing,
                                 onClick = { viewModel.toggleInterest(group.name) },
@@ -259,7 +265,7 @@ fun OnboardingScreen(
 @Composable
 private fun OnboardingL1Card(
     name: String, emoji: String, gradient: Pair<Color, Color>,
-    subCount: Int, isSelected: Boolean, isRefreshing: Boolean,
+    subCount: Int, subLabel: String = "topics", isSelected: Boolean, isRefreshing: Boolean,
     onClick: () -> Unit, modifier: Modifier = Modifier
 ) {
     // ── Shimmer animation ──
@@ -340,7 +346,7 @@ private fun OnboardingL1Card(
                 Text(name, style = MaterialTheme.typography.titleLarge,
                     color = OnSurface, fontWeight = FontWeight.ExtraBold)
                 Spacer(modifier = Modifier.height(2.dp))
-                Text("$subCount topics", style = MaterialTheme.typography.labelSmall,
+                Text("$subCount $subLabel", style = MaterialTheme.typography.labelSmall,
                     color = OnSurfaceVariant.copy(alpha = 0.7f), fontWeight = FontWeight.Medium)
             }
         }

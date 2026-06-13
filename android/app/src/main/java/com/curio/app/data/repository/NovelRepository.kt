@@ -98,4 +98,18 @@ class NovelRepository {
             Result.failure(e)
         }
     }
+
+    suspend fun refreshNovel(novelId: Long): Result<String> {
+        return try {
+            val response = api.refreshNovel(novelId)
+            if (response.isSuccessful) {
+                val msg = response.body()?.get("message") as? String ?: "Refreshed"
+                Result.success(msg)
+            } else {
+                Result.failure(Exception("Failed to refresh novel: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

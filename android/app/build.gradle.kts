@@ -21,7 +21,7 @@ android {
             useSupportLibrary = true
         }
 
-        buildConfigField("String", "API_BASE_URL", "\"https://98ec-2401-4900-881b-7143-404-7681-92b7-ba37.ngrok-free.app/api/v1/\"")
+        buildConfigField("String", "API_BASE_URL", "\"https://helpful-supposedly-moose.ngrok-free.app/api/v1/\"")
     }
 
     signingConfigs {
@@ -84,6 +84,7 @@ dependencies {
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("androidx.compose.foundation:foundation")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.compose.animation:animation")

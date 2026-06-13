@@ -43,6 +43,7 @@ type L1Group struct {
 	Icon        string              `json:"icon"`
 	ColorHex    string              `json:"color_hex"`
 	Categories  []models.Category   `json:"categories"`
+	NovelCount  int64               `json:"novel_count"`
 }
 
 func GetL1Categories(c *gin.Context) {
@@ -72,15 +73,24 @@ func GetL1Categories(c *gin.Context) {
 		"Novels":        {"auto_stories", "#8b5cf6"},
 	}
 
+	// Count novels for the Novels group
+	var novelCount int64
+	database.DB.Model(&models.Novel{}).Count(&novelCount)
+
 	var groups []L1Group
 	for _, name := range groupOrder {
 		if cats, ok := groupMap[name]; ok {
 			meta := groupMeta[name]
+			nc := int64(0)
+			if name == "Novels" {
+				nc = novelCount
+			}
 			groups = append(groups, L1Group{
 				Name:       name,
 				Icon:       meta.icon,
 				ColorHex:   meta.color,
 				Categories: cats,
+				NovelCount: nc,
 			})
 		}
 	}
