@@ -12,9 +12,10 @@ import androidx.room.RoomDatabase
         CachedContent::class,
         OfflineNovel::class,
         OfflineNovelChapter::class,
-        LocalNovelProgress::class
+        LocalNovelProgress::class,
+        SavedAnnotation::class
     ],
-    version = 4,
+    version = 6,
     exportSchema = false
 )
 abstract class JournalDatabase : RoomDatabase() {
@@ -25,6 +26,7 @@ abstract class JournalDatabase : RoomDatabase() {
     abstract fun offlineNovelDao(): OfflineNovelDao
     abstract fun offlineNovelChapterDao(): OfflineNovelChapterDao
     abstract fun localNovelProgressDao(): LocalNovelProgressDao
+    abstract fun savedAnnotationDao(): SavedAnnotationDao
 
     companion object {
         @Volatile

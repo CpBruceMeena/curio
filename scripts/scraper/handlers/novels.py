@@ -35,6 +35,7 @@ CURATED_NOVELS = [
         ),
         "language": "en",
         "pdf_url": "https://giove.isti.cnr.it/demo/eread/Libri/joy/Pride.pdf",
+        "cover_url": "https://covers.openlibrary.org/b/id/14348537-L.jpg",
     },
     # ── New PDF-based additions ──
     {
@@ -47,6 +48,7 @@ CURATED_NOVELS = [
         ),
         "language": "en",
         "pdf_url": "https://www.globalgreyebooks.com/ebooks/herman-melville_moby-dick.pdf",
+        "cover_url": "https://covers.openlibrary.org/b/id/10544254-L.jpg",
     },
     {
         "gutenberg_id": 345,
@@ -58,6 +60,7 @@ CURATED_NOVELS = [
         ),
         "language": "en",
         "pdf_url": "https://www.globalgreyebooks.com/ebooks/bram-stoker_dracula.pdf",
+        "cover_url": "https://covers.openlibrary.org/b/id/12216503-L.jpg",
     },
     {
         "gutenberg_id": 84,
@@ -69,6 +72,7 @@ CURATED_NOVELS = [
         ),
         "language": "en",
         "pdf_url": "https://www.globalgreyebooks.com/ebooks/mary-shelley_frankenstein.pdf",
+        "cover_url": "https://covers.openlibrary.org/b/id/12356249-L.jpg",
     },
     {
         "gutenberg_id": 11,
@@ -80,6 +84,7 @@ CURATED_NOVELS = [
         ),
         "language": "en",
         "pdf_url": "https://www.globalgreyebooks.com/ebooks/lewis-carroll_alices-adventures-in-wonderland.pdf",
+        "cover_url": "https://covers.openlibrary.org/b/id/10527843-L.jpg",
     },
     {
         "gutenberg_id": 1661,
@@ -90,6 +95,7 @@ CURATED_NOVELS = [
             "and Dr. Watson, solving baffling mysteries in Victorian London."
         ),
         "language": "en",
+        "cover_url": "https://covers.openlibrary.org/b/id/6717853-L.jpg",
         # No PDF URL — Global Grey PDF has poor chapter structure.
         # Uses Gutenberg EPUB which produces clean 16 chapters.
     },
@@ -103,6 +109,7 @@ CURATED_NOVELS = [
         ),
         "language": "en",
         "pdf_url": "https://www.globalgreyebooks.com/ebooks/charles-dickens_great-expectations.pdf",
+        "cover_url": "https://covers.openlibrary.org/b/id/13322313-L.jpg",
     },
     {
         "gutenberg_id": 1260,
@@ -114,6 +121,7 @@ CURATED_NOVELS = [
         ),
         "language": "en",
         "pdf_url": "https://www.globalgreyebooks.com/ebooks/charlotte-bronte_jane-eyre.pdf",
+        "cover_url": "https://covers.openlibrary.org/b/id/8235363-L.jpg",
     },
     {
         "gutenberg_id": 174,
@@ -125,6 +133,7 @@ CURATED_NOVELS = [
         ),
         "language": "en",
         "pdf_url": "https://www.globalgreyebooks.com/ebooks/oscar-wilde_picture-of-dorian-gray.pdf",
+        "cover_url": "https://covers.openlibrary.org/b/id/14314858-L.jpg",
     },
     {
         "gutenberg_id": 0,
@@ -137,6 +146,7 @@ CURATED_NOVELS = [
         ),
         "language": "en",
         "pdf_url": "https://www.globalgreyebooks.com/ebooks/rabindranath-tagore_gitanjali.pdf",
+        "cover_url": "https://covers.openlibrary.org/b/id/8246100-L.jpg",
     },
     {
         "gutenberg_id": 120,
@@ -148,6 +158,7 @@ CURATED_NOVELS = [
             "adventure novel that shaped the modern pirate genre."
         ),
         "language": "en",
+        "cover_url": "https://covers.openlibrary.org/b/id/13859660-L.jpg",
         # No PDF URL — Global Grey PDF has poor chapter structure.
         # Uses Gutenberg EPUB which produces clean 36 chapters.
     },
@@ -216,6 +227,7 @@ def fetch_novels(
             description=entry.get("description", ""),
             language=entry.get("language", "en"),
             pdf_url=entry.get("pdf_url"),
+            cover_url=entry.get("cover_url"),
         )
 
         if result is None:

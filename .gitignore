@@ -12,6 +12,7 @@ backend/backend
 backend/curio-server
 backend/server
 backend/tmp/
+backend/novels_scraper/
 vendor/
 
 # ── Python / Scraper ─────────────────────────────────────

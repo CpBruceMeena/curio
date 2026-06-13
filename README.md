@@ -73,7 +73,35 @@ Each puzzle supports validation, hints, and explanations.
 ### 👤 Profile & Personalization
 Create a profile to help Curio personalize your experience. Share your name, age, gender, likes, and dislikes — all stored securely on the backend and linked to your device via a unique UUID. A dedicated profile tab lets you manage your information and preferences.
 
-### 🔊 Text-to-Speech
+### 📚 Novels (Offline Reader)
+
+Read public-domain classics with a full-featured reading experience:
+- **Download for offline** — Novels are downloaded chapter-by-chapter and stored locally via Room database. Chapter 1 is prioritized so you can start reading immediately.
+- **Reading progress** — Auto-saves your position every 30 seconds. Tracks last chapter read, scroll position, and bookmark status.
+- **Font customization** — Adjust font size (12–28) and toggle between dark mode and warm sepia light mode.
+- **Chapter navigation** — Previous/next chapter buttons with persisted progress tracking.
+
+### 🔊 Text-to-Speech (Chunked Playback)
+
+Curio reads content aloud with a low-latency chunked audio system:
+- **Chunked streaming** — Text is split into ~1000-character chunks. The first chunk plays in ~2–3 seconds while remaining chunks pre-fetch in parallel.
+- **Gapless playback** — Chunks transition seamlessly via ExoPlayer — no gaps between chunks.
+- **Playback speed control** — Choose from 1×, 1.25×, 1.5×, or 2× speed, applied instantly to the current chunk.
+- **Sentence-level tracking** — The currently spoken sentence is highlighted in the text with a colored background. The view auto-scrolls to follow along.
+- **Auto-play mode** — Sit back and listen to an entire feed session — audio plays through each card, pauses briefly between cards, and auto-swipes to the next.
+- **Voice selection** — Curio picks the perfect voice for each type of content: warm and clear for facts, expressive for poetry, British English for classic literature, calm and precise for puzzles.
+
+### 🏷️ Word Annotations (Local Only)
+
+Save and revisit words or phrases you find interesting while reading novels:
+- **Long-press** any word in the chapter body to open a save dialog
+- **Add a personal note** to remember why it caught your attention
+- **Tap on any highlighted word** to view your saved note
+- **Delete** annotations when they're no longer needed
+- **Amber highlighter** marks all saved words in the text (persists across sessions)
+- All data stored **exclusively on your device** via Room — nothing is sent to the server
+
+### 🔊 Text-to-Speech (Feed)
 Every card in your feed can be read aloud with a single tap. Curio picks the perfect voice for each type of content — warm and clear for facts, expressive for poetry and shayari, British English for classic literature, and calm and precise for puzzles.
 
 **Auto-play mode** lets you sit back and listen to an entire feed session — audio plays through each card, pauses briefly between cards, and auto-swipes to the next. Tap the ▶️ button in the top bar to start, or use the per-card ▶️ button to play individual cards.

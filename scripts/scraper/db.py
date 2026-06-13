@@ -114,14 +114,15 @@ def insert_novel(db: DB, novel: dict) -> bool:
     try:
         # Insert novel
         result = db.query_one(
-            "INSERT INTO novels (title, author, description, source, source_url, "
+            "INSERT INTO novels (title, author, description, cover_image_url, source, source_url, "
             "total_chapters, language, likes) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) "
             "ON CONFLICT (title) DO NOTHING RETURNING id",
             [
                 novel["title"][:500],
                 novel.get("author", "")[:300],
                 novel.get("description", ""),
+                novel.get("cover_url", ""),
                 novel.get("source", "gutenberg"),
                 novel.get("source_url", ""),
                 novel.get("total_chapters", 0),

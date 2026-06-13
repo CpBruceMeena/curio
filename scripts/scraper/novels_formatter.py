@@ -69,7 +69,7 @@ def _match_chapter_heading(tag) -> Optional[re.Match]:
         return None
     # Match patterns like "Chapter I", "CHAPTER 1", "Part One", "Section I"
     heading_pattern = re.compile(
-        r"(CHAPTER|Chapter|CHAP\\.?|PART|Part|SECTION|Section|ACT|Act|"
+        r"(CHAPTER|Chapter|CHAP\.?|PART|Part|SECTION|Section|ACT|Act|"
         r"SCENE|Scene|STORY|Story|LETTER|Letter|ADVENTURE|Adventure)\s+"
         r"([IVXLCDM]+|\d+)",
         re.IGNORECASE
@@ -107,25 +107,34 @@ def _split_document_by_headings(soup, chapter_num_start: int) -> list[dict]:
             heading_matches.append((h, m))
 
     if len(heading_matches) <= 1:
-        # Single heading or none — return whole document as one chapter
+        # Single heading or none — return content after heading only
         chapter_title = ""
-        if heading_matches:
-            # Extract clean title from the match
-            chapter_title = heading_matches[0][1].group(0).rstrip(".,:;")
-        else:
-            title_tag = soup.find(["h1", "h2", "h3"])
-            chapter_title = title_tag.get_text(strip=True) if title_tag else ""
-            chapter_title = chapter_title.rstrip(".,:;")
+        heading_tag = heading_matches[0][0] if heading_matches else None
 
         paragraphs = []
-        for p in soup.find_all(["p", "div", "blockquote"]):
-            text = p.get_text(strip=True)
-            if text and len(text) > 10:
-                paragraphs.append(text)
+        if heading_tag:
+            # Only collect elements AFTER the heading to avoid boilerplate
+            # before chapter content (Gutenberg title page, license, etc.)
+            elem = heading_tag.find_next_sibling()
+            while elem:
+                if elem.name in ("p", "div", "blockquote", "span"):
+                    text = elem.get_text(strip=True)
+                    if text and len(text) > 10:
+                        paragraphs.append(text)
+                elem = elem.find_next_sibling()
+        else:
+            # No heading at all — take everything (likely poetry or single-page)
+            for p in soup.find_all(["p", "div", "blockquote"]):
+                text = p.get_text(strip=True)
+                if text and len(text) > 10:
+                    paragraphs.append(text)
 
         body = "\n\n".join(paragraphs)
         if len(body) < 100:
             return []
+
+        if heading_matches:
+            chapter_title = heading_matches[0][1].group(0).rstrip(".,:;")
 
         return [{
             "chapter_number": chapter_num,
@@ -207,6 +216,7 @@ def extract_chapters_from_epub(epub_bytes: bytes) -> Optional[list[dict]]:
             skip_keywords = [
                 "cover", "title page", "contents", "index",
                 "advertisement", "colophon", "notes",
+                "project gutenberg",
             ]
             if any(kw in lower_title for kw in skip_keywords):
                 all_text = soup.get_text(strip=True)
@@ -318,6 +328,104 @@ def extract_chapters_from_pdf(pdf_data: bytes) -> Optional[list[dict]]:
         })
 
     return chapters if chapters else None
+
+
+# ─── Novel Content Cleaning (applied to all parsing paths) ────────────────────
+# Strips Gutenberg boilerplate (license text, credit headers, page artifacts)
+# from chapter bodies after extraction. Applied to PDF, EPUB, and text paths.
+
+# ── Gutenberg boilerplate text patterns ──
+# These match multi-paragraph boilerplate blocks (start/end markers, license).
+# Uses re.DOTALL so . matches across newlines within the boilerplate block.
+
+GUTENBERG_BOILERPLATE_PATTERNS = [
+    re.compile(
+        r"\*\*\*\s*START OF (THE|THIS) PROJECT GUTENBERG EBOOK[^*]*\*\*\*",
+        re.IGNORECASE | re.DOTALL,
+    ),
+    re.compile(
+        r"\*\*\*\s*END OF (THE|THIS) PROJECT GUTENBERG EBOOK[^*]*\*\*\*",
+        re.IGNORECASE | re.DOTALL,
+    ),
+    re.compile(r"\*END\*THE SMALL PRINT! FOR PUBLIC DOMAIN[^*]*\*\*\*", re.DOTALL),
+    re.compile(
+        r"End of (the )?Project Gutenberg[^.]+\.",
+        re.IGNORECASE | re.DOTALL,
+    ),
+    # "This eBook is for the use of anyone anywhere" license block (single sentence)
+    re.compile(
+        r"This eBook is for the use of anyone anywhere[^.]*almost no restrictions whatsoever[^.]*\.",
+        re.IGNORECASE | re.DOTALL,
+    ),
+]
+
+# ── Line-level boilerplate patterns ──
+# These match single-line Gutenberg credits (headers, "Produced by").
+# Uses re.MULTILINE so ^ matches at start of each line.
+# NOTE: \n in raw strings within re.compile() is interpreted as newline
+# by the regex engine, so patterns like $\n match end-of-line + newline.
+
+GUTENBERG_LINE_PATTERNS = [
+    re.compile(r"^Project Gutenberg's .+?$\n?", re.MULTILINE),
+    re.compile(r"^The Project Gutenberg eBook of .+$\n?", re.MULTILINE | re.IGNORECASE),
+    re.compile(r"^Produced by .+$\n?", re.MULTILINE),
+]
+
+# ── Pre-chapter content patterns ──
+# Single-line patterns common before chapter 1 (title page, copyright, publisher).
+
+PRE_CHAPTER_PATTERNS = [
+    re.compile(r"^by [A-Z][A-Za-z .'`-]+$\n?", re.MULTILINE),
+    re.compile(r"^ISBN:\s*\S+$", re.MULTILINE),
+    re.compile(r"^Copyright \u00a9?\s*\d{4}", re.IGNORECASE | re.MULTILINE),
+    re.compile(r"^All rights reserved.$", re.MULTILINE),
+    re.compile(r"^(Published by|Printed in|Manufactured)[^\n]*$", re.MULTILINE),
+]
+
+# ── Chapter page artifacts ──
+# Patterns to strip in every chapter (standalone page numbers).
+
+CHAPTER_ARTIFACTS = [
+    # Standalone page numbers: a line containing only digits (+ optional dashes/spaces)
+    re.compile(r"^[-\s]*\d+[-\s]*$", re.MULTILINE),
+]
+
+
+def clean_gutenberg_boilerplate(body: str, chapter_num: int = 1) -> str:
+    """Clean Gutenberg boilerplate from a chapter's body text.
+
+    Strips license text, start/end markers, credit headers, page numbers,
+    and pre-chapter content (title page, copyright, publisher lines).
+
+    Applied to ALL parsing paths (PDF/EPUB/text) after chapter extraction.
+    """
+    # Early exit for empty bodies only. Short test inputs (e.g., boilerplate
+    # credit line + a sentence) may be under 50 chars — still need cleaning.
+    if not body or not body.strip():
+        return body
+
+    # ── Step 1: Strip multi-paragraph Gutenberg boilerplate ──
+    for pattern in GUTENBERG_BOILERPLATE_PATTERNS:
+        body = pattern.sub("", body)
+
+    # ── Step 2: Strip line-level Gutenberg credits ──
+    for pattern in GUTENBERG_LINE_PATTERNS:
+        body = pattern.sub("", body)
+
+    # ── Step 3: For first chapter, strip pre-chapter content ──
+    if chapter_num == 1:
+        for pattern in PRE_CHAPTER_PATTERNS:
+            body = pattern.sub("", body)
+
+    # ── Step 4: Strip page-level artifacts from all chapters ──
+    for pattern in CHAPTER_ARTIFACTS:
+        body = pattern.sub("", body)
+
+    # ── Step 5: Normalize whitespace after removals ──
+    body = re.sub(r"\n{4,}", "\n\n\n", body)
+    body = re.sub(r"^[\s\n]+", "", body)
+
+    return body.strip()
 
 
 # ─── Improved Text-based Fallback ─────────────────────────────────────────────
@@ -492,6 +600,7 @@ def fetch_and_format_novel(
     description: str = "",
     language: str = "en",
     pdf_url: str = None,
+    cover_url: str = None,
 ) -> Optional[dict]:
     """Download a novel from Gutenberg and format it into chapters.
 
@@ -577,11 +686,18 @@ def fetch_and_format_novel(
         if len(body.strip()) < 100:
             continue
 
-        # Run through content validator pipeline
+        # Step 1: Strip Gutenberg boilerplate (license, headers, page artifacts)
+        # Applied to ALL paths — PDF, EPUB, and text fallback.
+        body = clean_gutenberg_boilerplate(body, chapter_num=ch["chapter_number"])
+
+        if len(body) < 100:
+            continue
+
+        # Step 2: Run through content validator pipeline
         body = normalize_text_alignment(body, category="Short Stories")
         body = tts_normalize_text(body, category="Short Stories")
 
-        # Cap chapter body length at 15K chars (some Gutenberg chapters are huge)
+        # Step 3: Cap chapter body length at 15K chars (some Gutenberg chapters are huge)
         body = body[:15000]
 
         read_time = max(8, min(180, round(len(body.split()) / 3)))
@@ -603,6 +719,7 @@ def fetch_and_format_novel(
         "title": title[:500],
         "author": author[:300],
         "description": description,
+        "cover_url": cover_url or "",
         "source": "gutenberg",
         "source_url": source_url,
         "language": language,

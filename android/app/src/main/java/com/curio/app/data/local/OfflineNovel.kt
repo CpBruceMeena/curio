@@ -9,6 +9,7 @@ data class OfflineNovel(
     val title: String = "",
     val author: String = "",
     val description: String = "",
+    val coverImageUrl: String = "",
     val source: String = "gutenberg",
     val sourceUrl: String = "",
     val totalChapters: Int = 0,
