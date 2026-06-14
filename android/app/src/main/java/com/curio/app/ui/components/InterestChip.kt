@@ -136,7 +136,8 @@ fun getCategoryEmoji(categoryName: String): String {
         "Modern" to "\uD83C\uDFA8",
         "Classic Fiction" to "\uD83D\uDCD6",
         "Micro Stories" to "\uD83D\uDCD0",
-        "Serialized Stories" to "\uD83D\uDCCA"
+        "Serialized Stories" to "\uD83D\uDCCA",
+        "Hindi Stories" to "\uD83C\uDF10"
     )
     return iconMap[categoryName] ?: getIconEmoji(categoryName.lowercase().replace(" ", "_")) ?: ""
 }
@@ -173,6 +174,7 @@ private fun getIconEmoji(iconName: String): String {
         "classic_fiction" -> "\uD83D\uDCD6"  // 📖 Classic Fiction
         "micro_stories" -> "\uD83D\uDCD0"   // 📐 Micro Stories
         "serialized_stories" -> "\uD83D\uDCCA" // 📊 Serialized Stories
+        "hindi_stories" -> "\uD83C\uDF10"    // \ud83c\udf10 Hindi Stories
         else -> "\u2728"                 // ✨ fallback
     }
 }

@@ -86,8 +86,8 @@ def insert_content(db: DB, item: dict) -> bool:
     table_id = get_content_table_id(db, cat_id)
     try:
         db.execute(
-            f"INSERT INTO contents_{table_id} (title, body, poet, source, read_time_secs, tags, likes) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s) ON CONFLICT (title) DO NOTHING",
+            f"INSERT INTO contents_{table_id} (title, body, poet, source, read_time_secs, tags, likes, quality_score) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT (title) DO NOTHING",
             [
                 (item.get("title") or "")[:1000],
                 (item.get("body") or "")[:10000],
@@ -96,6 +96,7 @@ def insert_content(db: DB, item: dict) -> bool:
                 item.get("readTime", 15),
                 item.get("tags", ""),
                 item.get("likes", 0),
+                item.get("quality_score", 0),
             ]
         )
         return True
@@ -178,8 +179,8 @@ def archive_category(db: DB, cat_id: int) -> int:
     try:
         result = db.execute(
             f"INSERT INTO archive_{table_id} "
-            "(title, body, source, source_url, read_time_secs, tags, likes, created_at, archived_at) "
-            f"SELECT title, body, source, source_url, read_time_secs, tags, likes, created_at, NOW() "
+            "(title, body, source, source_url, read_time_secs, tags, likes, quality_score, created_at, archived_at) "
+            f"SELECT title, body, source, source_url, read_time_secs, tags, likes, quality_score, created_at, NOW() "
             f"FROM contents_{table_id} ON CONFLICT (title) DO NOTHING"
         )
         db.execute(f"TRUNCATE contents_{table_id}")

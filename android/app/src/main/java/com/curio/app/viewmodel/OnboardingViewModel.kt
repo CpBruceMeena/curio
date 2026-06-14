@@ -57,6 +57,7 @@ private fun fallbackL1Groups(): List<L1Group> = listOf(
             Category(26, "Classic Fiction", "menu_book", "#06b6d4", 29, l1Category = "Short Stories"),
             Category(27, "Micro Stories", "auto_stories", "#34d399", 30, l1Category = "Short Stories"),
             Category(28, "Serialized Stories", "library_books", "#6366f1", 31, l1Category = "Short Stories"),
+            Category(36, "Hindi Stories", "translate", "#f97316", 48, l1Category = "Short Stories"),
         )
     ),
     L1Group(

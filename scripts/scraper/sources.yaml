@@ -144,6 +144,66 @@ sources:
     tags: [puzzles, riddles, math, logic]
     notes: "Generated math puzzles, riddles, pattern puzzles, and reasoning problems"
 
+  # ─── API Source: NASA APOD ────────────────────────────────────────────────
+  - name: NASA APOD
+    type: api_json
+    url: "https://api.nasa.gov/planetary/apod"
+    handler: fetch_nasa_apod
+    enabled: true
+    rate_limit: 1
+    categories: [Space]
+    batch_size: 10
+    tags: [nasa, space, astronomy]
+    notes: "Astronomy Picture of the Day — space images with explanations via DEMO_KEY"
+
+  # ─── API Source: OpenLibrary ──────────────────────────────────────────────
+  - name: OpenLibrary
+    type: api_json
+    url: "https://openlibrary.org/subjects/{subject}.json"
+    handler: fetch_openlibrary
+    enabled: true
+    rate_limit: 0.5
+    categories: [Science, History, Philosophy, Technology, Literature, Mathematics, Art, Music]
+    batch_size: 15
+    tags: [books, literature, openlibrary]
+    notes: "Book facts by subject — author, first publish year, edition count"
+
+  # ─── API Source: World Bank ─────────────────────────────────────────────────
+  - name: World Bank
+    type: api_json
+    url: "https://api.worldbank.org/v2/country/all/indicator/{code}"
+    handler: fetch_worldbank
+    enabled: true
+    rate_limit: 0.5
+    categories: [Economics, Geography]
+    batch_size: 15
+    tags: [worldbank, economics, geography, development]
+    notes: "Economic & development indicators — GDP, population, life expectancy, etc."
+
+  # ─── RSS Source: Phys.org ──────────────────────────────────────────────────
+  - name: Phys.org
+    type: rss
+    url: "https://phys.org/rss-feed/breaking/"
+    handler: fetch_physorg
+    enabled: true
+    rate_limit: 0
+    categories: all
+    batch_size: 20
+    tags: [physorg, science, physics, news]
+    notes: "Science news RSS — physics, space, technology, biology"
+
+  # ─── RSS Source: ScienceAlert ──────────────────────────────────────────────
+  - name: ScienceAlert
+    type: rss
+    url: "https://www.sciencealert.com/feed"
+    handler: fetch_sciencealert
+    enabled: true
+    rate_limit: 0
+    categories: all
+    batch_size: 20
+    tags: [sciencealert, science, news]
+    notes: "Science news RSS — general science, discoveries, nature"
+
   # ─── API Source: Short Stories ─────────────────────────────────────────
   - name: Project Gutenberg
     type: api_json
@@ -155,3 +215,15 @@ sources:
     batch_size: 15
     tags: [stories, fiction, gutenberg]
     notes: "Short story excerpts from Project Gutenberg via Gutendex API"
+
+  # ─── API Source: Hindi Short Stories ───────────────────────────────────────
+  - name: Hindi Stories
+    type: api_json
+    url: "https://curio.app/internal/hindi-stories"
+    handler: fetch_hindi_stories
+    enabled: true
+    rate_limit: 0
+    categories: [Hindi Stories]
+    batch_size: 15
+    tags: [hindi, stories, classic, premchand]
+    notes: "Curated Hindi short stories from Premchand, Panchatantra, Betaal Pachisi, and Hindi folktales"

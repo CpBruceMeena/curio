@@ -1,11 +1,12 @@
 """
-Content Validator — validates, normalizes, and formats content for Curio.
+Content Validator — validates, normalizes, formats, and scores content for Curio.
 
 Run BEFORE every DB insertion to ensure:
-  1. Safe line separators  (replace "/" → "\\n" in poetic/hindi text)
+  1. Safe line separators  (replace "/" → "\n" in poetic/hindi text)
   2. TTS-friendly text     (punctuation cleanup, spacing, Unicode normalization)
   3. Content quality checks (minimum length, healthy ratio, profanity filter)
-  4. Deduplication hints   (normalised-text fingerprint for future fuzzy dedup)
+  4. Quality scoring       (0-100 numeric score for ranking and filtering)
+  5. Deduplication hints   (normalised-text fingerprint for future fuzzy dedup)
 
 Usage:
     from scraper.content_validator import validate_and_normalize, tts_normalize_text
@@ -44,9 +45,206 @@ BLOCKED_KEYWORDS = [
     "buy now", "subscribe now", "limited offer",
 ]
 
+# Gibberish patterns — repeated chars, keyboard mashing
+GIBBERISH_PATTERNS = [
+    re.compile(r"(.)\1{5,}"),            # same char 6+ times (aaaaaa)
+    re.compile(r"asdf|qwerty|zxcvb", re.IGNORECASE),  # keyboard rows
+    re.compile(r"x{4,}|z{4,}|q{4,}"),    # improbable letter runs
+]
+
+# Phrases that indicate incomplete or low-value content
+LOW_VALUE_PHRASES = [
+    "click here to", "read more", "learn more",
+    "this article", "this page", "this website",
+    "subscribe to", "sign up", "register now",
+    "for more information", "visit our website",
+]
+
 # Poetry-specific languages that often get "/" as line breaks
 POETIC_CATEGORIES = {"Poetry", "Shayari", "Hindi Poems", "English Poems",
                      "Classics", "Modern"}
+
+# Source authority scores (used in quality scoring)
+SOURCE_AUTHORITY = {
+    "nasa": 20, "world bank": 20, "wikipedia": 20, "pubmed": 20,
+    "science daily": 15, "smithsonian": 15, "nat geo": 15,
+    "phys.org": 15, "sciencealert": 15,
+    "openlibrary": 10, "poetrydb": 10, "quotes api": 10, "inaturalist": 10,
+    "hacker news": 5, "numbers api": 5, "open trivia db": 8,
+}
+
+
+# ─── Enhanced Guardrails ────────────────────────────────────────────────────────
+
+def is_gibberish(text: str) -> bool:
+    """Detect nonsense text — repeated chars, keyboard mashing."""
+    for pattern in GIBBERISH_PATTERNS:
+        if pattern.search(text):
+            return True
+    return False
+
+
+def is_url_only(text: str) -> bool:
+    """Check if content is just a URL with no actual information."""
+    stripped = text.strip()
+    if not stripped:
+        return False
+    # Count URL-like segments
+    url_count = len(re.findall(r'https?://\S+', stripped))
+    if url_count > 0:
+        # If most of the content is URLs, it's low value
+        non_url = re.sub(r'https?://\S+\s*', '', stripped).strip()
+        if len(non_url) < 20:
+            return True
+    return False
+
+
+def has_low_value_content(title: str, body: str) -> bool:
+    """Detect content that's just filler/placeholder."""
+    combined = f"{title} {body}".lower()
+    match_count = sum(1 for phrase in LOW_VALUE_PHRASES if phrase in combined)
+    # If 3+ low-value phrases found, likely boilerplate
+    return match_count >= 3
+
+
+def is_incomplete_content(text: str) -> bool:
+    """Detect content that's clearly cut off or incomplete."""
+    if len(text.strip()) < 20:
+        return True
+    # Check if it ends mid-sentence (no punctuation at end)
+    stripped = text.strip()
+    if stripped and stripped[-1] not in ".!?…":
+        # Short text without proper ending is suspicious
+        if len(stripped) < 60:
+            return True
+    return False
+
+
+def has_encoding_artifacts(text: str) -> bool:
+    """Detect common encoding issues."""
+    artifacts = ["\ufffd", "\ufffe", "\uffff",  # Unicode replacement
+                 "\\x", "\\u", "\\n",             # Escaped sequences shown as text
+                 "&amp;", "&lt;", "&gt;", "&quot;", # Unescaped HTML
+                 ]
+    for artifact in artifacts:
+        if artifact in text:
+            return True
+    return False
+
+
+def has_repetitive_content(text: str) -> bool:
+    """Detect content that repeats the same phrase."""
+    # Check if same sentence appears more than twice
+    sentences = re.split(r'[.?!]+', text)
+    sentence_counts = {}
+    for s in sentences:
+        s = s.strip().lower()
+        if len(s) > 10:
+            sentence_counts[s] = sentence_counts.get(s, 0) + 1
+    for s, count in sentence_counts.items():
+        if count >= 3:
+            return True
+    return False
+
+
+# ─── Quality Scoring ─────────────────────────────────────────────────────────────
+
+def compute_quality_score(item: dict) -> int:
+    """Compute a 0-100 quality score for a content item.
+
+    Dimensions:
+      - Substance (0-25):  Length + information density
+      - Readability (0-20): Well-formed sentences, proper punctuation
+      - Source Authority (0-20): Source trustworthiness
+      - Completeness (0-20): Has all metadata fields
+      - Content Health (0-18): No encoding/quality issues
+    """
+    score = 0
+    title = (item.get("title") or "").strip()
+    body = (item.get("body") or "").strip()
+    source = (item.get("source") or "").lower()
+    tags = (item.get("tags") or "")
+    category = (item.get("category") or "")
+
+    # ── 1. Substance (0-25) ──
+    body_len = len(body)
+    if body_len >= 1500:
+        score += 25
+    elif body_len >= 800:
+        score += 20
+    elif body_len >= 400:
+        score += 15
+    elif body_len >= 200:
+        score += 10
+    elif body_len >= 100:
+        score += 5
+    elif body_len >= 50:
+        score += 3
+    else:
+        score += 0
+
+    # Bonus for longer titles (more specific facts)
+    if len(title) >= 20:
+        score += 3
+    elif len(title) >= 10:
+        score += 1
+
+    # ── 2. Readability (0-20) ──
+    # Proper sentence endings
+    sentence_endings = len(re.findall(r'[.?!]', body))
+    if sentence_endings >= 3:
+        score += 8
+    elif sentence_endings >= 1:
+        score += 4
+
+    # Healthy alpha ratio (not mostly numbers/symbols)
+    non_space = body.replace(" ", "").replace("\n", "")
+    if len(non_space) > 0:
+        alpha_count = sum(1 for c in non_space if c.isalpha())
+        ratio = alpha_count / len(non_space)
+        if ratio >= 0.60:
+            score += 7
+        elif ratio >= 0.40:
+            score += 4
+        elif ratio >= 0.25:
+            score += 2
+
+    # Proper capitalization (starts with capital letter)
+    if body and body[0].isupper():
+        score += 5
+
+    # ── 3. Source Authority (0-20) ──
+    source_lower = source.lower()
+    best_authority = 0
+    for key, auth_score in SOURCE_AUTHORITY.items():
+        if key in source_lower:
+            best_authority = max(best_authority, auth_score)
+    score += best_authority
+
+    # ── 4. Completeness (0-20) ──
+    if source:
+        score += 5
+    if tags:
+        score += 5
+    if category:
+        score += 5
+    if item.get("readTime") or item.get("read_time_secs"):
+        score += 5
+
+    # ── 5. Content Health (0-15) ──
+    if not has_encoding_artifacts(f"{title} {body}"):
+        score += 5
+    if not has_repetitive_content(body):
+        score += 5
+    if not is_incomplete_content(body):
+        score += 3
+    # Low-value filler — scoring penalty instead of hard reject
+    if has_low_value_content(title, body):
+        score -= 8
+    else:
+        score += 5
+
+    return min(100, max(0, score))
 
 
 # ─── Text Alignment / Formatting ────────────────────────────────────────────────
@@ -119,7 +317,7 @@ def strip_non_printable(text: str) -> str:
 # ─── Line Separator Fix ─────────────────────────────────────────────────────────
 
 def fix_line_separators(text: str, category: str = "") -> str:
-    """Replace '/' used as poetic line separators with '\\n'.
+    """Replace '/' used as poetic line separators with '\n'.
 
     Detects '/' between words that looks like a line break (e.g.,
     in Shayari or poetry) and replaces it with a proper newline.
@@ -213,7 +411,21 @@ def passes_content_quality(title: str, body: str, source: str = "") -> bool:
             return False
 
     # Check for Unicode replacement characters or encoding artifacts
-    if "\ufffd" in body or "\ufffd" in title:
+    if has_encoding_artifacts(f"{title} {body}"):
+        return False
+
+    # ── Enhanced guardrails ──
+
+    # Gibberish detection
+    if is_gibberish(title) or is_gibberish(body):
+        return False
+
+    # URL-only content (no actual information)
+    if is_url_only(body):
+        return False
+
+    # Repetitive content
+    if has_repetitive_content(body):
         return False
 
     return True
@@ -224,7 +436,8 @@ def passes_content_quality(title: str, body: str, source: str = "") -> bool:
 def validate_and_normalize(item: dict) -> Optional[dict]:
     """Validate and normalise a content item before DB insertion.
 
-    Returns the cleaned item, or None if it should be skipped.
+    Returns the cleaned item with quality_score attached, or None if it
+    should be skipped.
     """
     title = (item.get("title") or "").strip()
     body = (item.get("body") or "").strip()
@@ -263,6 +476,9 @@ def validate_and_normalize(item: dict) -> Optional[dict]:
     result["body"] = body
     if category:
         result["category"] = category
+
+    # ── Step 7: Compute quality score ──
+    result["quality_score"] = compute_quality_score(result)
 
     return result
 

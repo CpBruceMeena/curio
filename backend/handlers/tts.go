@@ -69,6 +69,7 @@ var voiceByCategory = map[uint]string{
 	31: "en-GB-SoniaNeural",  // Classic Fiction — British, perfect for classic lit
 	32: "en-US-JennyNeural",  // Micro Stories — engaging for short reads
 	33: "en-US-GuyNeural",    // Serialized Stories — authoritative, keeps you hooked
+	105: "hi-IN-SwaraNeural", // Hindi Stories — Hindi female voice, warm and clear
 
 	// ── Puzzles (calm, precise, clear) ─────────────────────────
 	22: "en-US-DavisNeural",  // Mixed Puzzles — calm, balanced
@@ -97,12 +98,34 @@ func GenerateTTS(c *gin.Context) {
 	// Determine the text to synthesize
 	text := req.Text
 	if text == "" && req.ContentID > 0 {
-		// Fetch content from the database
+		// Decode global ID: categoryID * 10_000_000 + localID
+		// This avoids ID collisions across per-category tables in the UNION ALL VIEW
+		catID := req.ContentID / 10000000
+		localID := req.ContentID % 10000000
+
 		var content models.Content
-		result := database.DB.First(&content, req.ContentID)
-		if result.Error != nil {
-			jsonResponse(c, http.StatusNotFound, gin.H{"error": "Content not found"})
-			return
+
+		if catID > 0 {
+			// Global ID — query the correct per-category table directly
+			var category models.Category
+			if err := database.DB.First(&category, catID).Error; err != nil {
+				jsonResponse(c, http.StatusNotFound, gin.H{"error": "Category not found"})
+				return
+			}
+			tableName := database.ContentTableName(uint(category.ContentTableID), catID)
+			result := database.DB.Table(tableName).First(&content, localID)
+			if result.Error != nil {
+				jsonResponse(c, http.StatusNotFound, gin.H{"error": "Content not found"})
+				return
+			}
+			content.CategoryID = catID
+		} else {
+			// Legacy ID (raw local ID from before global ID encoding) — fall back to VIEW
+			result := database.DB.First(&content, req.ContentID)
+			if result.Error != nil {
+				jsonResponse(c, http.StatusNotFound, gin.H{"error": "Content not found"})
+				return
+			}
 		}
 
 		// Auto-select voice based on content category

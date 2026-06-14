@@ -70,6 +70,9 @@ CATEGORIES = [
     {"name": "Micro Stories", "icon": "auto_stories", "color_hex": "#34d399", "priority": 30, "table_id": 42, "l1_category": "Short Stories"},
     {"name": "Serialized Stories", "icon": "library_books", "color_hex": "#6366f1", "priority": 31, "table_id": 43, "l1_category": "Short Stories"},
 
+    # Short Stories subcategories
+    {"name": "Hindi Stories", "icon": "translate", "color_hex": "#f97316", "priority": 36, "table_id": 48, "l1_category": "Short Stories"},
+
     # Novels subcategories
     {"name": "Classic Novels", "icon": "menu_book", "color_hex": "#8b5cf6", "priority": 34, "table_id": 46, "l1_category": "Novels"},
     {"name": "Fiction", "icon": "auto_stories", "color_hex": "#a78bfa", "priority": 35, "table_id": 47, "l1_category": "Novels"},

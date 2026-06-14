@@ -180,5 +180,5 @@ data class TtsRequest(
     @SerializedName("content_id")
     val contentId: Long? = null,
     val text: String? = null,
-    val voice: String = "en-US-JennyNeural"
+    val voice: String = ""
 )

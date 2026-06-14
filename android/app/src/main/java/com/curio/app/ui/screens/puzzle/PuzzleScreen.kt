@@ -173,6 +173,14 @@ private fun InteractivePuzzleView(
     var keyboardBuffer by remember { mutableStateOf("") }
     val focusRequester = remember { FocusRequester() }
 
+    // Auto-advance to next puzzle after correct answer (1.5s delay)
+    LaunchedEffect(result) {
+        if (result == true) {
+            kotlinx.coroutines.delay(1500)
+            onNext()
+        }
+    }
+
     // Reset state when puzzle changes
     LaunchedEffect(puzzle.id) {
         userAnswer = ""
@@ -396,26 +404,9 @@ private fun InteractivePuzzleView(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             if (result == true) {
-                OutlinedButton(
-                    onClick = onNext,
-                    modifier = Modifier.weight(1f).height(52.dp),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Text(
-                        text = if (puzzleNumber < totalPuzzles) "Next \u2192" else "Done \u2192",
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-
+                // Auto-advancing in 1.5s — show a brief indicator
                 Button(
-                    onClick = {
-                        result = null
-                        explanation = ""
-                        userAnswer = ""
-                        selectedCell = -1
-                        keyboardBuffer = ""
-                        sudokuState = parseSudokuGrid(puzzle.question).toMutableList()
-                    },
+                    onClick = onNext,
                     modifier = Modifier.weight(1f).height(52.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
@@ -423,7 +414,10 @@ private fun InteractivePuzzleView(
                         contentColor = Color(0xFF002021)
                     )
                 ) {
-                    Text("Play Again", fontWeight = FontWeight.Bold)
+                    Text(
+                        text = if (puzzleNumber < totalPuzzles) "Next \u2192" else "Done \u2192",
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             } else if (result == false) {
                 OutlinedButton(
