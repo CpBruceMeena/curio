@@ -23,8 +23,17 @@ from .api_sources import (
     fetch_neuroscience,
     fetch_puzzles,
     fetch_stories,
+    fetch_hindi_stories,
+    fetch_nasa_apod,
+    fetch_openlibrary,
+    fetch_worldbank,
 )
-from .rss_sources import fetch_sciencedaily, fetch_smithsonian
+from .rss_sources import (
+    fetch_sciencedaily,
+    fetch_smithsonian,
+    fetch_physorg,
+    fetch_sciencealert,
+)
 from .html_sources import fetch_natgeo
 from .novels import fetch_novels
 from scraper.content_validator import validate_batch
@@ -43,8 +52,14 @@ SOURCE_REGISTRY = {
     "fetch_stories": fetch_stories,
     "fetch_sciencedaily": fetch_sciencedaily,
     "fetch_smithsonian": fetch_smithsonian,
+    "fetch_physorg": fetch_physorg,
+    "fetch_sciencealert": fetch_sciencealert,
     "fetch_natgeo": fetch_natgeo,
     "fetch_novels": fetch_novels,
+    "fetch_nasa_apod": fetch_nasa_apod,
+    "fetch_openlibrary": fetch_openlibrary,
+    "fetch_worldbank": fetch_worldbank,
+    "fetch_hindi_stories": fetch_hindi_stories,
 }
 
 __all__ = list(SOURCE_REGISTRY.keys()) + ["SOURCE_REGISTRY"]

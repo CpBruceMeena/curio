@@ -73,6 +73,9 @@ func GetFeed(c *gin.Context) {
 
 		for i := range content {
 			content[i].CategoryName = catMap[content[i].CategoryID]
+			// Encode as global ID: categoryID * 10_000_000 + localID
+			// This prevents ID collisions across per-category tables in the VIEW
+			content[i].ID = uint(content[i].CategoryID)*10000000 + content[i].ID
 		}
 	}
 

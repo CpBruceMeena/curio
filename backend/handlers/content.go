@@ -25,20 +25,40 @@ func GetContent(c *gin.Context) {
 		return
 	}
 
-	// Look up the content via the global VIEW (SELECT only)
+	// Decode global ID: categoryID * 10_000_000 + localID
+	// This avoids ID collisions across per-category tables in the UNION ALL VIEW
+	catID, localID := decodeContentID(globalID)
+
 	var content models.Content
-	result := database.DB.First(&content, globalID)
-	if result.Error != nil {
-		jsonResponse(c, http.StatusNotFound, gin.H{"error": "Content not found"})
-		return
+	var category models.Category
+
+	if catID > 0 {
+		// Global ID — query the correct per-category table directly
+		if err := database.DB.First(&category, catID).Error; err != nil {
+			jsonResponse(c, http.StatusNotFound, gin.H{"error": "Category not found"})
+			return
+		}
+		tableName := database.ContentTableName(uint(category.ContentTableID), catID)
+		result := database.DB.Table(tableName).First(&content, localID)
+		if result.Error != nil {
+			jsonResponse(c, http.StatusNotFound, gin.H{"error": "Content not found"})
+			return
+		}
+		content.CategoryID = catID
+		content.CategoryName = category.Name
+	} else {
+		// Legacy ID (raw local ID) — fall back to VIEW lookup
+		result := database.DB.First(&content, globalID)
+		if result.Error != nil {
+			jsonResponse(c, http.StatusNotFound, gin.H{"error": "Content not found"})
+			return
+		}
+		database.DB.First(&category, content.CategoryID)
+		content.CategoryName = category.Name
+		localID = content.ID // raw ID from VIEW is the correct local ID for legacy lookups
 	}
 
-	var category models.Category
-	database.DB.First(&category, content.CategoryID)
-	content.CategoryName = category.Name
-
 	// Find related content from the same per-category table
-	_, localID := decodeContentID(globalID)
 	tableName := database.ContentTableName(uint(category.ContentTableID), content.CategoryID)
 	var related []models.Content
 	database.DB.Table(tableName).

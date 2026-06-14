@@ -18,7 +18,7 @@ from scraper.handlers import SOURCE_REGISTRY
 
 def scrape(db: DB, target: int, is_batch: bool, filter_category: str = None, dry_run: bool = False):
     """Main scraping loop. Iterates registered sources, inserts into DB."""
-    print(f"🔍 Curio Content Scraper")
+    print(f"[Curio Content Scraper]")
     print(f"   Target: {target} new items{f' (category: {filter_category})' if filter_category else ''}")
     if dry_run:
         print("   Mode: DRY RUN")
@@ -33,9 +33,9 @@ def scrape(db: DB, target: int, is_batch: bool, filter_category: str = None, dry
                 "ON CONFLICT (name) DO UPDATE SET icon = EXCLUDED.icon, color_hex = EXCLUDED.color_hex, priority = EXCLUDED.priority",
                 [cat["name"], cat["icon"], cat["color"], CATEGORIES.index(cat) + 1]
             )
-        print(f"✓ {len(CATEGORIES)} categories ensured")
+        print(f"  OK {len(CATEGORIES)} categories ensured")
     except Exception as e:
-        print(f"⚠ Category insert error: {e}")
+        print(f"  !! Category insert error: {e}")
 
     # Sync source configs  from YAML into DB
     sync_source_configs(db)
@@ -51,32 +51,32 @@ def scrape(db: DB, target: int, is_batch: bool, filter_category: str = None, dry
     while total_inserted < target and run_count < max_runs:
         run_count += 1
         if is_batch:
-            print(f"\n📦 Batch run #{run_count} (inserted so far: {total_inserted}/{target})")
+            print(f"\n[Batch run #{run_count}] (inserted so far: {total_inserted}/{target})")
 
         all_items = []
         for src in source_configs:
             handler_fn = SOURCE_REGISTRY.get(src["handler"])
             if not handler_fn:
-                print(f"  ⚠ Unknown handler '{src['handler']}' for source '{src['name']}'")
+                print(f"  !! Unknown handler '{src['handler']}' for source '{src['name']}'")
                 continue
             batch_size = src.get("batch_size", 30)
             limit = batch_size if is_batch else target
-            print(f"📖 {src['name']}...")
+            print(f"[{src['name']}]...")
             try:
                 items = handler_fn(limit, filter_category)
-                print(f"   → {len(items)} candidate(s)")
+                print(f"   -> {len(items)} candidate(s)")
                 all_items.extend(items)
                 if not dry_run:
                     log_source_result(db, src["name"], len(items))
             except Exception as e:
                 error_msg = f"{type(e).__name__}: {e}"
-                print(f"  ⚠ {src['name']} failed: {error_msg}")
+                print(f"  !! {src['name']} failed: {error_msg}")
                 if not dry_run:
                     log_source_result(db, src["name"], 0, error_msg)
                 random.shuffle(all_items)
 
         if not all_items:
-            print("⚠ No new candidates from any source.")
+            print("!! No new candidates from any source.")
             if not is_batch:
                 break
             time.sleep(2)
@@ -85,7 +85,7 @@ def scrape(db: DB, target: int, is_batch: bool, filter_category: str = None, dry
         # Validate & normalise all items before insertion
         all_items = validate_batch(all_items)
         if not all_items:
-            print("⚠ All candidates failed validation.")
+            print("!! All candidates failed validation.")
             if not is_batch:
                 break
             time.sleep(2)
@@ -99,25 +99,25 @@ def scrape(db: DB, target: int, is_batch: bool, filter_category: str = None, dry
             if dry_run:
                 inserted += 1
                 if not is_batch:
-                    print(f"  ✓ [DRY] [{item['category']}] {(item.get('title',''))[:60]}...")
+                    print(f"  [DRY] [{item['category']}] {(item.get('title',''))[:60]}...")
             else:
                 if insert_content(db, item):
                     inserted += 1
                     if not is_batch:
-                        print(f"  ✓ [{item['category']}] {(item.get('title',''))[:60]}...")
+                        print(f"  + [{item['category']}] {(item.get('title',''))[:60]}...")
                 else:
                     skipped += 1
 
         total_inserted += inserted
-        print(f"   ✓ Run result: +{inserted} new, {skipped} duplicates")
+        print(f"   Run result: +{inserted} new, {skipped} duplicates")
         if not is_batch:
             break
         time.sleep(1)
 
-    print(f"\n✅ Done! Inserted {total_inserted} total.")
+    print(f"\nDone! Inserted {total_inserted} total.")
 
     if is_batch and not dry_run:
-        print(f"\n📊 Category distribution:")
+        print(f"\nCategory distribution:")
         dist = db.query(
             "SELECT c.name, COUNT(*) as count FROM contents ct "
             "JOIN categories c ON ct.category_id = c.id "
@@ -138,7 +138,7 @@ def scrape_novels(db: DB, limit: int = 10, dry_run: bool = False):
     from scraper.handlers.novels import fetch_novels
     from scraper.db import insert_novel
 
-    print(f"📚 Novel Scraper")
+    print(f"[Novel Scraper]")
     print(f"   Target: {limit} novels")
     if dry_run:
         print("   Mode: DRY RUN")
@@ -146,20 +146,78 @@ def scrape_novels(db: DB, limit: int = 10, dry_run: bool = False):
 
     novels = fetch_novels(limit, filter_category="novels")
     if not novels:
-        print("⚠ No novels fetched.")
+        print("!! No novels fetched.")
         return 0
 
     inserted = 0
     for novel in novels:
         if dry_run:
-            print(f"  ✓ [DRY] '{novel['title']}' — {novel['total_chapters']} chapters")
+            print(f"  [DRY] '{novel['title']}' -- {novel['total_chapters']} chapters")
             inserted += 1
         else:
             if insert_novel(db, novel):
                 inserted += 1
 
-    print(f"\n✅ Done! {inserted} novels inserted.")
+    print(f"\nDone! {inserted} novels inserted.")
     return inserted
+
+
+def seed_puzzles(db: DB, total: int, dry_run: bool = False):
+    """Generate and seed puzzles into the puzzles table."""
+    from scraper.puzzle_generator import generate_puzzles
+
+    print("[Curio Puzzle Seeder]")
+    print(f"   Target: {total} puzzles")
+    if dry_run:
+        print("   Mode: DRY RUN")
+    print()
+
+    puzzles = generate_puzzles(total)
+    print(f"   Generated {len(puzzles)} puzzles")
+
+    # Distribution stats
+    type_counts = {}
+    for p in puzzles:
+        pt = p["puzzle_type"]
+        type_counts[pt] = type_counts.get(pt, 0) + 1
+    for pt, cnt in sorted(type_counts.items()):
+        print(f"   * {pt.title():12} {cnt} puzzles")
+
+    if dry_run:
+        print(f"\nSample puzzles:")
+        for p in puzzles[:5]:
+            print(f"  - [{p['puzzle_type']}] {p['title']} (diff: {p['difficulty']})")
+        print(f"\nDry run complete! Would insert {len(puzzles)} puzzles.")
+        return len(puzzles)
+
+    # Insert into DB
+    imported = 0
+    conn = db.connect()
+    with conn.cursor() as cur:
+        for p in puzzles:
+            cur.execute(
+                """INSERT INTO puzzles (puzzle_type, category_id, title, question, answer, answer_type, hint, explanation, difficulty, likes)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                (p["puzzle_type"], p["category_id"], p["title"], p["question"],
+                 p["answer"], p["answer_type"], p["hint"], p["explanation"],
+                 p["difficulty"], p["likes"])
+            )
+            imported += 1
+
+    print(f"\nDone! Inserted {imported} puzzles")
+
+    # Verify
+    verify_conn = db.connect()
+    with verify_conn.cursor() as cur:
+        cur.execute("SELECT puzzle_type, COUNT(*) FROM puzzles GROUP BY puzzle_type ORDER BY COUNT(*) DESC")
+        print(f"\nPuzzle distribution in DB:")
+        for pt, cnt in cur.fetchall():
+            print(f"  * {pt.title():12} {cnt}")
+        cur.execute("SELECT COUNT(*) FROM puzzles")
+        total_in_db = cur.fetchone()[0]
+        print(f"\n   Total puzzles in DB: {total_in_db}")
+
+    return imported
 
 
 def main():
@@ -182,15 +240,21 @@ def main():
                         help="Comma-separated Gutenberg IDs (used with --novels-batch 0)")
     parser.add_argument("--id", type=int, default=None, dest="single_id",
                         help="Single novel ID to verify (used with --novels-verify)")
+    parser.add_argument("--seed-puzzles", type=int, default=0,
+                        help="Generate and seed N programmatic puzzles into the puzzles table")
     args = parser.parse_args()
 
     db = DB(DATABASE_URL)
 
     try:
+        if args.seed_puzzles:
+            seed_puzzles(db, args.seed_puzzles, dry_run=args.dry_run)
+            return
+
         if args.novels_verify:
             from scraper.novels_verify import verify_all_novels
             verified = verify_all_novels(db, auto_fix=args.auto_fix, single_id=args.single_id)
-            print(f"\n✅ Verified {verified} novels.")
+            print(f"\nVerified {verified} novels.")
             return
 
         if args.novels_batch > 0 or (args.novels_batch == 0 and args.ids):
@@ -208,7 +272,7 @@ def main():
                 inserted = scrape_top_novels(db, limit=args.novels_batch, dry_run=args.dry_run)
 
             elapsed = time.time() - start
-            print(f"\n✅ Batch complete! {inserted} novels processed in {elapsed:.1f}s.")
+            print(f"\nBatch complete! {inserted} novels processed in {elapsed:.1f}s.")
             return
 
         if args.novels > 0:
@@ -219,9 +283,9 @@ def main():
             cat_name = args.archive
             cat_id = get_category_id(db, cat_name)
             if not cat_id:
-                print(f'❌ Category "{cat_name}" not found')
+                print(f'Category "{cat_name}" not found')
                 sys.exit(1)
-            print(f'📦 Archiving "{cat_name}" (category {cat_id})...')
+            print(f'Archiving "{cat_name}" (category {cat_id})...')
             archived = archive_category(db, cat_id)
             print(f"   Archived {archived} items, table is now empty.")
             target = args.batch if args.batch > 0 else args.limit

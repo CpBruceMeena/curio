@@ -59,6 +59,9 @@ scripts/venv/
 .backend.pid
 .ngrok.pid
 
+# ── Backup files ──────────────────────────────────────────
+*.old
+
 # ── Testing ─────────────────────────────────────────────
 *.test
 

@@ -692,11 +692,32 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
 
+        // ── Guardrail: encode raw IDs as global IDs ────────────────────
+        // The backend's contents VIEW is a UNION ALL of per-category tables.
+        // Different tables can have the same auto-increment ID, so we must
+        // send categoryID * 10_000_000 + localID to avoid collisions.
+        val safeContentId = if (contentId < 10_000_000L) {
+            // Raw ID — encode using the item's categoryId
+            val item = _uiState.value.content.find { it.id == contentId }
+                ?: _uiState.value.discoverContent.find { it.id == contentId }
+                ?: _uiState.value.bookmarkedContent.find { it.id == contentId }
+            if (item != null && item.categoryId > 0) {
+                item.categoryId * 10_000_000L + contentId
+            } else {
+                contentId // fallback: can't find category info
+            }
+        } else {
+            contentId // Already a global ID (>= 10M)
+        }
+        // ── End guardrail ─────────────────────────────────────────────
+
+        // Clear previous audio immediately so the ExoPlayer stops playing stale audio
+        audioFilePath = null
         isAudioLoading = true
-        playingContentId = contentId
+        playingContentId = safeContentId
 
         viewModelScope.launch {
-            repository.generateSpeech(contentId).onSuccess { file ->
+            repository.generateSpeech(safeContentId).onSuccess { file ->
                 audioFilePath = file.absolutePath
                 isAudioLoading = false
             }.onFailure {
