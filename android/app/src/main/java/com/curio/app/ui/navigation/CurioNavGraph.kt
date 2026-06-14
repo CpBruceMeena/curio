@@ -39,7 +39,9 @@ fun CurioNavGraph(navController: NavHostController) {
                     navController.navigate(Screen.L2Selection.createRoute(l1Name))
                 },
                 onNavigateToNovels = {
-                    navController.navigate(Screen.NovelsFeed.route)
+                    navController.navigate(Screen.NovelsFeed.route) {
+                        popUpTo(Screen.Onboarding.route) { inclusive = true }
+                    }
                 },
                 onBack = { navController.popBackStack() }
             )

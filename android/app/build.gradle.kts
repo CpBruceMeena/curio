@@ -21,7 +21,7 @@ android {
             useSupportLibrary = true
         }
 
-        buildConfigField("String", "API_BASE_URL", "\"https://helpful-supposedly-moose.ngrok-free.app/api/v1/\"")
+        buildConfigField("String", "API_BASE_URL", "\"https://helpful-supposedly-moose.ngrok-free.app/curio/api/v1/\"")
     }
 
     signingConfigs {
