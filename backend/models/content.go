@@ -10,7 +10,7 @@ import (
 type Content struct {
 	ID           uint      `json:"id" gorm:"primaryKey"`
 	CategoryID   uint      `json:"category_id"`
-	CategoryName string    `json:"category_name" gorm:"-"`
+	CategoryName string    `json:"category_name"`
 	Title        string    `json:"title" gorm:"not null"`
 	Body         string    `json:"body" gorm:"type:text;not null"`
 	Description  string    `json:"description" gorm:"default:''"`

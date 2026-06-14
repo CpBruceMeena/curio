@@ -102,14 +102,6 @@ func ContentTableName(contentTableID, categoryID uint) string {
 	return fmt.Sprintf("contents_%d", categoryID)
 }
 
-// ArchiveTableName returns the archive table name using the stable
-// ContentTableID. Falls back to categoryID if ContentTableID is 0.
-func ArchiveTableName(contentTableID, categoryID uint) string {
-	if contentTableID > 0 {
-		return fmt.Sprintf("archive_%d", contentTableID)
-	}
-	return fmt.Sprintf("archive_%d", categoryID)
-}
 
 // ValidateChapterIntegrity checks that all novels have sequential chapter
 // numbering (1..N, no gaps, no duplicates) and clean titles.

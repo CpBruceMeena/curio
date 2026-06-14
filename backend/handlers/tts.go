@@ -98,34 +98,26 @@ func GenerateTTS(c *gin.Context) {
 	// Determine the text to synthesize
 	text := req.Text
 	if text == "" && req.ContentID > 0 {
-		// Decode global ID: categoryID * 10_000_000 + localID
-		// This avoids ID collisions across per-category tables in the UNION ALL VIEW
+		// Global ID = categoryID * 10_000_000 + localID
+		// IDs in per-category tables are already stored as global IDs
 		catID := req.ContentID / 10000000
-		localID := req.ContentID % 10000000
 
 		var content models.Content
 
 		if catID > 0 {
-			// Global ID — query the correct per-category table directly
+			// Query the correct per-category table using the global ID directly
 			var category models.Category
 			if err := database.DB.First(&category, catID).Error; err != nil {
 				jsonResponse(c, http.StatusNotFound, gin.H{"error": "Category not found"})
 				return
 			}
 			tableName := database.ContentTableName(uint(category.ContentTableID), catID)
-			result := database.DB.Table(tableName).First(&content, localID)
+			result := database.DB.Table(tableName).First(&content, req.ContentID)
 			if result.Error != nil {
 				jsonResponse(c, http.StatusNotFound, gin.H{"error": "Content not found"})
 				return
 			}
 			content.CategoryID = catID
-		} else {
-			// Legacy ID (raw local ID from before global ID encoding) — fall back to VIEW
-			result := database.DB.First(&content, req.ContentID)
-			if result.Error != nil {
-				jsonResponse(c, http.StatusNotFound, gin.H{"error": "Content not found"})
-				return
-			}
 		}
 
 		// Auto-select voice based on content category

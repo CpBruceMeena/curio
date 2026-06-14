@@ -17,7 +17,7 @@ func Setup() *gin.Engine {
 		c.JSON(200, gin.H{"status": "ok", "app": "curio"})
 	})
 
-	api := r.Group("/api/v1")
+	api := r.Group("/curio/api/v1")
 	{
 		// Feed
 		api.GET("/feed", handlers.GetFeed)

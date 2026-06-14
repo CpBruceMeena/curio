@@ -95,7 +95,7 @@ fun DiscoverScreen(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                val l1Groups = uiState.l1Groups
+                val l1Groups = uiState.l1Groups.filter { it.name != "Novels" }
                 l1Groups.forEach { group ->
                     val cc = curioColors()
                     val isActive = selectedL1 == group.name

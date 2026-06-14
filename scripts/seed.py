@@ -206,22 +206,12 @@ CREATE TABLE IF NOT EXISTS contents_{id} (
 );
 """
 
-CREATE_ARCHIVE_TABLE = """
-CREATE TABLE IF NOT EXISTS archive_{id} (
-    id SERIAL PRIMARY KEY,
-    title TEXT NOT NULL,
-    body TEXT NOT NULL,
-    description TEXT DEFAULT '',
-    poet TEXT DEFAULT '',
-    source TEXT DEFAULT '',
-    source_url TEXT DEFAULT '',
-    read_time_secs INTEGER DEFAULT 15,
-    tags TEXT DEFAULT '',
-    likes INTEGER DEFAULT 0,
-    created_at TIMESTAMP DEFAULT NOW(),
-    archived_at TIMESTAMP DEFAULT NOW(),
-    UNIQUE(title)
-);
+# Set the sequence to start at (category_id * 10_000_000 + 1) so IDs are globally unique.
+SET_SEQUENCE_START = """
+SELECT setval('contents_{tbl_id}_id_seq', {cat_id} * 10000000 + 1, false);
+"""
+
+CREATE_ARCHIVE_TABLE = """ -- Archive tables retired
 """
 
 UPDATE_CATEGORY_TABLE_ID = """
@@ -239,9 +229,14 @@ ON CONFLICT (name) DO UPDATE SET
 """
 
 INSERT_CONTENT = """
-INSERT INTO contents_{cat_id} (title, body, description, poet, source, read_time_secs, tags, likes)
+INSERT INTO contents_{tbl_id} (title, body, description, poet, source, read_time_secs, tags, likes)
 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
 ON CONFLICT (title) DO NOTHING;
+"""
+
+# After inserting content, update the sequence to continue after max ID
+UPDATE_SEQUENCE = """
+SELECT setval('contents_{tbl_id}_id_seq', COALESCE((SELECT MAX(id) FROM contents_{tbl_id}), {cat_id} * 10000000), true);
 """
 
 
@@ -261,13 +256,16 @@ def connect(db_url: str):
 
 
 def migrate(conn):
+    """Create categories and per-category content tables.
+    Sequence starts are set after seeding since we need the actual category DB IDs.
+    """
     with conn.cursor() as cur:
         cur.execute(CREATE_CATEGORIES_TABLE)
         for cat in CATEGORIES:
             db_id = cat["table_id"]
             cur.execute(CREATE_PER_CATEGORY_TABLE.format(id=db_id))
-            cur.execute(CREATE_ARCHIVE_TABLE.format(id=db_id))
-    print("\u2713 Tables ensured (categories + per-category content + archive)")
+            # Note: sequence starts are set in seed_categories() after we know the DB IDs
+    print("\u2713 Tables ensured (categories + per-category content)")
 
 
 def seed_categories(conn):
@@ -280,15 +278,35 @@ def seed_categories(conn):
                 print(f"  Created category: {cat['name']}")
             # Set the stable content_table_id for this category
             cur.execute(UPDATE_CATEGORY_TABLE_ID, (cat["table_id"], cat["name"]))
+    
+    # After categories are created, set sequence starts using actual DB category IDs
+    cur.execute("SELECT id, content_table_id FROM categories ORDER BY id")
+    for row in cur.fetchall():
+        cat_db_id, tbl_id = row[0], row[1] if row[1] else row[0]
+        cur.execute(SET_SEQUENCE_START.format(tbl_id=tbl_id, cat_id=cat_db_id))
+        print(f"  Set sequence for contents_{tbl_id} to start at {cat_db_id} * 10M + 1")
+    
     print(f"\u2713 Categories: {count} new, {len(CATEGORIES) - count} existing")
 
 
 def seed_content(conn):
+    """Seed content using table_id for the correct per-category table.
+    Each table has its sequence set to (cat_id * 10_000_000 + 1) so
+    auto-generated IDs are globally unique.
+    """
+    # Build category_name -> (cat_id, table_id) mapping
+    cat_map = {}
+    with conn.cursor() as cur:
+        cur.execute("SELECT id, content_table_id FROM categories")
+        for row in cur.fetchall():
+            cat_map[row[0]] = row[1] if row[1] else row[0]
+
     count = 0
     with conn.cursor() as cur:
         for item in CONTENT:
-            table_id = item["category_id"]
-            sql = INSERT_CONTENT.format(cat_id=table_id)
+            cat_id = item["category_id"]
+            tbl_id = cat_map.get(cat_id, cat_id)
+            sql = INSERT_CONTENT.format(tbl_id=tbl_id)
             cur.execute(sql, (
                 item["title"],
                 item["body"],
@@ -301,6 +319,8 @@ def seed_content(conn):
             ))
             if cur.rowcount > 0:
                 count += 1
+            # Update sequence to continue from max ID
+            cur.execute(UPDATE_SEQUENCE.format(tbl_id=tbl_id, cat_id=cat_id))
     print(f"\u2713 Content: {count} new, {len(CONTENT) - count} existing")
 
 # Puzzles seed data
@@ -464,13 +484,26 @@ def reset_tables(conn):
     migrate(conn)
 
 
-def verify(conn):
+def verify_no_view(conn):
+    """Verify data across all per-category tables (VIEW was removed)."""
     with conn.cursor() as cur:
         cur.execute("SELECT COUNT(*) FROM categories;")
         cat_count = cur.fetchone()[0]
-        cur.execute("SELECT COUNT(*) FROM contents;")
-        con_count = cur.fetchone()[0]
-    print(f"\n\u2713 Verification: {cat_count} categories, {con_count} content items in database")
+        
+        cur.execute("""
+            SELECT table_name FROM information_schema.tables 
+            WHERE table_schema = 'public' AND table_name LIKE 'contents\\_%'
+            AND table_name ~ '^contents_[0-9]+$'
+            ORDER BY table_name
+        """)
+        tables = [row[0] for row in cur.fetchall()]
+        
+        total = 0
+        for table in tables:
+            cur.execute(f"SELECT COUNT(*) FROM {table}")
+            total += cur.fetchone()[0]
+            
+    print(f"\n\u2713 Verification: {cat_count} categories, {total} content items across {len(tables)} tables")
 
 
 def main():
@@ -493,10 +526,9 @@ def main():
     print("Seeding content...")
     seed_content(conn)
 
-    print("Rebuilding contents VIEW...")
-    rebuild_view(conn)
-
-    verify(conn)
+    # VIEW was removed — IDs are now global via sequence starts
+    # Verify data instead
+    verify_no_view(conn)
 
     print("\nSeeding puzzles...")
     seed_puzzles(conn)
